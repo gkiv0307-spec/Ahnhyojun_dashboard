@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>대구경매 매물정보 | 옆커폰부동산에듀</title>
+<meta name="description" content="블로그에 올라오는 실전 낙찰 사례와 진행 중인 경매 매물을 한 곳에서 확인하세요." />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#top"><img src="assets/logo-dark.png" alt="옆커폰부동산에듀"></a>
+    <nav class="nav-menu">
+      <a href="index.html">매물정보</a>
+      <a href="about.html">회사소개</a>
+      <a href="courses.html">강의안내</a>
+      <a href="reviews.html">수강생후기</a>
+      <a href="https://blog.naver.com/ykphone_edu" target="_blank" rel="noopener">블로그</a>
+    </nav>
+    <a class="btn btn-gold" href="tel:010-6419-0759">전화상담</a>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="wrap">
+    <span class="kick-badge">실시간 매물 업데이트</span>
+    <h1>블로그에 올라온 <span class="gold">경매 매물</span>을<br>한눈에 확인하세요</h1>
+    <p class="lead">옆커폰부동산에듀 블로그에 새 글이 올라오면 자동으로 이 목록에 반영됩니다. 매물을 눌러 상세 정보를 확인하고, 자료·컨설팅 신청까지 이어서 진행할 수 있습니다.</p>
+  </div>
+</section>
+
+<section id="properties">
+  <div class="wrap">
+    <div class="kicker">Properties</div>
+    <h2 class="title">진행 중인 <span class="gold">경매 매물</span></h2>
+    <p class="desc">블로그(blog.naver.com/ykphone_edu) 최신 글 중 경매 매물 관련 글을 자동으로 불러옵니다.</p>
+    <div id="prop-grid" class="prop-grid"></div>
+    <div id="prop-state" class="state-msg"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="frow"><img src="assets/logo-dark.png" alt="옆커폰부동산에듀" style="height:28px"></div>
+    <div class="frow fmenu">
+      <a href="about.html">회사소개</a>
+      <a href="courses.html">강의안내</a>
+      <a href="reviews.html">수강생후기</a>
+      <a href="https://blog.naver.com/ykphone_edu" target="_blank" rel="noopener">블로그</a>
+    </div>
+    <div class="biz">
+      <b>회사명</b> (주)옆커폰부동산에듀 &nbsp;|&nbsp; <b>대표자</b> 고호정 &nbsp;|&nbsp; <b>사업자등록번호</b> 882-88-03372<br>
+      <b>주소</b> 대구광역시 수성구 두산동 207-5, 2층 204호 &nbsp;|&nbsp; <b>연락처</b> 010-6419-0759 / 053-281-0759<br>
+      <b>이메일</b> rhghwjd12@naver.com
+    </div>
+    <div style="color:#5a5a63">© 2026 (주)옆커폰부동산에듀. 매물정보 사이트 (개발 진행 중).</div>
+  </div>
+</footer>
+
+<script>
+async function loadProperties(){
+  const grid = document.getElementById('prop-grid');
+  const state = document.getElementById('prop-state');
+  state.textContent = '불러오는 중...';
+
+  let data = null;
+  try {
+    const res = await fetch('/api/properties');
+    if (res.ok) data = await res.json();
+  } catch (e) { /* /api 라우트가 없는 환경(정적 미리보기 등)에서는 아래 mock으로 대체 */ }
+
+  if (!data || !data.items) {
+    try {
+      const mockRes = await fetch('data/mock-properties.json');
+      const mockItems = await mockRes.json();
+      data = { source: 'mock', items: mockItems };
+    } catch (e) {
+      state.textContent = '매물 정보를 불러오지 못했습니다.';
+      return;
+    }
+  }
+
+  if (!data.items.length) {
+    state.textContent = '현재 등록된 매물이 없습니다.';
+    return;
+  }
+
+  grid.innerHTML = data.items.map(cardHtml).join('');
+  state.textContent = data.source === 'mock'
+    ? '⚠ 지금은 예시(mock) 데이터입니다. 실제 배포 후 블로그 RSS에서 자동으로 채워집니다.'
+    : '';
+}
+
+function cardHtml(p){
+  const priceRow = (p.appraisal || p.minBid)
+    ? `<div class="price-row">${p.appraisal ? `<span>감정가 <b>${p.appraisal}</b></span>`:''}${p.minBid ? `<span>최저가 <b>${p.minBid}</b></span>`:''}</div>`
+    : '<div class="price-row"><span>가격은 블로그 원문에서 확인해주세요</span></div>';
+  const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : '';
+  const addressLine = p.address ? `<div class="desc" style="font-size:13px;margin:0">${p.address}</div>` : '';
+  return `
+    <a class="prop-card" href="property.html?id=${encodeURIComponent(p.id)}">
+      <div class="ph">${thumb}</div>
+      <div class="pc">
+        <div class="tag">${p.region || '대구'} · ${p.category || '경매매물'}</div>
+        <h3>${p.title}</h3>
+        ${addressLine}
+        ${priceRow}
+        <div class="more">자세히 보기 →</div>
+      </div>
+    </a>`;
+}
+
+loadProperties();
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "224356311370",
+    "title": "대구 읍내동 아파트 경매 칠곡이편한세상 3억대 거래 아파트가 2억까지 내려왔습니다",
+    "link": "https://blog.naver.com/ykphone_edu/224356311370",
+    "pubDate": "2026-07-24",
+    "thumbnail": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250'><rect width='400' height='250' fill='%232a2410'/><text x='50%25' y='50%25' fill='%23FFC300' font-size='20' text-anchor='middle'>mock 사진 1</text></svg>",
+    "images": [
+      "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250'><rect width='400' height='250' fill='%232a2410'/><text x='50%25' y='50%25' fill='%23FFC300' font-size='20' text-anchor='middle'>mock 사진 1</text></svg>",
+      "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250'><rect width='400' height='250' fill='%23232329'/><text x='50%25' y='50%25' fill='%23FFC300' font-size='20' text-anchor='middle'>mock 사진 2</text></svg>",
+      "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250'><rect width='400' height='250' fill='%2317171c'/><text x='50%25' y='50%25' fill='%23FFC300' font-size='20' text-anchor='middle'>mock 사진 3</text></svg>"
+    ],
+    "region": "대구북구",
+    "category": "아파트경매",
+    "address": "대구 북구 읍내동 칠곡이편한세상 105동 201호",
+    "appraisal": "3억 1,000만원",
+    "minBid": "2억 1,700만원",
+    "hashtags": ["칠곡이편한세상", "칠곡이편한세상경매", "읍내동아파트경매", "대구북구아파트경매", "대구아파트경매", "대구경매"],
+    "summary": "최근 3억 2,000만원 실거래가 거래, 경매 최저가는 2억 1,700만원. 감정가 대비 약 1억 낙찰가 차이가 나는 구조.",
+    "isMock": true
+  }
+]

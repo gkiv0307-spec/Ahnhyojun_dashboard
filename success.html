@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>결제 완료 | 옆커폰부동산에듀</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="index.html"><img src="assets/logo-dark.png" alt="옆커폰부동산에듀"></a>
+    <nav class="nav-menu"><a href="index.html">매물정보</a><a href="about.html">회사소개</a><a href="courses.html">강의안내</a><a href="reviews.html">수강생후기</a></nav>
+  </div>
+</header>
+
+<section class="dark" style="min-height:60vh">
+  <div class="wrap" style="max-width:560px;text-align:center">
+    <div id="result-icon" style="font-size:56px;margin-bottom:10px">⏳</div>
+    <h2 class="title" id="result-title">결제 승인 확인 중...</h2>
+    <p class="desc" id="result-desc" style="margin:0 auto"></p>
+    <div class="checkout-box" id="result-box" style="text-align:left;margin-top:26px;display:none">
+      <div class="row"><span>주문번호</span><b id="r-orderid">-</b></div>
+      <div class="row"><span>결제금액</span><b id="r-amount">-</b></div>
+      <div class="row"><span>승인번호</span><b id="r-paymentkey">-</b></div>
+    </div>
+    <a class="btn btn-gold" href="index.html" style="margin-top:26px">매물 목록으로</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="biz">
+      <b>회사명</b> (주)옆커폰부동산에듀 &nbsp;|&nbsp; <b>대표자</b> 고호정 &nbsp;|&nbsp; <b>사업자등록번호</b> 882-88-03372
+    </div>
+  </div>
+</footer>
+
+<script>
+function qs(name){ return new URLSearchParams(location.search).get(name); }
+
+async function confirmPayment(){
+  const paymentKey = qs('paymentKey');
+  const orderId = qs('orderId');
+  const amount = qs('amount');
+  const icon = document.getElementById('result-icon');
+  const title = document.getElementById('result-title');
+  const desc = document.getElementById('result-desc');
+
+  if (!paymentKey || !orderId || !amount){
+    icon.textContent = '⚠';
+    title.textContent = '결제 정보가 없습니다';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/payments/confirm', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ paymentKey, orderId, amount: Number(amount) }),
+    });
+    const data = await res.json();
+
+    if (!res.ok){
+      icon.textContent = '⚠';
+      title.textContent = '결제 승인 실패';
+      desc.textContent = data.message || '알 수 없는 오류가 발생했습니다.';
+      return;
+    }
+
+    icon.textContent = '✅';
+    title.textContent = '결제가 완료되었습니다';
+    desc.textContent = '테스트 결제입니다. 실제 청구는 발생하지 않았습니다.';
+    document.getElementById('r-orderid').textContent = data.orderId;
+    document.getElementById('r-amount').textContent = Number(data.totalAmount).toLocaleString('ko-KR') + '원';
+    document.getElementById('r-paymentkey').textContent = data.paymentKey;
+    document.getElementById('result-box').style.display = 'block';
+  } catch (e) {
+    icon.textContent = '⚠';
+    title.textContent = '결제 승인 요청 중 오류';
+    desc.textContent = String(e);
+  }
+}
+
+confirmPayment();
+</script>
+</body>
+</html>

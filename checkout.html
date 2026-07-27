@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>결제 | 옆커폰부동산에듀</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://js.tosspayments.com/v2/standard"></script>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="index.html"><img src="assets/logo-dark.png" alt="옆커폰부동산에듀"></a>
+    <nav class="nav-menu"><a href="index.html">매물정보</a><a href="about.html">회사소개</a><a href="courses.html">강의안내</a><a href="reviews.html">수강생후기</a></nav>
+  </div>
+</header>
+
+<section class="dark">
+  <div class="wrap">
+    <div class="kicker">Checkout</div>
+    <h2 class="title">신청금 결제 <span class="badge-mock">테스트(개발자) 키 — 실제 결제 아님</span></h2>
+    <p class="desc" style="margin-bottom:24px">아래는 토스페이먼츠 테스트 연동 화면입니다. 실제 카드 결제가 이루어지지 않습니다.</p>
+
+    <div class="checkout-box">
+      <div class="row"><span>신청 매물</span><b id="c-name">-</b></div>
+      <div class="row"><span>결제 금액</span><b id="c-amount">-</b></div>
+      <div id="payment-method"></div>
+      <div id="agreement"></div>
+      <button id="pay-btn" class="btn btn-gold" style="width:100%;margin-top:20px" disabled>결제하기</button>
+      <div id="c-state" class="state-msg"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="biz">
+      <b>회사명</b> (주)옆커폰부동산에듀 &nbsp;|&nbsp; <b>대표자</b> 고호정 &nbsp;|&nbsp; <b>사업자등록번호</b> 882-88-03372
+    </div>
+  </div>
+</footer>
+
+<script>
+const TEST_CLIENT_KEY = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm";
+
+function qs(name){ return new URLSearchParams(location.search).get(name); }
+
+async function init(){
+  const id = qs('id');
+  const amount = Number(qs('amount')) || 500000;
+  const name = qs('name') || '경매 매물 상담 신청금';
+  const state = document.getElementById('c-state');
+  const payBtn = document.getElementById('pay-btn');
+
+  document.getElementById('c-name').textContent = name;
+  document.getElementById('c-amount').textContent = amount.toLocaleString('ko-KR') + '원';
+
+  sessionStorage.setItem('checkout-property-id', id || '');
+  sessionStorage.setItem('checkout-order-name', name);
+
+  const customerKey = 'guest_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now());
+  const tossPayments = TossPayments(TEST_CLIENT_KEY);
+  const widgets = tossPayments.widgets({ customerKey });
+
+  try {
+    await widgets.setAmount({ currency: 'KRW', value: amount });
+    await Promise.all([
+      widgets.renderPaymentMethods({ selector: '#payment-method', variantKey: 'DEFAULT' }),
+      widgets.renderAgreement({ selector: '#agreement', variantKey: 'AGREEMENT' }),
+    ]);
+    payBtn.disabled = false;
+  } catch (e) {
+    state.textContent = '결제 위젯 로딩에 실패했습니다: ' + e.message;
+    return;
+  }
+
+  payBtn.addEventListener('click', async () => {
+    payBtn.disabled = true;
+    const orderId = 'order_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    try {
+      await widgets.requestPayment({
+        orderId,
+        orderName: name,
+        successUrl: `${location.origin}${location.pathname.replace('checkout.html','success.html')}`,
+        failUrl: `${location.origin}${location.pathname.replace('checkout.html','fail.html')}`,
+      });
+    } catch (e) {
+      state.textContent = '결제 요청이 취소되었거나 실패했습니다: ' + e.message;
+      payBtn.disabled = false;
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>
