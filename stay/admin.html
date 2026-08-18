@@ -233,7 +233,6 @@
         (STAY.ROLES[l.role]||{}).label||l.role, l.branch||'', l.action,
         l.from ? STAY.STATUS[l.from].label : '', l.to ? STAY.STATUS[l.to].label : '', l.memo||'']; });
       UI.download('처리로그_' + STAY.ymd(new Date()) + '.csv', UI.toCsv([head].concat(body)));
-      UI.toast('CSV를 내려받았습니다.','ok');
     };
   }
 
@@ -357,12 +356,8 @@
     if (this.dataset.b) location.href = 'detail.html?id=' + this.dataset.b;
   });
   UI.on(root, 'click', '#exportAll', function(){
-    var blob = JSON.stringify(Store.raw(), null, 2);
-    var a = document.createElement('a');
-    a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(blob);
-    a.download = 'ykp_stay_' + STAY.ymd(new Date()) + '.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    UI.toast('전체 데이터를 내려받았습니다.','ok');
+    UI.download('ykp_stay_' + STAY.ymd(new Date()) + '.json',
+                JSON.stringify(Store.raw(), null, 2), 'application/json');
   });
   UI.on(root, 'click', '#resetDb', function(){
     UI.confirm('데모 데이터 초기화',

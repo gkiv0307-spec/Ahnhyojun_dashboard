@@ -302,10 +302,14 @@
       return '<option value="' + k + '"' + (k===sel?' selected':'') + '>' + esc(obj[k]) + '</option>';
     }).join('');
   }
-  function download(filename, text){
+  /* 파일 저장. 성공/실패 안내까지 여기서 책임진다(호출부가 미리 성공을 알리지 않도록). */
+  function download(filename, text, mime){
+    var isCsv = /\.csv$/i.test(filename);
+    var body = isCsv ? '﻿' + text : text;   /* 엑셀에서 한글이 깨지지 않도록 BOM */
     var a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(text);
+    a.href = 'data:' + (mime || (isCsv ? 'text/csv' : 'text/plain')) + ';charset=utf-8,' + encodeURIComponent(body);
     a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    toast(filename + ' 파일을 내려받았습니다.', 'ok');
   }
   function toCsv(rows){
     return rows.map(function(r){

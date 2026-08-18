@@ -281,7 +281,6 @@
               (b.reservation||{}).confirmNo||'', UI.dtFull(b.updatedAt)];
     });
     UI.download('숙박예약_' + today + '.csv', UI.toCsv([head].concat(body)));
-    UI.toast('CSV를 내려받았습니다.', 'ok');
   };
 
   render();

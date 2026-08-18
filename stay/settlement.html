@@ -177,7 +177,6 @@
               STAY.STATUS[b.status].label, p.settledAt ? UI.dateFull(p.settledAt) : ''];
     });
     UI.download('정산내역_' + STAY.ymd(new Date()) + '.csv', UI.toCsv([head].concat(body)));
-    UI.toast('CSV를 내려받았습니다.', 'ok');
   });
 
   render();
