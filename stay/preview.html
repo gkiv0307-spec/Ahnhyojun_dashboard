@@ -651,48 +651,38 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
       { id:'u_ap7',   name:'류하늘', role:'applicant', branch:'수성점', dept:'영업',        phone:'010-5000-0006', email:'ss@ykphone.co.kr', active:true }
     ];
 
+    /* 회사가 실제 운영 중인 숙소 5곳 (네이버 플레이스에서 이름·주소·전화 확인).
+     * 가격·객실수·이용방법·취소규정 등 운영 정보는 담당자 확인 후 채운다. */
     d.lodgings = [
-      { id:'lo_1', name:'옆커폰 수성 게스트하우스', type:'PENSION', ownership:'DIRECT', region:'대구',
-        address:'대구광역시 수성구 두산동 207-5', managerName:'김관리', managerPhone:'053-281-0759',
-        homepage:'', rackRate:120000, partnerRate:0, discountRate:100,
-        roomInfo:'2인실 4실 / 4인실 2실 (총 6실, 최대 20인)', usage:'본사 예약관리팀에 신청 → 배정 후 도어락 번호 발송',
-        cancelPolicy:'이용 1일 전까지 무료 취소. 당일 취소 시 청소비 3만원 부과', checkInTime:'15:00', checkOutTime:'11:00',
-        caution:'회사 직영 숙소로 숙박비는 무료이며 청소비만 지점 부담', note:'주차 6대 가능', active:true },
-      { id:'lo_2', name:'인터불고 호텔 대구', type:'HOTEL', ownership:'PARTNER', region:'대구',
-        address:'대구광역시 수성구 만촌동 300', managerName:'영업팀 이과장', managerPhone:'053-602-7114',
-        homepage:'https://www.hotelinterburgo.com', rackRate:180000, partnerRate:126000, discountRate:30,
-        roomInfo:'스탠다드 트윈 / 디럭스 더블', usage:'전화 예약 시 "옆커폰 법인" 언급, 월말 일괄 세금계산서',
-        cancelPolicy:'3일 전 무료, 2일 전 30%, 당일 100%', checkInTime:'15:00', checkOutTime:'12:00',
-        caution:'조식 별도(1인 22,000원)', note:'법인 계약번호 IB-YKP-2024', active:true },
-      { id:'lo_3', name:'해운대 그랜드 호텔', type:'HOTEL', ownership:'PARTNER', region:'부산',
-        address:'부산광역시 해운대구 우동 217', managerName:'예약팀', managerPhone:'051-740-0114',
-        homepage:'', rackRate:220000, partnerRate:165000, discountRate:25,
-        roomInfo:'시티뷰 트윈 / 오션뷰 트윈(+3만)', usage:'홈페이지 법인코드 입력 예약',
-        cancelPolicy:'2일 전까지 무료, 이후 1박 요금 부과', checkInTime:'15:00', checkOutTime:'11:00',
-        caution:'성수기(7~8월) 제휴가 미적용', note:'', active:true },
-      { id:'lo_4', name:'가평 라온 펜션', type:'PENSION', ownership:'PARTNER', region:'경기',
-        address:'경기도 가평군 청평면 상천리 415', managerName:'사장님', managerPhone:'031-585-1234',
-        homepage:'', rackRate:250000, partnerRate:200000, discountRate:20,
-        roomInfo:'복층 8인실 3동 / 4인실 2동', usage:'워크숍용. 계좌이체 선입금 후 확정',
-        cancelPolicy:'7일 전 100% 환불, 3일 전 50%, 당일 환불 불가', checkInTime:'16:00', checkOutTime:'11:00',
-        caution:'바비큐장 별도 3만원, 취사 가능', note:'단체 워크숍 시 세미나실 무료', active:true },
-      { id:'lo_5', name:'신라스테이 서초', type:'HOTEL', ownership:'PARTNER', region:'서울',
-        address:'서울특별시 서초구 서초동 1338-25', managerName:'법인영업 박대리', managerPhone:'02-2223-9000',
-        homepage:'https://www.shillastay.com', rackRate:190000, partnerRate:142000, discountRate:25,
-        roomInfo:'스탠다드 더블 / 트윈', usage:'법인 코퍼레이트 코드로 온라인 예약',
-        cancelPolicy:'당일 18시 이전 무료 취소', checkInTime:'15:00', checkOutTime:'12:00',
-        caution:'조식 포함', note:'서울 출장 기본 숙소', active:true },
-      { id:'lo_6', name:'옆커폰 남해 연수원', type:'PENSION', ownership:'DIRECT', region:'경남',
-        address:'경상남도 남해군 삼동면 물건리 1-1', managerName:'연수원 관리인', managerPhone:'055-867-0000',
-        homepage:'', rackRate:0, partnerRate:0, discountRate:100,
-        roomInfo:'8인 도미토리 2실 / 가족실 3실 / 대강당', usage:'교육·워크숍 목적 우선 배정. 2주 전 신청',
-        cancelPolicy:'무료(단, 3일 전 미통보 노쇼 시 지점 평가 반영)', checkInTime:'14:00', checkOutTime:'11:00',
-        caution:'식사 미제공, 인근 식당 이용', note:'회사 직영', active:true },
-      { id:'lo_7', name:'유성 리베라 호텔', type:'HOTEL', ownership:'PARTNER', region:'대전',
-        address:'대전광역시 유성구 봉명동 444-5', managerName:'예약실', managerPhone:'042-823-2111',
-        homepage:'', rackRate:150000, partnerRate:112000, discountRate:25,
-        roomInfo:'스탠다드 트윈', usage:'전화 예약', cancelPolicy:'1일 전 무료',
-        checkInTime:'15:00', checkOutTime:'11:00', caution:'온천 이용 무료', note:'', active:true }
+      { id:'lo_1', name:'군위 펜션 독채 스테이레브소유', type:'PENSION', ownership:'DIRECT', region:'대구',
+        address:'대구 군위군 군위읍 장수길 47 (수서리 1218-1)', managerName:'', managerPhone:'',
+        homepage:'https://naver.me/5bC7VCgI', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'독채 (가족실)', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'주차 숙소 내 2대 / 외부 1대', note:'대구 도심에서 약 30분. 운영 정보 확인 필요', active:true },
+
+      { id:'lo_2', name:'거제 펜션 풀빌라 스테이레브소유', type:'PENSION', ownership:'DIRECT', region:'경남',
+        address:'경남 거제시 장목면 흥남길 36-1 (시방리 296), 1·2·3·4동', managerName:'', managerPhone:'',
+        homepage:'https://naver.me/5T0y40DT', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'풀빌라 4개동 (1·2·3·4동)', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'', note:'단체·워크숍 활용 가능. 운영 정보 확인 필요', active:true },
+
+      { id:'lo_3', name:'스테이레브소유 김해점', type:'ETC', ownership:'DIRECT', region:'경남',
+        address:'경남 김해시 분성로511번길 8 (어방동 1092-3)', managerName:'', managerPhone:'055-313-7979',
+        homepage:'https://naver.me/5Neb8tGx', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'', note:'네이버 등록 업종 "여관" — 숙박 유형 확인 필요', active:true },
+
+      { id:'lo_4', name:'브라운도트 포항죽도점', type:'HOTEL', ownership:'DIRECT', region:'경북',
+        address:'경북 포항시 북구 죽도로40번길 51 (죽도동 95-39)', managerName:'', managerPhone:'',
+        homepage:'https://naver.me/5fItzQbq', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'', note:'운영 정보 확인 필요', active:true },
+
+      { id:'lo_5', name:'브라운도트 호텔 진주성점', type:'HOTEL', ownership:'DIRECT', region:'경남',
+        address:'경남 진주시 진주대로 1136 (봉곡동 7-6), 1~6층', managerName:'', managerPhone:'0507-1305-1806',
+        homepage:'https://naver.me/5MvDs47e', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'', note:'운영 정보 확인 필요', active:true }
     ];
 
     /* ---- 예약 시드 ---- */
@@ -704,56 +694,56 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
     }
     var rows = [
       /* 과거 완료건 (정산완료) — 월별 비용 그래프용. 최근 12개월을 고르게 덮도록 배치 */
-      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_3', rm:2, ad:4, ch:0, cost:330000, purpose:'부산 지역 경매 임장', bearer:'BRANCH' },
-      { off:-318, ci:-312, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_5', rm:1, ad:2, ch:0, cost:142000, purpose:'서울 본사 정기회의', bearer:'COMPANY' },
-      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_ap2', lo:'lo_2', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 세미나 강사 숙박', bearer:'COMPANY' },
-      { off:-286, ci:-280, n:3, st:'SETTLED', u:'u_ap5', lo:'lo_4', rm:3, ad:12, ch:0, cost:600000, purpose:'광주점 동계 워크숍', bearer:'COMPANY' },
-      { off:-268, ci:-262, n:1, st:'SETTLED', u:'u_ap7', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'수성점 신입 교육', bearer:'COMPANY' },
-      { off:-252, ci:-246, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_7', rm:2, ad:3, ch:0, cost:224000, purpose:'대전 지역 임장 교육', bearer:'BRANCH' },
-      { off:-238, ci:-232, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_5', rm:2, ad:3, ch:0, cost:284000, purpose:'서울 부동산 박람회 참가', bearer:'COMPANY' },
-      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_3', rm:1, ad:2, ch:0, cost:330000, purpose:'부산점 매물 브리핑', bearer:'BRANCH' },
-      { off:-205, ci:-198, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_6', rm:2, ad:9, ch:0, cost:0, purpose:'대전점 직원 연수', bearer:'COMPANY' },
-      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_ap2', lo:'lo_2', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 고객 상담 지원', bearer:'COMPANY' },
-      { off:-172, ci:-166, n:2, st:'SETTLED', u:'u_ap5', lo:'lo_4', rm:2, ad:8, ch:2, cost:400000, purpose:'광주점 가족 초청 행사', bearer:'BRANCH' },
-      { off:-158, ci:-150, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_5', rm:1, ad:1, ch:0, cost:142000, purpose:'서울 출장', bearer:'COMPANY' },
-      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_3', rm:2, ad:4, ch:0, cost:330000, purpose:'부산 고객 초청 세미나', bearer:'COMPANY' },
-      { off:-126, ci:-120, n:1, st:'SETTLED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'수성점 야간 근무 숙박', bearer:'COMPANY' },
-      { off:-112, ci:-106, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_7', rm:1, ad:2, ch:0, cost:224000, purpose:'대전 지사 업무 협의', bearer:'COMPANY' },
-      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_ap2', lo:'lo_2', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 지점 신규 직원 교육 참석', bearer:'COMPANY' },
-      { off:-88, ci:-84, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_5', rm:1, ad:2, ch:0, cost:142000, purpose:'본사 월간 회의 참석', bearer:'COMPANY' },
-      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_3', rm:2, ad:4, ch:0, cost:330000, purpose:'부산 지역 경매 물건 임장', bearer:'BRANCH' },
-      { off:-64, ci:-60, n:1, st:'SETTLED', u:'u_ap6', lo:'lo_7', rm:1, ad:1, ch:0, cost:112000, purpose:'대전 세미나 진행', bearer:'COMPANY' },
-      { off:-58, ci:-54, n:3, st:'SETTLED', u:'u_ap5', lo:'lo_4', rm:3, ad:12, ch:0, cost:600000, purpose:'광주점 하계 워크숍', bearer:'COMPANY' },
-      { off:-44, ci:-40, n:1, st:'SETTLED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'본사 출장 숙박', bearer:'COMPANY' },
-      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_ap2', lo:'lo_2', rm:1, ad:2, ch:1, cost:252000, purpose:'고객 초청 세미나 지원', bearer:'COMPANY' },
-      { off:-33, ci:-29, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_5', rm:2, ad:3, ch:0, cost:284000, purpose:'서울 부동산 박람회 참가', bearer:'COMPANY' },
-      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_3', rm:1, ad:2, ch:0, cost:330000, purpose:'부산점 신규 매물 브리핑', bearer:'BRANCH' },
+      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-318, ci:-312, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
+      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_ap2', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
+      { off:-286, ci:-280, n:3, st:'SETTLED', u:'u_ap5', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
+      { off:-268, ci:-262, n:1, st:'SETTLED', u:'u_ap7', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-252, ci:-246, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
+      { off:-238, ci:-232, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
+      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
+      { off:-205, ci:-198, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_5', rm:2, ad:9, ch:0, cost:0, purpose:'진주 지역 출장 숙박', bearer:'COMPANY' },
+      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_ap2', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 지점 교육 후 숙박', bearer:'COMPANY' },
+      { off:-172, ci:-166, n:2, st:'SETTLED', u:'u_ap5', lo:'lo_2', rm:2, ad:8, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'BRANCH' },
+      { off:-158, ci:-150, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
+      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 연수', bearer:'COMPANY' },
+      { off:-126, ci:-120, n:1, st:'SETTLED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
+      { off:-112, ci:-106, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_4', rm:1, ad:2, ch:0, cost:224000, purpose:'포항 물건 임장', bearer:'COMPANY' },
+      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_ap2', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
+      { off:-88, ci:-84, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
+      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-64, ci:-60, n:1, st:'SETTLED', u:'u_ap6', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'포항 고객 상담', bearer:'COMPANY' },
+      { off:-58, ci:-54, n:3, st:'SETTLED', u:'u_ap5', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
+      { off:-44, ci:-40, n:1, st:'SETTLED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
+      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_ap2', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-33, ci:-29, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
+      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
       /* 최근 진행건 */
-      { off:-21, ci:-14, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_6', rm:2, ad:8, ch:0, cost:0, purpose:'대전점 직원 연수', bearer:'COMPANY' },
-      { off:-16, ci:-8,  n:1, st:'SETTLED', u:'u_ap5', lo:'lo_7', rm:1, ad:1, ch:0, cost:112000, purpose:'대전 지사 업무 협의', bearer:'COMPANY' },
-      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_ap2', lo:'lo_2', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지역 경매 임장 및 상담', bearer:'BRANCH' },
-      { off:-12, ci:-5,  n:1, st:'SETTLE_WAIT', u:'u_ap4', lo:'lo_5', rm:1, ad:2, ch:0, cost:142000, purpose:'서울 본사 전략회의 참석', bearer:'COMPANY' },
-      { off:-11, ci:-4,  n:1, st:'SETTLE_WAIT', u:'u_ap7', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'수성점 신입 교육', bearer:'COMPANY' },
-      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_ap3', lo:'lo_3', rm:2, ad:4, ch:1, cost:363000, purpose:'부산 고객 초청 행사', bearer:'COMPANY' },
-      { off:-9,  ci:-1,  n:1, st:'USED', u:'u_ap5', lo:'lo_4', rm:1, ad:4, ch:2, cost:200000, purpose:'광주점 가족 워크숍', bearer:'BRANCH' },
+      { off:-21, ci:-14, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_5', rm:2, ad:8, ch:0, cost:0, purpose:'서부경남 임장 교육', bearer:'COMPANY' },
+      { off:-16, ci:-8,  n:1, st:'SETTLED', u:'u_ap5', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'경북 동해안 지역 출장', bearer:'COMPANY' },
+      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_ap2', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
+      { off:-12, ci:-5,  n:1, st:'SETTLE_WAIT', u:'u_ap4', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
+      { off:-11, ci:-4,  n:1, st:'SETTLE_WAIT', u:'u_ap7', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
+      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
+      { off:-9,  ci:-1,  n:1, st:'USED', u:'u_ap5', lo:'lo_2', rm:1, ad:4, ch:2, cost:200000, purpose:'거제 단체 연수', bearer:'BRANCH' },
       /* 오늘 체크인/체크아웃 */
-      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_ap2', lo:'lo_2', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 세미나 강사 숙박 지원', bearer:'COMPANY' },
-      { off:-7,  ci:0,   n:1, st:'UPCOMING', u:'u_ap6', lo:'lo_7', rm:2, ad:3, ch:0, cost:224000, purpose:'대전 지역 임장 교육', bearer:'BRANCH' },
-      { off:-9,  ci:-1,  n:1, st:'UPCOMING', u:'u_ap4', lo:'lo_5', rm:1, ad:1, ch:0, cost:142000, purpose:'서울 출장(오늘 체크아웃)', bearer:'COMPANY' },
+      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_ap2', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
+      { off:-7,  ci:0,   n:1, st:'UPCOMING', u:'u_ap6', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
+      { off:-9,  ci:-1,  n:1, st:'UPCOMING', u:'u_ap4', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
       /* 내일 체크인 */
-      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_ap3', lo:'lo_3', rm:2, ad:4, ch:0, cost:330000, purpose:'부산 경매 물건 현장 확인', bearer:'BRANCH' },
-      { off:-5,  ci:3,   n:1, st:'BOOKED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'수성점 야간 교육 후 숙박', bearer:'COMPANY' },
-      { off:-4,  ci:8,   n:3, st:'BOOKING', u:'u_ap5', lo:'lo_4', rm:3, ad:14, ch:0, cost:600000, purpose:'광주점 3분기 워크숍', bearer:'COMPANY' },
-      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_ap2', lo:'lo_2', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 고객 초청 강연 지원', bearer:'COMPANY' },
-      { off:-2,  ci:14,  n:1, st:'APPROVAL_PENDING', u:'u_ap4', lo:'lo_5', rm:2, ad:3, ch:0, cost:284000, purpose:'서울 본사 워크숍 참석', bearer:'COMPANY' },
-      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_ap3', lo:'lo_3', rm:3, ad:6, ch:0, cost:495000, purpose:'부산 지역 대형 물건 합동 임장', bearer:'COMPANY' },
-      { off:-1,  ci:20,  n:2, st:'REVIEWING', u:'u_ap6', lo:'lo_6', rm:2, ad:10, ch:0, cost:0, purpose:'대전점 신규 입사자 연수', bearer:'COMPANY' },
-      { off:-1,  ci:10,  n:1, st:'RECEIVED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:1, cost:0, purpose:'수성점 주말 근무 숙박', bearer:'BRANCH' },
-      { off:0,   ci:18,  n:2, st:'NEW', u:'u_ap2', lo:'lo_2', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지점 분기 실적회의 및 회식 후 숙박', bearer:'COMPANY' },
-      { off:0,   ci:25,  n:1, st:'NEW', u:'u_ap5', lo:'lo_4', rm:2, ad:6, ch:2, cost:400000, purpose:'광주점 우수사원 포상 숙박', bearer:'COMPANY' },
+      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-5,  ci:3,   n:1, st:'BOOKED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
+      { off:-4,  ci:8,   n:3, st:'BOOKING', u:'u_ap5', lo:'lo_2', rm:3, ad:14, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
+      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_ap2', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-2,  ci:14,  n:1, st:'APPROVAL_PENDING', u:'u_ap4', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
+      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_ap3', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 지역 합동 워크숍', bearer:'COMPANY' },
+      { off:-1,  ci:20,  n:2, st:'REVIEWING', u:'u_ap6', lo:'lo_5', rm:2, ad:10, ch:0, cost:0, purpose:'진주 세미나 진행', bearer:'COMPANY' },
+      { off:-1,  ci:10,  n:1, st:'RECEIVED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:1, cost:0, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
+      { off:0,   ci:18,  n:2, st:'NEW', u:'u_ap2', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 연수', bearer:'COMPANY' },
+      { off:0,   ci:25,  n:1, st:'NEW', u:'u_ap5', lo:'lo_2', rm:2, ad:6, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
       /* 취소/반려 */
-      { off:-15, ci:-3,  n:1, st:'CANCELED', u:'u_ap4', lo:'lo_5', rm:1, ad:1, ch:0, cost:142000, purpose:'서울 출장 (일정 변경으로 취소)', bearer:'COMPANY' },
-      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_ap3', lo:'lo_3', rm:4, ad:8, ch:0, cost:1320000, purpose:'부산 팀 단합 목적 숙박', bearer:'COMPANY' }
+      { off:-15, ci:-3,  n:1, st:'CANCELED', u:'u_ap4', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
+      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_ap3', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 연수', bearer:'COMPANY' }
     ];
 
     var byId = {}; d.users.forEach(function(u){ byId[u.id]=u; });
@@ -823,10 +813,10 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
       }
       if (reach >= 7 && !terminal) {
         b.reservation.confirmNo = (lo.ownership==='DIRECT' ? 'YKP-' : lo.name.slice(0,2)) + ymd(reqAt).replace(/-/g,'').slice(2) + '-' + ('00'+(i+1)).slice(-3);
-        b.reservation.roomInfo = lo.roomInfo.split('/')[0].trim() + ' ' + r.rm + '실 / ' + r.n + '박';
+        b.reservation.roomInfo = (((lo.roomInfo || '').split('/')[0].trim() + ' ').trimStart()) + r.rm + '실 / ' + r.n + '박';
         b.reservation.amount = r.cost;
         b.reservation.reservedAt = step(90);
-        b.reservation.note = lo.ownership==='DIRECT' ? '직영 숙소 배정 완료' : '제휴가 적용';
+        b.reservation.note = '회사 운영 숙소 배정 완료';
         log(b.reservation.reservedAt, assignee, '예약 완료',
             '예약번호 ' + b.reservation.confirmNo + ' / ' + b.reservation.roomInfo + ' / ' + won(r.cost),
             'BOOKING', 'BOOKED');
@@ -843,7 +833,7 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
         log(step(60), assignee, '정산 요청', '회계팀 정산 요청', 'USED', 'SETTLE_WAIT');
       }
       if (reach >= 11 && !terminal) {
-        b.payment.method = (lo.ownership==='DIRECT') ? '기타' : (i%3===0 ? '계좌이체' : '법인카드');
+        b.payment.method = (i % 3 === 0) ? '계좌이체' : '법인카드';
         b.payment.paidAmount = r.cost;
         b.payment.paidAt = ymd(addDays(today, r.ci + r.n));
         b.payment.status = r.cost ? 'PAY_DONE' : 'PAY_NONE';
@@ -852,7 +842,7 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
             '결제방법 ' + b.payment.method + ' / 결제금액 ' + won(r.cost), 'SETTLE_WAIT', 'SETTLING');
       }
       if (reach >= 12 && !terminal) {
-        b.payment.taxInvoice = lo.ownership === 'PARTNER';
+        b.payment.taxInvoice = (i % 2 === 0);
         b.payment.receipt = true;
         b.payment.settledAt = step(24*60);
         log(b.payment.settledAt, byId['u_fi1'], '정산 완료',
@@ -909,17 +899,16 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
       { id:uid('nc'), category:'이용규정', pinned:false, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
         title:'숙박 이용 기준 및 객실 배정 규정',
         body:'· 1객실 2인 기준 배정이 원칙입니다. 1인 1객실은 팀장급 이상 또는 야간 업무 시에만 승인됩니다.\n' +
-             '· 회사 직영 숙소(수성 게스트하우스, 남해 연수원)가 있는 지역은 직영 숙소를 우선 이용합니다.\n' +
-             '· 성수기(7~8월, 연말)는 최소 2주 전 신청해주세요. 제휴가 적용이 어려울 수 있습니다.\n' +
+             '· 회사가 직접 운영하는 숙소를 우선 이용합니다. 지역별 운영 숙소는 [숙소 안내]에서 확인하세요.\n' +
+             '· 성수기(7~8월, 연말)와 주말은 일반 예약이 많으므로 최소 2주 전에 신청해주세요.\n' +
              '· 가족 동반 숙박은 개인 부담을 원칙으로 하며, 포상 숙박은 별도 승인이 필요합니다.' },
       { id:uid('nc'), category:'취소규정', pinned:false, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
         title:'예약 취소·변경 시 반드시 확인할 것',
         body:'취소·변경은 [예약 상세] 화면의 "수정 요청 / 취소 요청" 버튼으로 접수해주세요.\n\n' +
              '숙소별 취소 규정이 다르며 위약금이 발생할 수 있습니다.\n' +
-             '· 인터불고 호텔 대구 : 3일 전 무료 / 2일 전 30% / 당일 100%\n' +
-             '· 해운대 그랜드 호텔 : 2일 전까지 무료, 이후 1박 요금\n' +
-             '· 가평 라온 펜션 : 7일 전 100% 환불 / 3일 전 50% / 당일 환불 불가\n' +
-             '· 직영 숙소 : 무료 (당일 취소 시 청소비 3만원)\n\n' +
+             '펜션(군위·거제)은 일반 예약 손실이 커서 호텔보다 취소 조건이 엄격합니다.\n\n' +
+             '※ 숙소별 정확한 취소 규정은 확인되는 대로 [숙소 안내]와 이 공지에 반영합니다.\n' +
+             '   등록 전까지는 예약 담당자에게 확인 후 취소해주세요.\n\n' +
              '위약금이 발생하면 해당 지점 부담으로 처리됩니다.' },
       { id:uid('nc'), category:'비용처리 기준', pinned:false, author:'최유진', createdAt:nowIso, updatedAt:nowIso,
         title:'숙박비 비용처리·증빙 기준',
@@ -929,19 +918,24 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
              '· 증빙 미첨부 건은 정산완료 처리되지 않습니다.\n' +
              '· 정산 마감은 매월 5일이며, 전월 이용분은 그때까지 증빙이 등록되어야 합니다.' },
       { id:uid('nc'), category:'회사 숙소 이용방법', pinned:false, author:'박서연', createdAt:nowIso, updatedAt:nowIso,
-        title:'직영 숙소(수성 게스트하우스 / 남해 연수원) 이용 안내',
-        body:'회사가 직접 운영하는 숙소는 숙박비가 무료입니다(청소비만 발생).\n\n' +
-             '· 옆커폰 수성 게스트하우스 : 2인실 4실, 4인실 2실 (최대 20인), 주차 6대\n' +
-             '· 옆커폰 남해 연수원 : 8인 도미토리 2실, 가족실 3실, 대강당 보유. 교육·워크숍 우선 배정, 2주 전 신청\n\n' +
-             '배정 확정 후 도어락 번호를 신청자 연락처로 발송합니다. 퇴실 시 분리수거와 정리 부탁드립니다.' },
+        title:'회사 운영 숙소 5곳 안내',
+        body:'회사가 직접 운영하는 숙소입니다. 업무 목적 숙박은 이 중에서 우선 배정합니다.\n\n' +
+             '· 군위 펜션 독채 스테이레브소유 — 대구 군위군 군위읍 장수길 47\n' +
+             '  독채(가족실). 대구 도심에서 약 30분. 주차 숙소 내 2대 / 외부 1대\n\n' +
+             '· 거제 펜션 풀빌라 스테이레브소유 — 경남 거제시 장목면 흥남길 36-1\n' +
+             '  풀빌라 4개동(1·2·3·4동). 단체·워크숍 활용 가능\n\n' +
+             '· 스테이레브소유 김해점 — 경남 김해시 분성로511번길 8 (055-313-7979)\n\n' +
+             '· 브라운도트 포항죽도점 — 경북 포항시 북구 죽도로40번길 51\n\n' +
+             '· 브라운도트 호텔 진주성점 — 경남 진주시 진주대로 1136 (0507-1305-1806)\n\n' +
+             '※ 객실 수·요금·입퇴실 시간·취소 규정은 확인되는 대로 [숙소 안내]에 등록합니다.\n' +
+             '   그 전까지는 예약 담당자가 숙소에 확인 후 안내드립니다.' },
       { id:uid('nc'), category:'제휴숙소 안내', pinned:false, author:'박서연', createdAt:nowIso, updatedAt:nowIso,
-        title:'2026년 제휴 숙소 및 할인율',
-        body:'· 인터불고 호텔 대구 : 정상가 180,000 → 제휴가 126,000 (30%)\n' +
-             '· 해운대 그랜드 호텔 : 220,000 → 165,000 (25%) ※ 7~8월 제휴가 미적용\n' +
-             '· 신라스테이 서초 : 190,000 → 142,000 (25%, 조식포함)\n' +
-             '· 유성 리베라 호텔 : 150,000 → 112,000 (25%, 온천 무료)\n' +
-             '· 가평 라온 펜션 : 250,000 → 200,000 (20%, 워크숍용)\n\n' +
-             '제휴가는 예약관리팀이 법인 코드로 예약할 때만 적용됩니다. 개인이 직접 예약하면 정상가로 결제되니 주의해주세요.' },
+        title:'운영 숙소가 없는 지역 출장은 어떻게 하나요',
+        body:'현재 회사 운영 숙소는 대구(군위)·경남(거제·김해·진주)·경북(포항) 5곳입니다.\n\n' +
+             '이 지역 출장은 운영 숙소를 우선 이용해주세요.\n' +
+             '운영 숙소가 없는 지역은 예약 신청서의 숙박 유형에서 “기타”를 고르고\n' +
+             '희망 숙소를 직접 입력해주시면 예약 담당자가 확인 후 진행합니다.\n\n' +
+             '※ 외부 제휴 숙소가 생기면 이 공지와 [숙소 안내]에 추가합니다.' },
       { id:uid('nc'), category:'FAQ', pinned:false, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
         title:'자주 묻는 질문 (FAQ)',
         body:'Q. 급해서 전화로 요청했는데 시스템에도 넣어야 하나요?\n' +
@@ -2204,15 +2198,25 @@ PAGES["new"] = function(){
     UI.qs('#loInfo').innerHTML = lo ? lodgingCard(lo) : '';
     calcCost();
   };
+  /* 아직 등록되지 않은 항목은 아예 표시하지 않는다 (빈칸·0원이 잘못된 정보로 읽히지 않도록) */
   function lodgingCard(l){
+    var bits = [];
+    if (l.address) bits.push(UI.esc(l.address));
+    if (l.checkInTime || l.checkOutTime)
+      bits.push('입실 ' + UI.esc(l.checkInTime || '-') + ' / 퇴실 ' + UI.esc(l.checkOutTime || '-'));
+    if (l.roomInfo) bits.push('객실 ' + UI.esc(l.roomInfo));
+    if (l.rackRate) bits.push('정상가 ' + STAY.won(l.rackRate) +
+      (l.partnerRate ? ' → 적용가 <b>' + STAY.won(l.partnerRate) + '</b>' : ''));
+    if (l.cancelPolicy) bits.push('취소규정: ' + UI.esc(l.cancelPolicy));
+    if (l.managerPhone) bits.push('숙소 연락처 ' + UI.esc(l.managerPhone));
+    var missing = !l.rackRate && !l.cancelPolicy && !l.checkInTime;
     return '<div class="note info" style="margin-bottom:14px">' +
       '<b>' + UI.esc(l.name) + '</b> <span class="tag ' + (l.ownership==='DIRECT'?'direct':'partner') + '">' +
-        UI.esc(STAY.OWNERSHIP[l.ownership]) + '</span><br>' +
-      '입실 ' + UI.esc(l.checkInTime) + ' / 퇴실 ' + UI.esc(l.checkOutTime) +
-      ' · 객실 ' + UI.esc(l.roomInfo) + '<br>' +
-      '정상가 ' + STAY.won(l.rackRate) + (l.partnerRate ? ' → 제휴가 <b>' + STAY.won(l.partnerRate) + '</b> (' + l.discountRate + '% 할인)' : (l.discountRate===100 ? ' → <b>직영 숙소 (숙박비 없음)</b>' : '')) + '<br>' +
-      '취소규정: ' + UI.esc(l.cancelPolicy) +
-      (l.caution ? '<br>⚠ ' + UI.esc(l.caution) : '') + '</div>';
+        UI.esc(STAY.OWNERSHIP[l.ownership]) + '</span>' +
+      (bits.length ? '<br>' + bits.join('<br>') : '') +
+      (l.caution ? '<br>⚠ ' + UI.esc(l.caution) : '') +
+      (missing ? '<br><span style="color:#9a4b06">요금·입퇴실·취소규정이 아직 등록되지 않았습니다. 예약 담당자가 확인 후 안내드립니다.</span>' : '') +
+      '</div>';
   }
 
   /* --- 자동계산 --- */
@@ -2234,7 +2238,11 @@ PAGES["new"] = function(){
     var n = STAY.nights(UI.qs('#checkIn').value, UI.qs('#checkOut').value);
     var rooms = Number(UI.qs('#rooms').value)||1;
     if (!lo || !n) return;
-    var unit = lo.partnerRate || (lo.discountRate === 100 ? 0 : lo.rackRate);
+    var unit = lo.partnerRate || lo.rackRate;
+    if (!unit) {   /* 요금이 아직 등록되지 않은 숙소 — 0원으로 채우면 오해를 부른다 */
+      UI.qs('#costHint').textContent = lo.name + ' 요금이 아직 등록되지 않았습니다. 예상 비용을 직접 입력해주세요.';
+      return;
+    }
     UI.qs('#estimatedCost').value = unit * n * rooms;
     UI.qs('#costHint').textContent = lo.name + ' ' + STAY.won(unit) + ' × ' + n + '박 × ' + rooms + '실 = ' +
       STAY.won(unit*n*rooms) + ' (자동계산 · 수정 가능)';
@@ -3652,7 +3660,7 @@ PAGES["lodgings"] = function(){
   var isStaff = Deploy.isStaff();
   var root = UI.shell('lodging',
     isStaff ? '숙소 안내' : '숙소 관리',
-    isStaff ? '회사 직영 숙소와 제휴 숙소 이용 안내' : '호텔 · 펜션 마스터 (직영 / 제휴 구분)');
+    isStaff ? '회사가 운영하는 숙소 이용 안내' : '호텔 · 펜션 마스터 (직영 / 제휴 구분)');
   var canEdit = !isStaff && Auth.can('manageLodging');
   var st = { q:'', type:'', own:'', region:'' };
 
@@ -3673,6 +3681,12 @@ PAGES["lodgings"] = function(){
     }
     return list;
   }
+  /* 운영 정보가 비어 있는 숙소 수 */
+  function incomplete(){
+    return Store.lodgings().filter(function(l){
+      return !l.rackRate || !l.cancelPolicy || !l.checkInTime || !l.usage;
+    }).length;
+  }
   function usage(loId){
     var bs = Store.bookings().filter(function(b){ return b.lodgingId===loId && ['CANCELED','REJECTED'].indexOf(b.status)<0; });
     return { n: bs.length, sum: bs.reduce(function(s,b){ return s + ((b.reservation&&b.reservation.amount)||b.estimatedCost||0); }, 0) };
@@ -3685,14 +3699,14 @@ PAGES["lodgings"] = function(){
     root.innerHTML =
      '<div class="pagehead"><div><h2>' + (isStaff ? '숙소 안내' : '숙소 관리') + '</h2>' +
        '<p>' + (isStaff
-         ? '회사가 직접 운영하는 <b>직영 숙소</b>와 <b>제휴 숙소</b>입니다. 예약 신청 시 아래 숙소 중에서 선택해주세요.'
-         : '회사 직영 숙소와 외부 제휴 숙소를 구분해 관리합니다. 예약 신청 화면의 숙소 목록이 여기서 채워집니다.') + '</p></div>' +
+         ? '회사가 직접 운영하는 숙소입니다. 예약 신청 시 아래 숙소 중에서 선택해주세요.'
+         : '회사 운영 숙소와 외부 제휴 숙소를 구분해 관리합니다. 예약 신청 화면의 숙소 목록이 여기서 채워집니다.') + '</p></div>' +
        '<div class="sp"></div>' + (canEdit ? '<button class="btn btn-gold" id="add">＋ 숙소 등록</button>' : '') + '</div>' +
 
      '<div class="kpis" style="grid-template-columns:repeat(' + (isStaff?3:4) + ',1fr)">' +
        '<div class="kpi k-ink"><div class="lb">전체 숙소</div><div class="vl">' + all.length + '<small>곳</small></div></div>' +
        '<div class="kpi k-blue"><div class="lb">직영 (회사운영)</div><div class="vl">' +
-         all.filter(function(l){return l.ownership==='DIRECT';}).length + '<small>곳</small></div><div class="sub">숙박비 무료</div></div>' +
+         all.filter(function(l){return l.ownership==='DIRECT';}).length + '<small>곳</small></div><div class="sub">회사가 직접 운영</div></div>' +
        '<div class="kpi k-violet"><div class="lb">제휴 숙소</div><div class="vl">' +
          all.filter(function(l){return l.ownership==='PARTNER';}).length + '<small>곳</small></div><div class="sub">제휴가 적용</div></div>' +
        (isStaff ? '' : '<div class="kpi k-gold"><div class="lb">평균 할인율</div><div class="vl">' +
@@ -3701,6 +3715,9 @@ PAGES["lodgings"] = function(){
          '<div class="sub">제휴 숙소 기준</div></div>') +
      '</div>' +
 
+     (incomplete() ? '<div class="note warn" style="margin-bottom:14px">📝 요금·객실·입퇴실·취소규정이 아직 등록되지 않은 숙소가 <b>' +
+        incomplete() + '곳</b> 있습니다. ' +
+        (isStaff ? '해당 항목은 예약 담당자가 확인 후 안내드립니다.' : '숙소를 열어 정보를 채워주세요.') + '</div>' : '') +
      '<div class="card mt"><div class="card-b"><div class="filterbar">' +
        '<div class="field"><label>검색</label><input class="input" id="f_q" value="' + UI.esc(st.q) + '" placeholder="숙소명·주소·담당자"></div>' +
        '<div class="field"><label>구분</label><select class="select" id="f_type"><option value="">전체</option>' +
@@ -3724,19 +3741,18 @@ PAGES["lodgings"] = function(){
         (canEdit ? '<button class="btn btn-sm" data-ed="' + l.id + '">수정</button>' : '') + '</div>' +
         '<div class="card-b"><dl class="dl">' +
           d('지역', UI.esc(l.region)) + d('주소', UI.esc(l.address)) +
-          d('담당자', UI.esc(l.managerName)) + d('연락처', UI.esc(l.managerPhone)) +
-          d('홈페이지', l.homepage ? '<a href="' + UI.esc(l.homepage) + '" target="_blank" rel="noopener" style="text-decoration:underline">' + UI.esc(l.homepage) + '</a>' : '<span class="muted">-</span>') +
-          d('입실/퇴실', UI.esc(l.checkInTime) + ' / ' + UI.esc(l.checkOutTime)) +
-          d('정상가격', STAY.won(l.rackRate)) +
-          d('제휴가격', l.partnerRate ? '<b>' + STAY.won(l.partnerRate) + '</b>' : (l.discountRate===100 ? '<b>무료(직영)</b>' : '<span class="muted">-</span>')) +
-          d('할인율', (l.discountRate||0) + '%') +
+          (l.managerName ? d('담당자', UI.esc(l.managerName)) : '') +
+          d('연락처', l.managerPhone ? UI.esc(l.managerPhone) : miss()) +
+          d('네이버 플레이스', l.homepage ? '<a href="' + UI.esc(l.homepage) + '" target="_blank" rel="noopener" style="text-decoration:underline">보기</a>' : '<span class="muted">-</span>') +
+          d('입실/퇴실', (l.checkInTime || l.checkOutTime) ? (UI.esc(l.checkInTime||'-') + ' / ' + UI.esc(l.checkOutTime||'-')) : miss()) +
+          d('요금', l.rackRate ? (STAY.won(l.rackRate) + (l.partnerRate ? ' → <b>' + STAY.won(l.partnerRate) + '</b> (' + (l.discountRate||0) + '%)' : '')) : miss()) +
           (isStaff ? '' : d('이용 실적', u.n + '건 · ' + STAY.won(u.sum))) +
         '</dl>' +
         '<div class="hr"></div>' +
         '<dl class="dl one">' +
-          d('객실정보', UI.esc(l.roomInfo)) +
-          d('이용방법', UI.esc(l.usage)) +
-          d('취소규정', UI.esc(l.cancelPolicy)) +
+          d('객실정보', l.roomInfo ? UI.esc(l.roomInfo) : miss()) +
+          d('이용방법', l.usage ? UI.esc(l.usage) : miss()) +
+          d('취소규정', l.cancelPolicy ? UI.esc(l.cancelPolicy) : miss()) +
           (l.caution ? d('주의사항', '<span style="color:var(--orange)">⚠ ' + UI.esc(l.caution) + '</span>') : '') +
           (l.note ? d('비고', UI.esc(l.note)) : '') +
         '</dl></div></div>';
@@ -3750,6 +3766,8 @@ PAGES["lodgings"] = function(){
     });
   }
   function d(k, v){ return '<div class="dr"><dt>' + k + '</dt><dd>' + v + '</dd></div>'; }
+  /* 값을 지어내지 않고 '아직 등록되지 않았다'는 사실을 그대로 보여준다 */
+  function miss(){ return '<span style="color:var(--orange);font-weight:700">미등록</span>'; }
 
   function editModal(l){
     l = l || { type:'HOTEL', ownership:'PARTNER', active:true, discountRate:0,

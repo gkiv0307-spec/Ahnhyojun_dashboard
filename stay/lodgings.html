@@ -17,7 +17,7 @@
   var isStaff = Deploy.isStaff();
   var root = UI.shell('lodging',
     isStaff ? '숙소 안내' : '숙소 관리',
-    isStaff ? '회사 직영 숙소와 제휴 숙소 이용 안내' : '호텔 · 펜션 마스터 (직영 / 제휴 구분)');
+    isStaff ? '회사가 운영하는 숙소 이용 안내' : '호텔 · 펜션 마스터 (직영 / 제휴 구분)');
   var canEdit = !isStaff && Auth.can('manageLodging');
   var st = { q:'', type:'', own:'', region:'' };
 
@@ -38,6 +38,12 @@
     }
     return list;
   }
+  /* 운영 정보가 비어 있는 숙소 수 */
+  function incomplete(){
+    return Store.lodgings().filter(function(l){
+      return !l.rackRate || !l.cancelPolicy || !l.checkInTime || !l.usage;
+    }).length;
+  }
   function usage(loId){
     var bs = Store.bookings().filter(function(b){ return b.lodgingId===loId && ['CANCELED','REJECTED'].indexOf(b.status)<0; });
     return { n: bs.length, sum: bs.reduce(function(s,b){ return s + ((b.reservation&&b.reservation.amount)||b.estimatedCost||0); }, 0) };
@@ -50,14 +56,14 @@
     root.innerHTML =
      '<div class="pagehead"><div><h2>' + (isStaff ? '숙소 안내' : '숙소 관리') + '</h2>' +
        '<p>' + (isStaff
-         ? '회사가 직접 운영하는 <b>직영 숙소</b>와 <b>제휴 숙소</b>입니다. 예약 신청 시 아래 숙소 중에서 선택해주세요.'
-         : '회사 직영 숙소와 외부 제휴 숙소를 구분해 관리합니다. 예약 신청 화면의 숙소 목록이 여기서 채워집니다.') + '</p></div>' +
+         ? '회사가 직접 운영하는 숙소입니다. 예약 신청 시 아래 숙소 중에서 선택해주세요.'
+         : '회사 운영 숙소와 외부 제휴 숙소를 구분해 관리합니다. 예약 신청 화면의 숙소 목록이 여기서 채워집니다.') + '</p></div>' +
        '<div class="sp"></div>' + (canEdit ? '<button class="btn btn-gold" id="add">＋ 숙소 등록</button>' : '') + '</div>' +
 
      '<div class="kpis" style="grid-template-columns:repeat(' + (isStaff?3:4) + ',1fr)">' +
        '<div class="kpi k-ink"><div class="lb">전체 숙소</div><div class="vl">' + all.length + '<small>곳</small></div></div>' +
        '<div class="kpi k-blue"><div class="lb">직영 (회사운영)</div><div class="vl">' +
-         all.filter(function(l){return l.ownership==='DIRECT';}).length + '<small>곳</small></div><div class="sub">숙박비 무료</div></div>' +
+         all.filter(function(l){return l.ownership==='DIRECT';}).length + '<small>곳</small></div><div class="sub">회사가 직접 운영</div></div>' +
        '<div class="kpi k-violet"><div class="lb">제휴 숙소</div><div class="vl">' +
          all.filter(function(l){return l.ownership==='PARTNER';}).length + '<small>곳</small></div><div class="sub">제휴가 적용</div></div>' +
        (isStaff ? '' : '<div class="kpi k-gold"><div class="lb">평균 할인율</div><div class="vl">' +
@@ -66,6 +72,9 @@
          '<div class="sub">제휴 숙소 기준</div></div>') +
      '</div>' +
 
+     (incomplete() ? '<div class="note warn" style="margin-bottom:14px">📝 요금·객실·입퇴실·취소규정이 아직 등록되지 않은 숙소가 <b>' +
+        incomplete() + '곳</b> 있습니다. ' +
+        (isStaff ? '해당 항목은 예약 담당자가 확인 후 안내드립니다.' : '숙소를 열어 정보를 채워주세요.') + '</div>' : '') +
      '<div class="card mt"><div class="card-b"><div class="filterbar">' +
        '<div class="field"><label>검색</label><input class="input" id="f_q" value="' + UI.esc(st.q) + '" placeholder="숙소명·주소·담당자"></div>' +
        '<div class="field"><label>구분</label><select class="select" id="f_type"><option value="">전체</option>' +
@@ -89,19 +98,18 @@
         (canEdit ? '<button class="btn btn-sm" data-ed="' + l.id + '">수정</button>' : '') + '</div>' +
         '<div class="card-b"><dl class="dl">' +
           d('지역', UI.esc(l.region)) + d('주소', UI.esc(l.address)) +
-          d('담당자', UI.esc(l.managerName)) + d('연락처', UI.esc(l.managerPhone)) +
-          d('홈페이지', l.homepage ? '<a href="' + UI.esc(l.homepage) + '" target="_blank" rel="noopener" style="text-decoration:underline">' + UI.esc(l.homepage) + '</a>' : '<span class="muted">-</span>') +
-          d('입실/퇴실', UI.esc(l.checkInTime) + ' / ' + UI.esc(l.checkOutTime)) +
-          d('정상가격', STAY.won(l.rackRate)) +
-          d('제휴가격', l.partnerRate ? '<b>' + STAY.won(l.partnerRate) + '</b>' : (l.discountRate===100 ? '<b>무료(직영)</b>' : '<span class="muted">-</span>')) +
-          d('할인율', (l.discountRate||0) + '%') +
+          (l.managerName ? d('담당자', UI.esc(l.managerName)) : '') +
+          d('연락처', l.managerPhone ? UI.esc(l.managerPhone) : miss()) +
+          d('네이버 플레이스', l.homepage ? '<a href="' + UI.esc(l.homepage) + '" target="_blank" rel="noopener" style="text-decoration:underline">보기</a>' : '<span class="muted">-</span>') +
+          d('입실/퇴실', (l.checkInTime || l.checkOutTime) ? (UI.esc(l.checkInTime||'-') + ' / ' + UI.esc(l.checkOutTime||'-')) : miss()) +
+          d('요금', l.rackRate ? (STAY.won(l.rackRate) + (l.partnerRate ? ' → <b>' + STAY.won(l.partnerRate) + '</b> (' + (l.discountRate||0) + '%)' : '')) : miss()) +
           (isStaff ? '' : d('이용 실적', u.n + '건 · ' + STAY.won(u.sum))) +
         '</dl>' +
         '<div class="hr"></div>' +
         '<dl class="dl one">' +
-          d('객실정보', UI.esc(l.roomInfo)) +
-          d('이용방법', UI.esc(l.usage)) +
-          d('취소규정', UI.esc(l.cancelPolicy)) +
+          d('객실정보', l.roomInfo ? UI.esc(l.roomInfo) : miss()) +
+          d('이용방법', l.usage ? UI.esc(l.usage) : miss()) +
+          d('취소규정', l.cancelPolicy ? UI.esc(l.cancelPolicy) : miss()) +
           (l.caution ? d('주의사항', '<span style="color:var(--orange)">⚠ ' + UI.esc(l.caution) + '</span>') : '') +
           (l.note ? d('비고', UI.esc(l.note)) : '') +
         '</dl></div></div>';
@@ -115,6 +123,8 @@
     });
   }
   function d(k, v){ return '<div class="dr"><dt>' + k + '</dt><dd>' + v + '</dd></div>'; }
+  /* 값을 지어내지 않고 '아직 등록되지 않았다'는 사실을 그대로 보여준다 */
+  function miss(){ return '<span style="color:var(--orange);font-weight:700">미등록</span>'; }
 
   function editModal(l){
     l = l || { type:'HOTEL', ownership:'PARTNER', active:true, discountRate:0,

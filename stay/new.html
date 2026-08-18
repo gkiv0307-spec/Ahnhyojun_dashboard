@@ -159,15 +159,25 @@
     UI.qs('#loInfo').innerHTML = lo ? lodgingCard(lo) : '';
     calcCost();
   };
+  /* 아직 등록되지 않은 항목은 아예 표시하지 않는다 (빈칸·0원이 잘못된 정보로 읽히지 않도록) */
   function lodgingCard(l){
+    var bits = [];
+    if (l.address) bits.push(UI.esc(l.address));
+    if (l.checkInTime || l.checkOutTime)
+      bits.push('입실 ' + UI.esc(l.checkInTime || '-') + ' / 퇴실 ' + UI.esc(l.checkOutTime || '-'));
+    if (l.roomInfo) bits.push('객실 ' + UI.esc(l.roomInfo));
+    if (l.rackRate) bits.push('정상가 ' + STAY.won(l.rackRate) +
+      (l.partnerRate ? ' → 적용가 <b>' + STAY.won(l.partnerRate) + '</b>' : ''));
+    if (l.cancelPolicy) bits.push('취소규정: ' + UI.esc(l.cancelPolicy));
+    if (l.managerPhone) bits.push('숙소 연락처 ' + UI.esc(l.managerPhone));
+    var missing = !l.rackRate && !l.cancelPolicy && !l.checkInTime;
     return '<div class="note info" style="margin-bottom:14px">' +
       '<b>' + UI.esc(l.name) + '</b> <span class="tag ' + (l.ownership==='DIRECT'?'direct':'partner') + '">' +
-        UI.esc(STAY.OWNERSHIP[l.ownership]) + '</span><br>' +
-      '입실 ' + UI.esc(l.checkInTime) + ' / 퇴실 ' + UI.esc(l.checkOutTime) +
-      ' · 객실 ' + UI.esc(l.roomInfo) + '<br>' +
-      '정상가 ' + STAY.won(l.rackRate) + (l.partnerRate ? ' → 제휴가 <b>' + STAY.won(l.partnerRate) + '</b> (' + l.discountRate + '% 할인)' : (l.discountRate===100 ? ' → <b>직영 숙소 (숙박비 없음)</b>' : '')) + '<br>' +
-      '취소규정: ' + UI.esc(l.cancelPolicy) +
-      (l.caution ? '<br>⚠ ' + UI.esc(l.caution) : '') + '</div>';
+        UI.esc(STAY.OWNERSHIP[l.ownership]) + '</span>' +
+      (bits.length ? '<br>' + bits.join('<br>') : '') +
+      (l.caution ? '<br>⚠ ' + UI.esc(l.caution) : '') +
+      (missing ? '<br><span style="color:#9a4b06">요금·입퇴실·취소규정이 아직 등록되지 않았습니다. 예약 담당자가 확인 후 안내드립니다.</span>' : '') +
+      '</div>';
   }
 
   /* --- 자동계산 --- */
@@ -189,7 +199,11 @@
     var n = STAY.nights(UI.qs('#checkIn').value, UI.qs('#checkOut').value);
     var rooms = Number(UI.qs('#rooms').value)||1;
     if (!lo || !n) return;
-    var unit = lo.partnerRate || (lo.discountRate === 100 ? 0 : lo.rackRate);
+    var unit = lo.partnerRate || lo.rackRate;
+    if (!unit) {   /* 요금이 아직 등록되지 않은 숙소 — 0원으로 채우면 오해를 부른다 */
+      UI.qs('#costHint').textContent = lo.name + ' 요금이 아직 등록되지 않았습니다. 예상 비용을 직접 입력해주세요.';
+      return;
+    }
     UI.qs('#estimatedCost').value = unit * n * rooms;
     UI.qs('#costHint').textContent = lo.name + ' ' + STAY.won(unit) + ' × ' + n + '박 × ' + rooms + '실 = ' +
       STAY.won(unit*n*rooms) + ' (자동계산 · 수정 가능)';
