@@ -31,6 +31,7 @@ const logo = 'data:image/png;base64,' +
   fs.readFileSync(path.join(REPO, 'assets/logo-dark.png')).toString('base64');
 
 /* ---------- 3. 공용 스크립트 ---------- */
+const gate  = read('assets/gate.js');
 const store = read('assets/store.js');
 let auth    = read('assets/auth.js');
 let ui      = read('assets/ui.js');
@@ -161,10 +162,16 @@ function draw(){
 }
 
 window.addEventListener('hashchange', draw);
+
+/* 공유 링크 잠금 — 풀린 뒤에 화면을 그린다 */
+function start(){
+  if (Gate.locked()) Gate.render(start);
+  else draw();
+}
 `;
 
 /* ---------- 7. 출력 (관리용 / 직원용 두 벌) ---------- */
-function bundle({ file, title, mode, pageList }) {
+function bundle({ file, title, mode, pageList, passcode }) {
   const body = pageList
     .map(n => `PAGES[${JSON.stringify(n)}] = function(){\n${pageScript(n)}\n};`)
     .join('\n\n');
@@ -186,7 +193,13 @@ ${css}
 
 <div id="stay-root"></div>
 
-<script>window.STAY_MODE = ${JSON.stringify(mode)};</script>
+<script>
+window.STAY_MODE = ${JSON.stringify(mode)};
+window.STAY_PASSCODE = ${JSON.stringify(passcode)};
+</script>
+<script>
+${inline(gate)}
+</script>
 <script>
 ${inline(store)}
 </script>
@@ -203,14 +216,16 @@ ${inline(router)}
 ${inline(routed)}
 </script>
 <script>
-draw();
+start();
 </script>
 `;
   fs.writeFileSync(path.join(ROOT, file), out);
   console.log(`${file.padEnd(22)} ${(out.length / 1024).toFixed(0)}KB  화면 ${pageList.length}개  [${mode}]`);
 }
 
+/* 공유 링크 비밀번호. 바꾸려면 이 값을 고치고 다시 빌드·배포한다.
+ * 브라우저에서 도는 코드라 우회가 가능하므로 실수 유입을 막는 문턱일 뿐이다. */
 bundle({ file:'preview.html',       title:'옆커폰 숙박 예약관리',
-         mode:'admin', pageList: PAGES });
+         mode:'admin', pageList: PAGES,       passcode:'0000' });
 bundle({ file:'preview-staff.html', title:'옆커폰 숙박 예약 신청',
-         mode:'staff', pageList: STAFF_PAGES });
+         mode:'staff', pageList: STAFF_PAGES, passcode:'0000' });

@@ -134,6 +134,12 @@
   }
 
   function shell(activeId, title, crumb){
+    /* 잠겨 있으면 화면을 그리지 않는다. 호출한 페이지 스크립트도 여기서 중단된다.
+     * (번들 라우터는 이보다 먼저 검사하므로 여기까지 오지 않는다) */
+    if (global.Gate && Gate.locked()) {
+      Gate.render(function(){ location.reload(); });
+      throw new Error('STAY_LOCKED');
+    }
     var user = Auth.current();
     Store.runDailyJobs();
     var c = counters(user);

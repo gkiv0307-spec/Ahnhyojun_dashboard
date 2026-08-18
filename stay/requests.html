@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="assets/stay.css">
 </head>
 <body>
+<script src="assets/gate.js"></script>
 <script src="assets/store.js"></script>
 <script src="assets/auth.js"></script>
 <script src="assets/ui.js"></script>
@@ -64,7 +65,7 @@
        '<div class="field"><label>신청 기간 (부터)</label><input class="input" type="date" id="f_from" value="' + st.from + '"></div>' +
        '<div class="field"><label>신청 기간 (까지)</label><input class="input" type="date" id="f_to" value="' + st.to + '"></div>' +
        '<div class="field"><label>지점</label><select class="select" id="f_branch"><option value="">전체</option>' +
-         Store.branches().map(function(b){ return '<option' + (b.name===st.branch?' selected':'') + '>' + UI.esc(b.name) + '</option>'; }).join('') + '</select></div>' +
+         branchOptions().map(function(b){ return '<option' + (b===st.branch?' selected':'') + '>' + UI.esc(b) + '</option>'; }).join('') + '</select></div>' +
        '<div class="field"><label>신청자</label><select class="select" id="f_applicant"><option value="">전체</option>' +
          Store.users().map(function(u){ return '<option value="' + u.id + '"' + (u.id===st.applicant?' selected':'') + '>' + UI.esc(u.name) + '</option>'; }).join('') + '</select></div>' +
        '<div class="field"><label>숙소</label><select class="select" id="f_lodging"><option value="">전체</option>' +
@@ -103,6 +104,13 @@
      '<div class="pager" id="pager"></div>' +
    '</div></div>';
 
+  /* 지점 목록이 확정되기 전이므로 실제 신청에 쓰인 지점명까지 필터에 넣는다 */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
   function amount(b){ return (b.reservation && b.reservation.amount) || b.estimatedCost || 0; }
   /* 7일 이내만 상대시간 표기 (그 이상은 날짜와 중복되므로 생략) */
   function relSub(at){

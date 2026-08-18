@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="assets/stay.css">
 </head>
 <body>
+<script src="assets/gate.js"></script>
 <script src="assets/store.js"></script>
 <script src="assets/auth.js"></script>
 <script src="assets/ui.js"></script>
@@ -19,6 +20,13 @@
   var now = new Date();
   var st = { tab:'wait', month:'', branch:'', bearer:'', q:'' };
 
+  /* 지점 목록이 확정되기 전이므로 실제 신청에 쓰인 지점명까지 필터에 넣는다 */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
   function amount(b){ return (b.reservation && b.reservation.amount) || b.estimatedCost || 0; }
   function pool(){
     return Store.visibleBookings(user).filter(function(b){
@@ -77,7 +85,7 @@
          '<div class="field"><label>정산 월 (체크아웃 기준)</label><select class="select" id="f_month"><option value="">전체</option>' +
            months.map(function(m){ return '<option' + (m===st.month?' selected':'') + '>' + m + '</option>'; }).join('') + '</select></div>' +
          '<div class="field"><label>지점</label><select class="select" id="f_branch"><option value="">전체</option>' +
-           Store.branches().map(function(b){ return '<option' + (b.name===st.branch?' selected':'') + '>' + UI.esc(b.name) + '</option>'; }).join('') + '</select></div>' +
+           branchOptions().map(function(b){ return '<option' + (b===st.branch?' selected':'') + '>' + UI.esc(b) + '</option>'; }).join('') + '</select></div>' +
          '<div class="field"><label>비용 부담주체</label><select class="select" id="f_bearer"><option value="">전체</option>' +
            UI.optionList(STAY.COST_BEARER, st.bearer) + '</select></div>' +
        '</div>' +

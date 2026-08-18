@@ -427,11 +427,114 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
   .card{box-shadow:none;break-inside:avoid}
 }
 
+/* ---------- 공유 링크 잠금 화면 ---------- */
+.gate{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(900px 500px at 70% -10%,#2a2410 0%,transparent 60%),var(--ink)}
+.gate-card{width:100%;max-width:360px;background:var(--paper);border-radius:var(--radius-lg);
+  padding:32px 28px;box-shadow:0 24px 60px rgba(0,0,0,.4);text-align:center}
+.gate-brand{font-size:12px;font-weight:900;letter-spacing:.16em;color:var(--gold-2)}
+.gate-card h1{font-size:19px;margin:8px 0 6px}
+.gate-card p{margin:0 0 20px;font-size:13px;color:var(--text-2);line-height:1.6}
+.gate-input{width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;outline:none;
+  font-size:22px;text-align:center;letter-spacing:.5em;text-indent:.5em;font-weight:800}
+.gate-input:focus{border-color:var(--gold-2);box-shadow:0 0 0 3px rgba(255,195,0,.18)}
+.gate-err{min-height:18px;margin-top:8px;font-size:12.5px;font-weight:700;color:var(--red)}
+.gate-btn{width:100%;margin-top:6px;padding:13px;border:none;border-radius:10px;cursor:pointer;
+  background:var(--gold);color:#241c00;font-size:15px;font-weight:800}
+.gate-btn:hover{background:var(--gold-2)}
+.gate-foot{margin-top:16px;font-size:11.5px;color:var(--muted);line-height:1.6}
+.shake{animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+@media(prefers-reduced-motion:reduce){.shake{animation:none}}
+
 </style>
 
 <div id="stay-root"></div>
 
-<script>window.STAY_MODE = "admin";</script>
+<script>
+window.STAY_MODE = "admin";
+window.STAY_PASSCODE = "0000";
+</script>
+<script>
+/* 옆커폰 숙박 예약관리 — 공유 링크 접근 잠금
+ *
+ * 링크를 사내에 뿌렸을 때 무관한 사람이 실수로 들어오는 것을 막는 문턱이다.
+ * 코드가 브라우저에서 실행되므로 개발자도구를 아는 사람은 우회할 수 있다.
+ * 진짜 보안이 필요하면 서버 인증(사내 SSO)을 붙여야 한다.
+ *
+ * 비밀번호는 배포 시점 상수다. 바꾸려면 window.STAY_PASSCODE 를 지정하거나
+ * 아래 기본값을 고친 뒤 다시 배포한다.
+ */
+(function (global) {
+  'use strict';
+
+  var KEY = 'ykp_stay_gate';
+
+  function passcode(){ return String(global.STAY_PASSCODE || '0000'); }
+  function label(){ return global.STAY_MODE === 'staff' ? '숙박 예약 신청' : '숙박 예약관리 시스템'; }
+
+  /* 한 번 풀면 이 기기에서는 다시 묻지 않는다(직원들이 매번 입력하지 않도록).
+   * 비밀번호가 바뀌면 저장값이 달라 자동으로 다시 묻는다. */
+  function unlocked(){
+    try { return global.localStorage.getItem(KEY) === passcode(); }
+    catch (e) { return unlockedMemory; }
+  }
+  var unlockedMemory = false;
+
+  function remember(){
+    unlockedMemory = true;
+    try { global.localStorage.setItem(KEY, passcode()); } catch (e) {}
+  }
+
+  var Gate = {
+    locked: function(){ return !unlocked(); },
+
+    /** 잠금 화면을 그린다. 풀리면 onUnlock() 을 호출한다. */
+    render: function (onUnlock) {
+      if (document.getElementById('stay-gate')) return;
+
+      var wrap = document.createElement('div');
+      wrap.id = 'stay-gate';
+      wrap.className = 'gate';
+      wrap.innerHTML =
+        '<form class="gate-card" autocomplete="off">' +
+          '<div class="gate-brand">옆커폰</div>' +
+          '<h1>' + label() + '</h1>' +
+          '<p>사내 공용 링크입니다. 안내받은 비밀번호를 입력해주세요.</p>' +
+          '<input class="gate-input" id="gate-pw" type="password" inputmode="numeric" ' +
+                 'autocomplete="off" placeholder="••••" aria-label="비밀번호">' +
+          '<div class="gate-err" id="gate-err" role="alert"></div>' +
+          '<button class="gate-btn" type="submit">들어가기</button>' +
+          '<div class="gate-foot">비밀번호를 모르시면 부동산팀 010-8347-2699 로 문의해주세요.</div>' +
+        '</form>';
+      document.body.appendChild(wrap);
+
+      var input = wrap.querySelector('#gate-pw');
+      var err = wrap.querySelector('#gate-err');
+      setTimeout(function(){ input.focus(); }, 50);
+
+      wrap.querySelector('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (input.value.trim() === passcode()) {
+          remember();
+          wrap.remove();
+          if (onUnlock) onUnlock();
+          return;
+        }
+        err.textContent = '비밀번호가 맞지 않습니다.';
+        wrap.querySelector('.gate-card').classList.remove('shake');
+        void wrap.offsetWidth;                     /* 애니메이션 재시작 */
+        wrap.querySelector('.gate-card').classList.add('shake');
+        input.value = '';
+        input.focus();
+      });
+    }
+  };
+
+  global.Gate = Gate;
+})(window);
+
+</script>
 <script>
 /* 옆커폰 숙박 예약관리 — 데이터 계층
  * localStorage 기반. 서버 연동 시 Store._read/_write 만 fetch 로 교체하면 된다.
@@ -604,7 +707,7 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
   /* 시드(숙소·구성원·공지)가 바뀌면 이 값을 올린다. 저장된 값과 다르면 다시 시드한다.
    * 미리보기에서 이미 열어본 브라우저가 옛 숙소·옛 담당자를 계속 보는 것을 막기 위함이다.
    * 서버 저장소로 옮기면 이 장치는 필요 없다. */
-  var SEED_VERSION = 4;
+  var SEED_VERSION = 5;
   var db = null;
 
   function emptyDb(){
@@ -636,10 +739,10 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
     var Y = today.getFullYear();
 
     /* 지점 목록 — 본사(부동산팀)만 확정. 나머지는 실제 지점명 확인 전까지 샘플이다. */
+    /* 확정된 지점은 본사뿐이다. 지점 명단을 받기 전까지 신청서에서는 직접 입력받고,
+     * 실제로 쓰인 지점명이 다음 신청자에게 자동완성으로 제안된다. */
     d.branches = [
-      { id:'br_hq', name:'본사',   region:'대구' },
-      { id:'br_dg', name:'대구점', region:'대구', sample:true },
-      { id:'br_bs', name:'부산점', region:'부산', sample:true }
+      { id:'br_hq', name:'본사', region:'대구' }
     ];
 
     /* 부동산팀 실제 구성원. 권한은 담당 업무 기준으로 배정했다.
@@ -665,11 +768,7 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
       { id:'u_ljh', name:'이재환', title:'주임',      role:'approver', branch:'본사', dept:'부동산팀', phone:'010-3101-2699', email:'', active:true, canApprove:true,
         duty:'시공 현장관리 및 감리 · 자재 구매/운반 · 인테리어 디자인 · 실측' },
       { id:'u_ygh', name:'여가현', title:'사원',      role:'approver', branch:'본사', dept:'부동산팀', phone:'010-6271-2699', email:'', active:true, canApprove:true,
-        duty:'부동산 인테리어 모델링 · 인테리어 견적 · 2D/3D 및 견적 관리' },
-
-      /* --- 아래 2개는 자리표시자. 실제 지점 담당자를 받으면 교체한다. --- */
-      { id:'u_s_dg', name:'대구점 담당자', title:'', role:'applicant', branch:'대구점', dept:'지점', phone:'', email:'', active:true, sample:true, duty:'' },
-      { id:'u_s_bs', name:'부산점 담당자', title:'', role:'applicant', branch:'부산점', dept:'지점', phone:'', email:'', active:true, sample:true, duty:'' }
+        duty:'부동산 인테리어 모델링 · 인테리어 견적 · 2D/3D 및 견적 관리' }
     ];
 
     /* 회사가 실제 운영 중인 숙소 5곳 (네이버 플레이스에서 이름·주소·전화 확인).
@@ -825,56 +924,56 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
     }
     var rows = [
       /* 과거 완료건 (정산완료) — 월별 비용 그래프용. 최근 12개월을 고르게 덮도록 배치 */
-      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
       { off:-318, ci:-312, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
+      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
       { off:-286, ci:-280, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
       { off:-268, ci:-262, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'군위 독채 연수', bearer:'COMPANY' },
       { off:-252, ci:-246, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
       { off:-238, ci:-232, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
-      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
+      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
       { off:-205, ci:-198, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:9, ch:0, cost:0, purpose:'진주 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 지점 교육 후 숙박', bearer:'COMPANY' },
+      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 지점 교육 후 숙박', bearer:'COMPANY' },
       { off:-172, ci:-166, n:2, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:2, ad:8, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'BRANCH' },
       { off:-158, ci:-150, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
-      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 연수', bearer:'COMPANY' },
+      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 연수', bearer:'COMPANY' },
       { off:-126, ci:-120, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
       { off:-112, ci:-106, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:2, ch:0, cost:224000, purpose:'포항 물건 임장', bearer:'COMPANY' },
-      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
+      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
       { off:-88, ci:-84, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
-      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
       { off:-64, ci:-60, n:1, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'포항 고객 상담', bearer:'COMPANY' },
       { off:-58, ci:-54, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
       { off:-44, ci:-40, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
-      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
       { off:-33, ci:-29, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
+      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
       /* 최근 진행건 */
       { off:-21, ci:-14, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:8, ch:0, cost:0, purpose:'서부경남 임장 교육', bearer:'COMPANY' },
       { off:-16, ci:-8,  n:1, st:'SETTLED', u:'u_yhr', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'경북 동해안 지역 출장', bearer:'COMPANY' },
-      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_s_dg', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
+      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
       { off:-12, ci:-5,  n:1, st:'SETTLE_WAIT', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
       { off:-11, ci:-4,  n:1, st:'SETTLE_WAIT', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
-      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
+      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
       { off:-9,  ci:-1,  n:1, st:'USED', u:'u_yhr', lo:'lo_2', rm:1, ad:4, ch:2, cost:200000, purpose:'거제 단체 연수', bearer:'BRANCH' },
       /* 오늘 체크인/체크아웃 */
-      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
+      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
       { off:-7,  ci:0,   n:1, st:'UPCOMING', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
       { off:-9,  ci:-1,  n:1, st:'UPCOMING', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
       /* 내일 체크인 */
-      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
       { off:-5,  ci:3,   n:1, st:'BOOKED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
       { off:-4,  ci:8,   n:3, st:'BOOKING', u:'u_yhr', lo:'lo_2', rm:3, ad:14, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
-      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_s_dg', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
       { off:-2,  ci:14,  n:1, st:'APPROVAL_PENDING', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
-      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_s_bs', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 지역 합동 워크숍', bearer:'COMPANY' },
+      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_lhc', br:'부산점', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 지역 합동 워크숍', bearer:'COMPANY' },
       { off:-1,  ci:20,  n:2, st:'REVIEWING', u:'u_ljh', lo:'lo_5', rm:2, ad:10, ch:0, cost:0, purpose:'진주 세미나 진행', bearer:'COMPANY' },
       { off:-1,  ci:10,  n:1, st:'RECEIVED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:1, cost:0, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
-      { off:0,   ci:18,  n:2, st:'NEW', u:'u_s_dg', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 연수', bearer:'COMPANY' },
+      { off:0,   ci:18,  n:2, st:'NEW', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 연수', bearer:'COMPANY' },
       { off:0,   ci:25,  n:1, st:'NEW', u:'u_yhr', lo:'lo_2', rm:2, ad:6, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
       /* 취소/반려 */
       { off:-15, ci:-3,  n:1, st:'CANCELED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_s_bs', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 연수', bearer:'COMPANY' }
+      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 연수', bearer:'COMPANY' }
     ];
 
     var bookers = ['u_ldh','u_msj'];
@@ -888,7 +987,7 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
       var b = {
         id: uid('bk'), code: code(reqAt),
         requestedAt: reqAt.toISOString(),
-        applicantId: u.id, applicantName: u.name, branch: u.branch, dept: u.dept, phone: u.phone,
+        applicantId: u.id, applicantName: u.name, branch: r.br || u.branch, dept: u.dept, phone: u.phone,
         purpose: r.purpose,
         lodgingType: lo.type, lodgingId: lo.id, lodgingName: lo.name,
         checkIn: ci, checkOut: co, nights: r.n,
@@ -912,7 +1011,8 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
       var logs = [];
       function log(at, user, action, memo, from, to){
         logs.push({ id:uid('lg'), at:at, bookingId:b.id, bookingCode:b.code, userId:user.id, userName:user.name,
-                    role:user.role, branch:user.branch, action:action, from:from||null, to:to||null, memo:memo||'' });
+                    role:user.role, branch:(user.id === u.id ? b.branch : user.branch),
+                    action:action, from:from||null, to:to||null, memo:memo||'' });
       }
       log(reqAt.toISOString(), u, '신규 예약 신청', r.purpose, null, 'NEW');
 
@@ -1623,6 +1723,12 @@ table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
   }
 
   function shell(activeId, title, crumb){
+    /* 잠겨 있으면 화면을 그리지 않는다. 호출한 페이지 스크립트도 여기서 중단된다.
+     * (번들 라우터는 이보다 먼저 검사하므로 여기까지 오지 않는다) */
+    if (global.Gate && Gate.locked()) {
+      Gate.render(function(){ NAV.reload(); });
+      throw new Error('STAY_LOCKED');
+    }
     var user = Auth.current();
     Store.runDailyJobs();
     var c = counters(user);
@@ -1900,6 +2006,12 @@ function draw(){
 
 window.addEventListener('hashchange', draw);
 
+/* 공유 링크 잠금 — 풀린 뒤에 화면을 그린다 */
+function start(){
+  if (Gate.locked()) Gate.render(start);
+  else draw();
+}
+
 </script>
 <script>
 PAGES["index"] = function(){
@@ -2127,7 +2239,15 @@ PAGES["new"] = function(){
   var user = Auth.current();
   var root = UI.shell('new', '신규 숙박 예약 신청', '예약 신청 → 접수 → 승인 → 예약 진행 → 예약 완료 → 숙박 이용 → 정산 → 완료');
   var lodgings = Store.lodgings().filter(function(l){ return l.active !== false; });
-  var branches = Store.branches();
+  /* 지점 명단이 아직 확정되지 않았다. 등록된 지점 + 이미 신청에 쓰인 지점명을 모아
+   * 자동완성으로 제안하고, 없으면 직접 입력하게 한다. 전 지점 누구나 신청할 수 있어야 하므로
+   * 목록에 없다고 막지 않는다. */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
   var todayStr = STAY.ymd(new Date());
   var files = [];
   var isProxy = (user.role === 'booker' || user.role === 'admin');
@@ -2160,10 +2280,12 @@ PAGES["new"] = function(){
      '</div>' +
      '<div class="frow f2">' +
        '<div class="field"><label>소속 지점<span class="req">*</span></label>' +
-         '<select class="select" name="branch" id="branch" required>' +
-           (isStaff ? '<option value="">지점을 선택하세요</option>' : '') +
-           branches.map(function(b){ return '<option' + (b.name===user.branch?' selected':'') + '>' + UI.esc(b.name) + '</option>'; }).join('') +
-         '</select></div>' +
+         '<input class="input" name="branch" id="branch" list="branchList" required autocomplete="off"' +
+           (isStaff ? '' : ' value="' + UI.esc(user.branch) + '"') + ' placeholder="예) 대구점">' +
+         '<datalist id="branchList">' +
+           branchOptions().map(function(b){ return '<option value="' + UI.esc(b) + '">'; }).join('') +
+         '</datalist>' +
+         '<div class="hint">목록에 없으면 직접 입력하세요. 입력한 지점명은 다음 신청자에게 자동완성으로 제안됩니다.</div></div>' +
        '<div class="field"><label>소속 부서<span class="req">*</span></label>' +
          '<input class="input" name="dept" id="dept" value="' + UI.esc(user.dept) + '" required></div>' +
      '</div>' +
@@ -2730,7 +2852,7 @@ PAGES["requests"] = function(){
        '<div class="field"><label>신청 기간 (부터)</label><input class="input" type="date" id="f_from" value="' + st.from + '"></div>' +
        '<div class="field"><label>신청 기간 (까지)</label><input class="input" type="date" id="f_to" value="' + st.to + '"></div>' +
        '<div class="field"><label>지점</label><select class="select" id="f_branch"><option value="">전체</option>' +
-         Store.branches().map(function(b){ return '<option' + (b.name===st.branch?' selected':'') + '>' + UI.esc(b.name) + '</option>'; }).join('') + '</select></div>' +
+         branchOptions().map(function(b){ return '<option' + (b===st.branch?' selected':'') + '>' + UI.esc(b) + '</option>'; }).join('') + '</select></div>' +
        '<div class="field"><label>신청자</label><select class="select" id="f_applicant"><option value="">전체</option>' +
          Store.users().map(function(u){ return '<option value="' + u.id + '"' + (u.id===st.applicant?' selected':'') + '>' + UI.esc(u.name) + '</option>'; }).join('') + '</select></div>' +
        '<div class="field"><label>숙소</label><select class="select" id="f_lodging"><option value="">전체</option>' +
@@ -2769,6 +2891,13 @@ PAGES["requests"] = function(){
      '<div class="pager" id="pager"></div>' +
    '</div></div>';
 
+  /* 지점 목록이 확정되기 전이므로 실제 신청에 쓰인 지점명까지 필터에 넣는다 */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
   function amount(b){ return (b.reservation && b.reservation.amount) || b.estimatedCost || 0; }
   /* 7일 이내만 상대시간 표기 (그 이상은 날짜와 중복되므로 생략) */
   function relSub(at){
@@ -3563,6 +3692,13 @@ PAGES["settlement"] = function(){
   var now = new Date();
   var st = { tab:'wait', month:'', branch:'', bearer:'', q:'' };
 
+  /* 지점 목록이 확정되기 전이므로 실제 신청에 쓰인 지점명까지 필터에 넣는다 */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
   function amount(b){ return (b.reservation && b.reservation.amount) || b.estimatedCost || 0; }
   function pool(){
     return Store.visibleBookings(user).filter(function(b){
@@ -3621,7 +3757,7 @@ PAGES["settlement"] = function(){
          '<div class="field"><label>정산 월 (체크아웃 기준)</label><select class="select" id="f_month"><option value="">전체</option>' +
            months.map(function(m){ return '<option' + (m===st.month?' selected':'') + '>' + m + '</option>'; }).join('') + '</select></div>' +
          '<div class="field"><label>지점</label><select class="select" id="f_branch"><option value="">전체</option>' +
-           Store.branches().map(function(b){ return '<option' + (b.name===st.branch?' selected':'') + '>' + UI.esc(b.name) + '</option>'; }).join('') + '</select></div>' +
+           branchOptions().map(function(b){ return '<option' + (b===st.branch?' selected':'') + '>' + UI.esc(b) + '</option>'; }).join('') + '</select></div>' +
          '<div class="field"><label>비용 부담주체</label><select class="select" id="f_bearer"><option value="">전체</option>' +
            UI.optionList(STAY.COST_BEARER, st.bearer) + '</select></div>' +
        '</div>' +
@@ -4524,5 +4660,5 @@ PAGES["admin"] = function(){
 };
 </script>
 <script>
-draw();
+start();
 </script>

@@ -169,7 +169,7 @@
   /* 시드(숙소·구성원·공지)가 바뀌면 이 값을 올린다. 저장된 값과 다르면 다시 시드한다.
    * 미리보기에서 이미 열어본 브라우저가 옛 숙소·옛 담당자를 계속 보는 것을 막기 위함이다.
    * 서버 저장소로 옮기면 이 장치는 필요 없다. */
-  var SEED_VERSION = 4;
+  var SEED_VERSION = 5;
   var db = null;
 
   function emptyDb(){
@@ -201,10 +201,10 @@
     var Y = today.getFullYear();
 
     /* 지점 목록 — 본사(부동산팀)만 확정. 나머지는 실제 지점명 확인 전까지 샘플이다. */
+    /* 확정된 지점은 본사뿐이다. 지점 명단을 받기 전까지 신청서에서는 직접 입력받고,
+     * 실제로 쓰인 지점명이 다음 신청자에게 자동완성으로 제안된다. */
     d.branches = [
-      { id:'br_hq', name:'본사',   region:'대구' },
-      { id:'br_dg', name:'대구점', region:'대구', sample:true },
-      { id:'br_bs', name:'부산점', region:'부산', sample:true }
+      { id:'br_hq', name:'본사', region:'대구' }
     ];
 
     /* 부동산팀 실제 구성원. 권한은 담당 업무 기준으로 배정했다.
@@ -230,11 +230,7 @@
       { id:'u_ljh', name:'이재환', title:'주임',      role:'approver', branch:'본사', dept:'부동산팀', phone:'010-3101-2699', email:'', active:true, canApprove:true,
         duty:'시공 현장관리 및 감리 · 자재 구매/운반 · 인테리어 디자인 · 실측' },
       { id:'u_ygh', name:'여가현', title:'사원',      role:'approver', branch:'본사', dept:'부동산팀', phone:'010-6271-2699', email:'', active:true, canApprove:true,
-        duty:'부동산 인테리어 모델링 · 인테리어 견적 · 2D/3D 및 견적 관리' },
-
-      /* --- 아래 2개는 자리표시자. 실제 지점 담당자를 받으면 교체한다. --- */
-      { id:'u_s_dg', name:'대구점 담당자', title:'', role:'applicant', branch:'대구점', dept:'지점', phone:'', email:'', active:true, sample:true, duty:'' },
-      { id:'u_s_bs', name:'부산점 담당자', title:'', role:'applicant', branch:'부산점', dept:'지점', phone:'', email:'', active:true, sample:true, duty:'' }
+        duty:'부동산 인테리어 모델링 · 인테리어 견적 · 2D/3D 및 견적 관리' }
     ];
 
     /* 회사가 실제 운영 중인 숙소 5곳 (네이버 플레이스에서 이름·주소·전화 확인).
@@ -390,56 +386,56 @@
     }
     var rows = [
       /* 과거 완료건 (정산완료) — 월별 비용 그래프용. 최근 12개월을 고르게 덮도록 배치 */
-      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
       { off:-318, ci:-312, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
+      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
       { off:-286, ci:-280, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
       { off:-268, ci:-262, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'군위 독채 연수', bearer:'COMPANY' },
       { off:-252, ci:-246, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
       { off:-238, ci:-232, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
-      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
+      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
       { off:-205, ci:-198, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:9, ch:0, cost:0, purpose:'진주 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 지점 교육 후 숙박', bearer:'COMPANY' },
+      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 지점 교육 후 숙박', bearer:'COMPANY' },
       { off:-172, ci:-166, n:2, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:2, ad:8, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'BRANCH' },
       { off:-158, ci:-150, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
-      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 연수', bearer:'COMPANY' },
+      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 연수', bearer:'COMPANY' },
       { off:-126, ci:-120, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
       { off:-112, ci:-106, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:2, ch:0, cost:224000, purpose:'포항 물건 임장', bearer:'COMPANY' },
-      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
+      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
       { off:-88, ci:-84, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
-      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
       { off:-64, ci:-60, n:1, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'포항 고객 상담', bearer:'COMPANY' },
       { off:-58, ci:-54, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
       { off:-44, ci:-40, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
-      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
       { off:-33, ci:-29, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
+      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
       /* 최근 진행건 */
       { off:-21, ci:-14, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:8, ch:0, cost:0, purpose:'서부경남 임장 교육', bearer:'COMPANY' },
       { off:-16, ci:-8,  n:1, st:'SETTLED', u:'u_yhr', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'경북 동해안 지역 출장', bearer:'COMPANY' },
-      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_s_dg', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
+      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
       { off:-12, ci:-5,  n:1, st:'SETTLE_WAIT', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
       { off:-11, ci:-4,  n:1, st:'SETTLE_WAIT', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
-      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
+      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
       { off:-9,  ci:-1,  n:1, st:'USED', u:'u_yhr', lo:'lo_2', rm:1, ad:4, ch:2, cost:200000, purpose:'거제 단체 연수', bearer:'BRANCH' },
       /* 오늘 체크인/체크아웃 */
-      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
+      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
       { off:-7,  ci:0,   n:1, st:'UPCOMING', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
       { off:-9,  ci:-1,  n:1, st:'UPCOMING', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
       /* 내일 체크인 */
-      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
       { off:-5,  ci:3,   n:1, st:'BOOKED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
       { off:-4,  ci:8,   n:3, st:'BOOKING', u:'u_yhr', lo:'lo_2', rm:3, ad:14, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
-      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_s_dg', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
       { off:-2,  ci:14,  n:1, st:'APPROVAL_PENDING', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
-      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_s_bs', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 지역 합동 워크숍', bearer:'COMPANY' },
+      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_lhc', br:'부산점', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 지역 합동 워크숍', bearer:'COMPANY' },
       { off:-1,  ci:20,  n:2, st:'REVIEWING', u:'u_ljh', lo:'lo_5', rm:2, ad:10, ch:0, cost:0, purpose:'진주 세미나 진행', bearer:'COMPANY' },
       { off:-1,  ci:10,  n:1, st:'RECEIVED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:1, cost:0, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
-      { off:0,   ci:18,  n:2, st:'NEW', u:'u_s_dg', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 연수', bearer:'COMPANY' },
+      { off:0,   ci:18,  n:2, st:'NEW', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 연수', bearer:'COMPANY' },
       { off:0,   ci:25,  n:1, st:'NEW', u:'u_yhr', lo:'lo_2', rm:2, ad:6, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
       /* 취소/반려 */
       { off:-15, ci:-3,  n:1, st:'CANCELED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_s_bs', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 연수', bearer:'COMPANY' }
+      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 연수', bearer:'COMPANY' }
     ];
 
     var bookers = ['u_ldh','u_msj'];
@@ -453,7 +449,7 @@
       var b = {
         id: uid('bk'), code: code(reqAt),
         requestedAt: reqAt.toISOString(),
-        applicantId: u.id, applicantName: u.name, branch: u.branch, dept: u.dept, phone: u.phone,
+        applicantId: u.id, applicantName: u.name, branch: r.br || u.branch, dept: u.dept, phone: u.phone,
         purpose: r.purpose,
         lodgingType: lo.type, lodgingId: lo.id, lodgingName: lo.name,
         checkIn: ci, checkOut: co, nights: r.n,
@@ -477,7 +473,8 @@
       var logs = [];
       function log(at, user, action, memo, from, to){
         logs.push({ id:uid('lg'), at:at, bookingId:b.id, bookingCode:b.code, userId:user.id, userName:user.name,
-                    role:user.role, branch:user.branch, action:action, from:from||null, to:to||null, memo:memo||'' });
+                    role:user.role, branch:(user.id === u.id ? b.branch : user.branch),
+                    action:action, from:from||null, to:to||null, memo:memo||'' });
       }
       log(reqAt.toISOString(), u, '신규 예약 신청', r.purpose, null, 'NEW');
 

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="assets/stay.css">
 </head>
 <body>
+<script src="assets/gate.js"></script>
 <script src="assets/store.js"></script>
 <script src="assets/auth.js"></script>
 <script src="assets/ui.js"></script>
@@ -16,7 +17,15 @@
   var user = Auth.current();
   var root = UI.shell('new', '신규 숙박 예약 신청', '예약 신청 → 접수 → 승인 → 예약 진행 → 예약 완료 → 숙박 이용 → 정산 → 완료');
   var lodgings = Store.lodgings().filter(function(l){ return l.active !== false; });
-  var branches = Store.branches();
+  /* 지점 명단이 아직 확정되지 않았다. 등록된 지점 + 이미 신청에 쓰인 지점명을 모아
+   * 자동완성으로 제안하고, 없으면 직접 입력하게 한다. 전 지점 누구나 신청할 수 있어야 하므로
+   * 목록에 없다고 막지 않는다. */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
   var todayStr = STAY.ymd(new Date());
   var files = [];
   var isProxy = (user.role === 'booker' || user.role === 'admin');
@@ -49,10 +58,12 @@
      '</div>' +
      '<div class="frow f2">' +
        '<div class="field"><label>소속 지점<span class="req">*</span></label>' +
-         '<select class="select" name="branch" id="branch" required>' +
-           (isStaff ? '<option value="">지점을 선택하세요</option>' : '') +
-           branches.map(function(b){ return '<option' + (b.name===user.branch?' selected':'') + '>' + UI.esc(b.name) + '</option>'; }).join('') +
-         '</select></div>' +
+         '<input class="input" name="branch" id="branch" list="branchList" required autocomplete="off"' +
+           (isStaff ? '' : ' value="' + UI.esc(user.branch) + '"') + ' placeholder="예) 대구점">' +
+         '<datalist id="branchList">' +
+           branchOptions().map(function(b){ return '<option value="' + UI.esc(b) + '">'; }).join('') +
+         '</datalist>' +
+         '<div class="hint">목록에 없으면 직접 입력하세요. 입력한 지점명은 다음 신청자에게 자동완성으로 제안됩니다.</div></div>' +
        '<div class="field"><label>소속 부서<span class="req">*</span></label>' +
          '<input class="input" name="dept" id="dept" value="' + UI.esc(user.dept) + '" required></div>' +
      '</div>' +
