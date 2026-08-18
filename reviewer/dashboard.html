@@ -2944,6 +2944,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
             s.reviewers = s.reviewers.concat(res.rows);
             s.isSample = false;
             S.relinkBranches(); S.commit();
+            resyncRange();
             toast(res.rows.length + '명을 추가했습니다.', 'ok');
             ui.page = 'reviewers'; syncNav(); render();
           }
@@ -2954,12 +2955,22 @@ body:not(.unlocked) .toast-wrap { display: none; }
             s.reviewers = res.rows.slice();
             s.isSample = false;
             S.relinkBranches(); S.commit();
+            resyncRange();
             toast('명단을 ' + res.rows.length + '명으로 교체했습니다.', 'ok');
             ui.page = 'reviewers'; syncNav(); render();
           }
         }
       ]
     });
+  }
+
+  /** 가져온 자료가 기간 필터 밖에 있어 안 보이는 일이 없도록 범위를 다시 잡는다 */
+  function resyncRange() {
+    var d = defaultRange();
+    ui.from = d.from; ui.to = d.to;
+    var f = $('#f-from'), t = $('#f-to');
+    if (f) f.value = ui.from;
+    if (t) t.value = ui.to;
   }
 
   function syncNav() {
