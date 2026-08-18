@@ -1017,7 +1017,40 @@
     return ui.shareShowCount ? '가능 ' + s.remaining + '명' : '예약 가능';
   }
 
+  /** 공유용 일정표 위의 지점 전환 탭 (상단 바 지점 선택과 같은 값을 쓴다) */
+  function renderShareBranches() {
+    var box = $('#share-branches');
+    if (!box) return;
+    clear(box);
+    var branches = state().branches;
+    if (!branches.length) return;
+
+    // 탭 옆 숫자는 모두 "기간 내 예약 가능한 시간대 수" 로 통일한다
+    var openCount = function (b) {
+      return S.slotsOfBranch(b, range()).filter(function (x) { return !x.closed; }).length;
+    };
+
+    var mk = function (label, value, count) {
+      var active = ui.branch === value;
+      return h('button', {
+        class: 'branch-tab' + (active ? ' active' : '') + (count === 0 ? ' empty' : ''),
+        title: '예약 가능한 시간대 ' + count + '개',
+        onclick: function () {
+          ui.branch = value;
+          var sel = $('#f-branch');
+          if (sel) sel.value = value;
+          render();
+        }
+      }, [label, h('span', { class: 'n', text: String(count) })]);
+    };
+
+    box.appendChild(mk('전체 지점', 'all',
+      branches.reduce(function (a, b) { return a + openCount(b); }, 0)));
+    branches.forEach(function (b) { box.appendChild(mk(b.name, b.id, openCount(b))); });
+  }
+
   function renderShare() {
+    renderShareBranches();
     var wrap = $('#share-preview');
     clear(wrap);
     $('#share-hide-closed').checked = ui.shareHideClosed;
@@ -1180,10 +1213,7 @@
     return cv;
   }
 
-  function exportShareImage(type) {
-    var cv = buildShareCanvas();
-    if (!cv) { toast('내보낼 일정이 없습니다.', 'err'); return; }
-    var mime = type === 'jpg' ? 'image/jpeg' : 'image/png';
+  function canvasToBlob(cv, type) {
     if (type === 'jpg') {
       // JPG 는 투명 배경을 지원하지 않으므로 흰 배경 위에 다시 그린다
       var flat = document.createElement('canvas');
@@ -1193,11 +1223,62 @@
       fx.drawImage(cv, 0, 0);
       cv = flat;
     }
-    var name = '공유용일정표_' + safeFileName(ui.branch === 'all' ? '전체지점' : (S.branchById(ui.branch) || {}).name || '지점') + '_' + stamp() + '.' + (type === 'jpg' ? 'jpg' : 'png');
-    cv.toBlob(function (blob) {
+    return new Promise(function (resolve) {
+      cv.toBlob(function (blob) { resolve(blob); },
+        type === 'jpg' ? 'image/jpeg' : 'image/png', type === 'jpg' ? 0.92 : undefined);
+    });
+  }
+
+  function shareFileName(label, type) {
+    return '공유용일정표_' + safeFileName(label) + '_' + stamp() + '.' + (type === 'jpg' ? 'jpg' : 'png');
+  }
+
+  function exportShareImage(type) {
+    var cv = buildShareCanvas();
+    if (!cv) { toast('내보낼 일정이 없습니다.', 'err'); return; }
+    var label = ui.branch === 'all' ? '전체지점' : ((S.branchById(ui.branch) || {}).name || '지점');
+    canvasToBlob(cv, type).then(function (blob) {
       if (!blob) { toast('이미지를 만들지 못했습니다. 다시 시도하세요.', 'err'); return; }
-      saveFile(blob, name);
-    }, mime, type === 'jpg' ? 0.92 : undefined);
+      saveFile(blob, shareFileName(label, type));
+    });
+  }
+
+  /**
+   * 지점마다 그 지점 일정만 담은 이미지를 하나씩 저장한다.
+   * 리뷰어에게는 자기 지점 일정만 보내야 하므로 지점별로 분리해 내보낸다.
+   * (저장 확인 창은 한 번에 하나만 뜨므로 순서대로 진행한다)
+   */
+  function exportBranchImages(type) {
+    var branches = state().branches.slice();
+    if (!branches.length) { toast('등록된 지점이 없습니다.', 'err'); return; }
+
+    var before = ui.branch;
+    var saved = 0, skipped = [];
+    var chain = Promise.resolve();
+
+    branches.forEach(function (b) {
+      chain = chain.then(function () {
+        ui.branch = b.id;
+        var cv = buildShareCanvas();
+        if (!cv) { skipped.push(b.name); return; }
+        return canvasToBlob(cv, type).then(function (blob) {
+          if (!blob) { skipped.push(b.name); return; }
+          return saveFile(blob, shareFileName(b.name, type)).then(function (ok) {
+            if (ok !== false) saved += 1;
+          });
+        });
+      });
+    });
+
+    return chain.catch(function () { /* 개별 실패는 아래 안내로 대신한다 */ }).then(function () {
+      ui.branch = before;
+      var sel = $('#f-branch');
+      if (sel) sel.value = before;
+      render();
+      var msg = saved + '개 지점 일정표를 저장했습니다.';
+      if (skipped.length) msg += ' (일정이 없어 건너뜀: ' + skipped.join(', ') + ')';
+      toast(msg, saved ? 'ok' : 'err');
+    });
   }
 
   /* ============================================================ 설정 */
@@ -1718,6 +1799,13 @@
     });
     $('#btn-share-png').addEventListener('click', function () { exportShareImage('png'); });
     $('#btn-share-jpg').addEventListener('click', function () { exportShareImage('jpg'); });
+    $('#btn-share-all').addEventListener('click', function () {
+      var btn = this;
+      btn.disabled = true;
+      var done = function () { btn.disabled = false; };
+      var r = exportBranchImages('png');
+      r && r.then ? r.then(done, done) : done();
+    });
   }
 
   function render() {

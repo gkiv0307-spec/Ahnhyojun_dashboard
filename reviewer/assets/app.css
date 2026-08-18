@@ -331,6 +331,17 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
 .person-row .nm { font-weight: 700; }
 
 /* --------------------------------------------------------------- 공유용 */
+.branch-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.branch-tab {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-2);
+  border-radius: 999px; padding: 5px 13px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  white-space: nowrap;
+}
+.branch-tab:hover { background: var(--panel-2); border-color: var(--ink-3); }
+.branch-tab.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.branch-tab .n { font-family: var(--font-data); font-size: 11px; opacity: .7; margin-left: 4px; }
+.branch-tab.empty { color: var(--ink-3); }
+
 .share-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .share-note-input { min-width: 320px; max-width: 100%; }
 /* 공유 카드는 내보내는 이미지의 미리보기 — 뷰어 테마와 무관하게 항상 밝은 색으로 고정한다. */
