@@ -87,7 +87,7 @@ h1,h2,h3,h4{margin:0;letter-spacing:-.02em;font-weight:800}
 .card-h .sp{margin-left:auto}
 .card-b{padding:16px 18px}
 .card-b.tight{padding:0}
-.grid{display:grid;gap:14px}
+.grid{display:grid;gap:14px;align-items:start}
 /* 그리드 자식의 기본 min-width:auto 때문에 긴 텍스트가 트랙을 밀어내는 것을 방지 */
 .grid>*,.kpis>*{min-width:0}
 .g2{grid-template-columns:1fr 1fr}
