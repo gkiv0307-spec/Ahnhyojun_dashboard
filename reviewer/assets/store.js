@@ -214,6 +214,16 @@
   var state = null;
   var listeners = [];
 
+  /** localStorage 사용 가능 여부 (샌드박스 iframe 등에서는 막힐 수 있다) */
+  var storageOK = (function () {
+    try {
+      var k = '__rv_probe__';
+      global.localStorage.setItem(k, '1');
+      global.localStorage.removeItem(k);
+      return true;
+    } catch (e) { return false; }
+  })();
+
   function load() {
     var raw = null;
     try { raw = global.localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
@@ -573,6 +583,7 @@
 
   global.Store = {
     STORAGE_KEY: STORAGE_KEY,
+    storageOK: storageOK,
     STATUSES: STATUSES,
     COUNTED_STATUSES: COUNTED_STATUSES,
     GRADES: GRADES,

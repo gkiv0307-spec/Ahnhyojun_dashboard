@@ -1,3 +1,1657 @@
+<title>리뷰노트 체험단 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root {
+  /* 크롬(UI)은 무채색, 색은 오직 "상태"를 뜻한다 —
+     그래서 강조색을 잉크 계열로 두어 예약확정 파랑과 부딪히지 않게 한다. */
+  --bg: #f1f2f6;
+  --panel: #ffffff;
+  --panel-2: #f8f9fc;
+  --ink: #171b26;
+  --ink-2: #4a5162;
+  --ink-3: #7c8496;
+  --line: #dcdfe8;
+  --line-2: #ebedf3;
+  --accent: #1b2130;
+  --accent-ink: #ffffff;
+  --accent-soft: #e7e9f0;
+  --focus: rgba(27, 33, 48, .14);
+
+  --ok: #157f3c;          /* 가능 */
+  --ok-soft: #e4f5ea;
+  --ok-line: #b3ddc1;
+  --danger: #c62828;      /* 마감 */
+  --danger-soft: #fceaea;
+  --danger-line: #eebcbc;
+  --warn: #a86a00;        /* 예약요청 */
+  --warn-soft: #fdf1d4;
+  --warn-line: #ebd6a0;
+  --info: #1d4ed8;        /* 예약확정 */
+  --info-soft: #e5edff;
+  --info-line: #c3d4ff;
+  --done: #10603c;        /* 방문완료 */
+  --done-soft: #dfeee6;
+  --done-line: #b6d8c5;
+  --mute: #79808f;        /* 취소 */
+  --mute-soft: #eef0f4;
+  --mute-line: #dfe2e9;
+  --flag: #8a5300;        /* 미매칭 */
+  --flag-soft: #fdf2e2;
+  --flag-line: #ecd5ae;
+
+  --font-ui: 'Noto Sans KR', Pretendard, -apple-system, BlinkMacSystemFont, 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  --font-data: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(16, 20, 32, .05), 0 6px 18px rgba(16, 20, 32, .04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141a;
+    --panel: #1a1d25;
+    --panel-2: #21252f;
+    --ink: #e9ebf2;
+    --ink-2: #aab2c2;
+    --ink-3: #7f8798;
+    --line: #2e3341;
+    --line-2: #262a35;
+    --accent: #e9ebf2;
+    --accent-ink: #12141a;
+    --accent-soft: #2b3140;
+    --focus: rgba(233, 235, 242, .16);
+
+    --ok: #5fd08a;
+    --ok-soft: #143020;
+    --ok-line: #2a5c3c;
+    --danger: #f28b8b;
+    --danger-soft: #3a1a1a;
+    --danger-line: #6b2f2f;
+    --warn: #f0c063;
+    --warn-soft: #372a0e;
+    --warn-line: #63501f;
+    --info: #9cb8ff;
+    --info-soft: #1b2647;
+    --info-line: #35477e;
+    --done: #6fd6a4;
+    --done-soft: #12312a;
+    --done-line: #2b5c48;
+    --mute: #8b93a3;
+    --mute-soft: #252a35;
+    --mute-line: #363c4a;
+    --flag: #e6b872;
+    --flag-soft: #33270f;
+    --flag-line: #5c4820;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .28);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #12141a;
+  --panel: #1a1d25;
+  --panel-2: #21252f;
+  --ink: #e9ebf2;
+  --ink-2: #aab2c2;
+  --ink-3: #7f8798;
+  --line: #2e3341;
+  --line-2: #262a35;
+  --accent: #e9ebf2;
+  --accent-ink: #12141a;
+  --accent-soft: #2b3140;
+  --focus: rgba(233, 235, 242, .16);
+
+  --ok: #5fd08a;
+  --ok-soft: #143020;
+  --ok-line: #2a5c3c;
+  --danger: #f28b8b;
+  --danger-soft: #3a1a1a;
+  --danger-line: #6b2f2f;
+  --warn: #f0c063;
+  --warn-soft: #372a0e;
+  --warn-line: #63501f;
+  --info: #9cb8ff;
+  --info-soft: #1b2647;
+  --info-line: #35477e;
+  --done: #6fd6a4;
+  --done-soft: #12312a;
+  --done-line: #2b5c48;
+  --mute: #8b93a3;
+  --mute-soft: #252a35;
+  --mute-line: #363c4a;
+  --flag: #e6b872;
+  --flag-soft: #33270f;
+  --flag-line: #5c4820;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .28);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--ink); text-underline-offset: 2px; }
+
+/* ------------------------------------------------------------- 상단 바 */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 800; letter-spacing: -.02em; }
+.brand .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
+.brand small { font-weight: 600; color: var(--ink-3); font-size: 11px; display: block; letter-spacing: 0; }
+.topbar-controls { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.field { display: flex; align-items: center; gap: 5px; }
+.field > label { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+
+input[type="text"], input[type="date"], input[type="number"], input[type="time"], select, textarea {
+  border: 1px solid var(--line); border-radius: 7px; background: var(--panel);
+  padding: 5px 8px; min-height: 30px; outline: none; max-width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.search { min-width: 190px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  border-radius: 7px; padding: 6px 11px; min-height: 31px;
+  cursor: pointer; font-weight: 600; white-space: nowrap;
+}
+.btn:hover { background: var(--panel-2); border-color: var(--ink-3); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { background: var(--accent); opacity: .88; }
+.btn-danger { color: var(--danger); border-color: var(--danger-line); }
+.btn-danger:hover { background: var(--danger-soft); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+.btn-sm { padding: 3px 8px; min-height: 26px; font-size: 12px; }
+.btn-icon { padding: 4px 7px; min-height: 26px; }
+
+.switch { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+
+/* --------------------------------------------------------------- 레이아웃 */
+.layout { display: flex; align-items: flex-start; min-height: calc(100vh - 52px); }
+.sidenav {
+  position: sticky; top: 52px;
+  width: 178px; flex: 0 0 178px; padding: 12px 10px;
+  border-right: 1px solid var(--line); background: var(--panel); min-height: calc(100vh - 52px);
+}
+.sidenav .nav-title { font-size: 10px; letter-spacing: .14em; color: var(--ink-3); font-weight: 600;
+  padding: 6px 8px; font-family: var(--font-data); }
+.navbtn {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  border: 0; background: transparent; text-align: left;
+  padding: 8px 10px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--ink-2);
+}
+.navbtn:hover { background: var(--line-2); }
+.navbtn.active { background: var(--accent); color: var(--accent-ink); }
+.navbtn.active .badge-count { color: var(--accent-ink); opacity: .7; }
+.navbtn .badge-count { margin-left: auto; font-size: 11px; color: var(--ink-3); font-weight: 600;
+  font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+.content { flex: 1 1 auto; padding: 14px; min-width: 0; }
+.page { display: none; }
+.page.active { display: block; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; }
+.panel-head {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 12px; border-bottom: 1px solid var(--line-2);
+}
+.panel-head h2 { margin: 0; font-size: 14px; letter-spacing: -.01em; }
+.panel-head .sub { font-size: 11.5px; color: var(--ink-3); }
+.panel-head .spacer { margin-left: auto; }
+.panel-body { padding: 12px; }
+.panel-body.tight { padding: 0; }
+
+/* --------------------------------------------------------------- 통계 카드 */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; }
+.stat {
+  border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; background: var(--panel);
+}
+.stat .k { font-size: 11.5px; color: var(--ink-3); font-weight: 600; }
+.stat .sub { letter-spacing: .01em; }
+.stat .v { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-top: 2px;
+  font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.stat .sub { font-size: 11px; color: var(--ink-3); }
+.stat.s-total { border-color: var(--ink-3); }
+.stat.s-pre .v { color: var(--ink-2); }
+.stat.s-req .v { color: var(--warn); }
+.stat.s-cfm .v { color: var(--info); }
+.stat.s-done .v { color: var(--done); }
+.stat.s-cancel .v { color: var(--mute); }
+.stat.s-remain .v { color: var(--ok); }
+
+/* --------------------------------------------------------------- 테이블 */
+.table-wrap { overflow: auto; max-height: 68vh; border-radius: 0 0 var(--radius) var(--radius); }
+table.grid { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 100%; }
+table.grid th, table.grid td {
+  border-bottom: 1px solid var(--line-2); border-right: 1px solid var(--line-2);
+  padding: 4px 6px; text-align: left; vertical-align: middle; white-space: nowrap;
+}
+table.grid thead th {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--panel-2); font-size: 11.5px; color: var(--ink-2); font-weight: 700;
+  border-bottom: 1px solid var(--line); cursor: pointer; user-select: none;
+}
+table.grid thead th.no-sort { cursor: default; }
+table.grid thead th .arrow { color: var(--ink); font-size: 10px; }
+table.grid tbody tr:hover { background: var(--panel-2); }
+table.grid tbody tr.row-unmatched { background: var(--flag-soft); }
+table.grid tbody tr.row-unmatched:hover { background: var(--flag-soft); filter: brightness(.98); }
+table.grid td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-data); }
+table.grid .cell-input {
+  width: 100%; border: 1px solid transparent; background: transparent;
+  border-radius: 5px; padding: 3px 5px; min-height: 26px;
+}
+table.grid .cell-input:hover { border-color: var(--line); background: var(--panel); }
+table.grid .cell-input:focus { border-color: var(--accent); background: var(--panel); box-shadow: 0 0 0 3px var(--focus); }
+table.grid select.cell-input { min-width: 88px; }
+.col-w-sm { min-width: 76px; }
+.col-w-branch { min-width: 172px; }
+.col-w-md { min-width: 132px; }
+.col-w-lg { min-width: 208px; }
+table.grid td.num .cell-input { text-align: right; }
+table.grid td .cell-input { min-width: 100%; }
+.rownum { color: var(--ink-3); font-size: 11px; font-family: var(--font-data); text-align: right; width: 34px; background: var(--panel-2); position: sticky; left: 0; }
+.sticky-name { position: sticky; left: 34px; background: var(--panel); z-index: 2; }
+tbody tr:hover .sticky-name { background: var(--panel-2); }
+tr.row-unmatched .sticky-name { background: var(--flag-soft); }
+
+/* --------------------------------------------------------------- 배지 */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.b-예약전 { background: var(--mute-soft); color: var(--ink-2); border-color: var(--mute-line); }
+.b-예약요청 { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-line); }
+.b-예약확정 { background: var(--info-soft); color: var(--info); border-color: var(--info-line); }
+.b-방문완료 { background: var(--done-soft); color: var(--done); border-color: var(--done-line); }
+.b-취소 { background: var(--mute-soft); color: var(--mute); border-color: var(--mute-line); }
+.b-ok { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-line); }
+.b-closed { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-line); }
+.b-warn { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-line); }
+.b-unmatched { background: var(--flag-soft); color: var(--flag); border-color: var(--flag-line); }
+
+select.status-select { border-radius: 999px; font-weight: 700; font-size: 11.5px; padding: 3px 6px; min-height: 26px; border: 1px solid var(--line); }
+select.status-select.s-예약전 { background: var(--mute-soft); color: var(--ink-2); }
+select.status-select.s-예약요청 { background: var(--warn-soft); color: var(--warn); }
+select.status-select.s-예약확정 { background: var(--info-soft); color: var(--info); }
+select.status-select.s-방문완료 { background: var(--done-soft); color: var(--done); }
+select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute); }
+
+/* --------------------------------------------------------------- 알림/배너 */
+.notice {
+  display: flex; gap: 10px; align-items: flex-start;
+  border: 1px solid var(--flag-line); background: var(--flag-soft); color: var(--flag);
+  border-radius: 9px; padding: 10px 12px; margin-bottom: 12px; font-size: 12.5px;
+}
+.notice.info { border-color: var(--info-line); background: var(--info-soft); color: var(--info); }
+.notice b { color: inherit; }
+.notice .actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+.hint { font-size: 11.5px; color: var(--ink-3); }
+
+.dropzone {
+  border: 1.5px dashed var(--line); border-radius: 10px; background: var(--panel-2);
+  padding: 16px; text-align: center; color: var(--ink-2);
+}
+.dropzone.drag { border-color: var(--accent); background: var(--accent-soft); }
+.dropzone strong { display: block; font-size: 13.5px; margin-bottom: 3px; }
+
+/* --------------------------------------------------------------- 예약 현황 */
+.slot-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 620px; }
+.slot-table th, .slot-table td { border-bottom: 1px solid var(--line-2); border-right: 1px solid var(--line-2); padding: 6px; text-align: center; }
+.slot-table thead th { background: var(--panel-2); font-size: 11.5px; font-family: var(--font-data); color: var(--ink-2); position: sticky; top: 0; z-index: 3; }
+.slot-table td.date-col, .slot-table th.date-col { text-align: left; white-space: nowrap; font-weight: 700; background: var(--panel-2); position: sticky; left: 0; z-index: 2; }
+.slot-cell { border: 0; background: transparent; width: 100%; cursor: pointer; border-radius: 7px; padding: 6px 4px; display: block; }
+.slot-cell:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+.slot-cell .big { font-weight: 700; font-size: 13px; }
+.slot-cell .small { font-size: 10.5px; color: var(--ink-3); font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.slot-open { background: var(--ok-soft); color: var(--ok); }
+.slot-closed { background: var(--danger-soft); color: var(--danger); }
+.slot-over { background: var(--danger-soft); color: var(--danger); outline: 2px solid var(--danger); outline-offset: -2px; }
+
+.slot-detail { border: 1px solid var(--line); border-radius: 9px; padding: 10px; background: var(--panel-2); }
+.slot-detail h3 { margin: 0 0 8px; font-size: 13px; }
+.person-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--line); flex-wrap: wrap; }
+.person-row:last-child { border-bottom: 0; }
+.person-row .nm { font-weight: 700; }
+
+/* --------------------------------------------------------------- 공유용 */
+.share-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.share-note-input { min-width: 320px; max-width: 100%; }
+/* 공유 카드는 내보내는 이미지의 미리보기 — 뷰어 테마와 무관하게 항상 밝은 색으로 고정한다. */
+.share-preview-wrap { background: var(--panel-2); padding: 14px; border-radius: 0 0 var(--radius) var(--radius); overflow: auto; }
+.share-card {
+  background: #fff; border-radius: 16px; padding: 22px; max-width: 560px; margin: 0 auto;
+  box-shadow: 0 10px 30px rgba(20, 25, 40, .12); border: 1px solid #e3e6ec;
+}
+.share-card h2 { margin: 0 0 2px; font-size: 24px; letter-spacing: -.02em; color: #1c2230; }
+.share-card .period { color: #6b7385; font-size: 14px; margin-bottom: 14px; font-weight: 600; }
+.share-day { margin-bottom: 14px; }
+.share-day-head {
+  background: #23293a; color: #fff; border-radius: 9px; padding: 8px 12px;
+  font-size: 17px; font-weight: 800; margin-bottom: 7px;
+}
+.share-slot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border-radius: 9px; padding: 10px 13px; margin-bottom: 6px; font-size: 18px; font-weight: 800;
+  border: 2px solid transparent;
+}
+.share-slot .t { letter-spacing: -.01em; font-family: var(--font-data); }
+.share-slot .s { font-size: 17px; }
+.share-slot.open { background: #e7f7ec; border-color: #9ed8b1; color: #11702f; }
+.share-slot.closed { background: #fdecec; border-color: #f3b6b6; color: #a51b1b; }
+.share-foot { border-top: 1px dashed #dfe3ea; margin-top: 12px; padding-top: 10px; color: #6b7385; font-size: 13px; }
+.share-legend { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.share-legend span { border-radius: 999px; padding: 3px 12px; font-weight: 800; font-size: 13px; }
+
+/* --------------------------------------------------------------- 설정 */
+.branch-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: var(--panel); }
+.branch-card .bc-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.branch-card .bc-head input.name { font-weight: 800; font-size: 14px; min-width: 220px; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line);
+  background: var(--panel-2); border-radius: 999px; padding: 3px 6px 3px 10px; font-size: 12px; font-weight: 600;
+}
+.chip button { border: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
+.chip button:hover { color: var(--danger); }
+.subhead { font-size: 11.5px; font-weight: 700; color: var(--ink-3); margin-top: 10px; }
+.inline-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+
+/* --------------------------------------------------------------- 모달 */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(18, 22, 33, .45); z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.modal {
+  background: var(--panel); border-radius: 12px; width: min(720px, 100%); max-height: 88vh; overflow: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
+}
+.modal header { padding: 13px 16px; border-bottom: 1px solid var(--line-2); display: flex; align-items: center; gap: 8px; }
+.modal header h3 { margin: 0; font-size: 15px; }
+.modal .body { padding: 14px 16px; }
+.modal footer { padding: 12px 16px; border-top: 1px solid var(--line-2); display: flex; gap: 8px; justify-content: flex-end; }
+.preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.preview-table th, .preview-table td { border: 1px solid var(--line-2); padding: 4px 6px; text-align: left; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.preview-table th { background: var(--panel-2); }
+
+.toast-wrap { position: fixed; right: 14px; bottom: 14px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--ink); color: var(--panel); padding: 9px 14px; border-radius: 9px; font-size: 12.5px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .25); max-width: 340px;
+}
+.toast.err { background: #b02525; color: #fff; }
+.toast.ok { background: #135e30; color: #fff; }
+
+.empty { padding: 26px; text-align: center; color: var(--ink-3); }
+.flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; }
+.pii-mask { color: var(--ink-3); letter-spacing: .04em; }
+
+/* --------------------------------------------------------------- 반응형 */
+@media (max-width: 900px) {
+  .layout { display: block; }
+  .sidenav {
+    position: sticky; top: 52px; width: auto; min-height: 0;
+    display: flex; gap: 6px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line);
+    padding: 8px 10px; z-index: 30;
+  }
+  .sidenav .nav-title { display: none; }
+  .navbtn { width: auto; white-space: nowrap; }
+  .content { padding: 10px; }
+  .topbar-controls { width: 100%; margin-left: 0; }
+  .search { flex: 1 1 140px; min-width: 0; }
+  .field { flex-wrap: wrap; }
+  .topbar-controls .field { flex: 1 1 100%; }
+  .topbar-controls input[type="date"] { flex: 1 1 110px; min-width: 0; }
+  .share-toolbar .field { width: 100%; }
+  .share-note-input { min-width: 0; width: 100%; }
+  .table-wrap { max-height: none; }
+  .stat-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+}
+@media (max-width: 560px) {
+  .brand small { display: none; }
+  .share-card { padding: 16px; }
+  .share-slot { font-size: 16px; }
+}
+
+@media print {
+  .topbar, .sidenav, .panel-head .spacer, .btn { display: none !important; }
+  .content { padding: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+</style>
+
+<!-- ─────────────────────────────── 상단 바 ─────────────────────────────── -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>지점별 리뷰어 관리<small>리뷰노트 체험단 운영 대시보드</small></span>
+    </div>
+
+    <div class="topbar-controls">
+      <div class="field">
+        <label for="f-branch">지점</label>
+        <select id="f-branch"><option value="all">전체 지점</option></select>
+      </div>
+      <div class="field">
+        <label for="f-from">기간</label>
+        <input type="date" id="f-from"><span class="hint">~</span><input type="date" id="f-to">
+        <button class="btn btn-sm btn-ghost" id="btn-range-reset" title="기간 초기화">초기화</button>
+      </div>
+      <div class="field">
+        <input type="text" id="f-search" class="search" placeholder="리뷰어명 · 연락처 · 계정 · 메모 검색">
+      </div>
+      <label class="switch" title="화면 공유 시 개인정보를 가립니다">
+        <input type="checkbox" id="f-mask"> 개인정보 가리기
+      </label>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ─────────────────────────── 좌측 내비 ─────────────────────────── -->
+  <nav class="sidenav" id="sidenav">
+    <div class="nav-title">MENU</div>
+    <button class="navbtn active" data-page="dashboard">대시보드</button>
+    <button class="navbtn" data-page="reviewers">리뷰어 명단 <span class="badge-count" id="nav-count-reviewers"></span></button>
+    <button class="navbtn" data-page="booking">예약 현황</button>
+    <button class="navbtn" data-page="share">공유용 일정표</button>
+    <button class="navbtn" data-page="settings">설정</button>
+  </nav>
+
+  <main class="content">
+    <div id="global-notice"></div>
+
+    <!-- ══════════════════════════ 대시보드 ══════════════════════════ -->
+    <section class="page active" id="page-dashboard">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>운영 현황 요약</h2>
+          <span class="sub" id="dash-scope"></span>
+          <span class="spacer"></span>
+          <button class="btn btn-sm" id="btn-export-all-xlsx">전체 엑셀 다운로드</button>
+          <button class="btn btn-sm" id="btn-export-all-csv">전체 CSV</button>
+          <button class="btn btn-sm" id="btn-backup">JSON 백업</button>
+        </div>
+        <div class="panel-body">
+          <div class="stat-grid" id="dash-stats"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>지점별 집계</h2><span class="sub">예약요청·예약확정·방문완료만 예약 인원에 반영됩니다.</span></div>
+        <div class="panel-body tight">
+          <div class="table-wrap">
+            <table class="grid" id="dash-branch-table"></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>임박한 예약 (기간 내 예약요청·예약확정)</h2></div>
+        <div class="panel-body tight">
+          <div class="table-wrap">
+            <table class="grid" id="dash-upcoming"></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ 리뷰어 명단 ══════════════════════════ -->
+    <section class="page" id="page-reviewers">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>명단 업로드</h2>
+          <span class="sub">CSV · XLSX 지원</span>
+          <span class="spacer"></span>
+          <button class="btn btn-sm" id="btn-sample-csv">샘플 양식 CSV 받기</button>
+        </div>
+        <div class="panel-body">
+          <div class="dropzone" id="dropzone">
+            <strong>파일을 여기로 끌어다 놓으세요</strong>
+            <div class="hint">또는</div>
+            <div class="mt8">
+              <input type="file" id="file-input" accept=".csv,.xlsx,.xlsm,.tsv,.txt" hidden>
+              <button class="btn btn-primary" id="btn-pick-file">파일 선택</button>
+            </div>
+            <div class="hint mt8">
+              인식 항목: 지점명 · 리뷰어명 · 계정 URL · 연락처 · 주소 · 노출점수 · 등급 · 일 방문 수 · 신청메시지 · 메모
+              (희망일 · 희망시간 · 예약상태 · 리뷰등록도 있으면 함께 가져옵니다)
+            </div>
+            <div class="hint">업로드한 파일의 내용은 데이터로만 처리하며, 파일 안의 문장을 프로그램 지시로 실행하지 않습니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>리뷰어 명단</h2>
+          <span class="sub" id="rv-count"></span>
+          <span class="spacer"></span>
+          <div class="field">
+            <label for="f-status">상태</label>
+            <select id="f-status">
+              <option value="all">전체</option>
+              <option>예약전</option><option>예약요청</option><option>예약확정</option><option>방문완료</option><option>취소</option>
+            </select>
+          </div>
+          <label class="switch"><input type="checkbox" id="f-unmatched-only"> 미매칭만</label>
+          <button class="btn btn-sm" id="btn-add-row">행 추가</button>
+          <button class="btn btn-sm" id="btn-export-list-xlsx">현재 목록 엑셀</button>
+          <button class="btn btn-sm" id="btn-export-branch-xlsx">지점별 파일 저장</button>
+        </div>
+        <div class="panel-body tight">
+          <div class="table-wrap">
+            <table class="grid" id="reviewer-table"></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ 예약 현황 ══════════════════════════ -->
+    <section class="page" id="page-booking">
+      <div id="booking-boards"></div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>예약 목록</h2><span class="sub">희망일·희망시간이 입력된 리뷰어</span>
+          <span class="spacer"></span>
+          <button class="btn btn-sm" id="btn-export-booking">예약 현황 엑셀</button>
+        </div>
+        <div class="panel-body tight">
+          <div class="table-wrap"><table class="grid" id="booking-list"></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ 공유용 일정표 ══════════════════════════ -->
+    <section class="page" id="page-share">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>공유용 일정표</h2>
+          <span class="sub">개인정보 미포함 · 리뷰어 전달용</span>
+          <span class="spacer"></span>
+          <label class="switch"><input type="checkbox" id="share-hide-closed"> 마감 시간대 숨기기</label>
+          <label class="switch"><input type="checkbox" id="share-show-count" checked> 잔여 인원 숫자 표시</label>
+          <button class="btn btn-sm" id="btn-share-png">PNG 저장</button>
+          <button class="btn btn-sm" id="btn-share-jpg">JPG 저장</button>
+        </div>
+        <div class="panel-body">
+          <div class="share-toolbar">
+            <div class="field">
+              <label for="share-note">안내문구</label>
+              <input type="text" id="share-note" class="search share-note-input" placeholder="예: 예약은 선착순입니다.">
+            </div>
+            <span class="hint">상단 바의 지점·기간 선택이 그대로 적용됩니다.</span>
+          </div>
+        </div>
+        <div class="share-preview-wrap" id="share-preview"></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ 설정 ══════════════════════════ -->
+    <section class="page" id="page-settings">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>지점 관리</h2>
+          <span class="sub">예약 가능 날짜 · 시간대 · 시간당 인원</span>
+          <span class="spacer"></span>
+          <div class="inline-form">
+            <input type="text" id="new-branch-name" placeholder="새 지점명 입력">
+            <button class="btn btn-primary btn-sm" id="btn-add-branch">지점 추가</button>
+          </div>
+        </div>
+        <div class="panel-body" id="branch-settings"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>데이터 관리</h2></div>
+        <div class="panel-body">
+          <div class="flex">
+            <button class="btn" id="btn-backup-2">JSON 백업 다운로드</button>
+            <input type="file" id="restore-input" accept=".json" hidden>
+            <button class="btn" id="btn-restore">JSON 백업 복원</button>
+            <button class="btn" id="btn-load-sample">샘플 데이터 불러오기</button>
+            <button class="btn btn-danger" id="btn-clear-reviewers">리뷰어 명단 전체 삭제</button>
+            <button class="btn btn-danger" id="btn-reset-all">전체 초기화</button>
+          </div>
+          <p class="hint mt12">
+            모든 데이터는 이 브라우저(localStorage)에만 저장됩니다. 다른 PC에서 이어서 작업하려면 JSON 백업을 사용하세요.
+            개인정보가 포함되므로 공용 PC에서는 작업 후 <b>전체 초기화</b>를 권장합니다.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+<div id="modal-root"></div>
+
+<script>
+/*!
+ * xlsx-lite.js — 의존성 없는 최소 XLSX 읽기/쓰기 유틸
+ * - 쓰기: ZIP(STORE, 무압축) + inlineStr 시트로 실제 .xlsx 생성
+ * - 읽기: ZIP 파싱 + DecompressionStream('deflate-raw')로 해제 후 시트 파싱
+ * 외부 CDN 없이 브라우저 표준 API만 사용한다.
+ */
+(function (global) {
+  'use strict';
+
+  /* ---------------------------------------------------------- CRC32 / ZIP */
+  var CRC_TABLE = (function () {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+
+  function crc32(u8) {
+    var c = 0xFFFFFFFF;
+    for (var i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  var enc = new TextEncoder();
+  var dec = new TextDecoder('utf-8');
+
+  function dosDateTime(d) {
+    var time = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31);
+    var date = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+    return { time: time, date: date };
+  }
+
+  /** files: [{name, data:Uint8Array}] -> Blob(application/zip) */
+  function zipWrite(files, mime) {
+    var stamp = dosDateTime(new Date());
+    var parts = [];
+    var central = [];
+    var offset = 0;
+
+    files.forEach(function (f) {
+      var nameBytes = enc.encode(f.name);
+      var data = f.data;
+      var crc = crc32(data);
+
+      var lh = new Uint8Array(30 + nameBytes.length);
+      var lv = new DataView(lh.buffer);
+      lv.setUint32(0, 0x04034b50, true);
+      lv.setUint16(4, 20, true);          // version needed
+      lv.setUint16(6, 0x0800, true);      // UTF-8 flag
+      lv.setUint16(8, 0, true);           // method: store
+      lv.setUint16(10, stamp.time, true);
+      lv.setUint16(12, stamp.date, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, data.length, true);
+      lv.setUint32(22, data.length, true);
+      lv.setUint16(26, nameBytes.length, true);
+      lv.setUint16(28, 0, true);
+      lh.set(nameBytes, 30);
+
+      parts.push(lh, data);
+
+      var ch = new Uint8Array(46 + nameBytes.length);
+      var cv = new DataView(ch.buffer);
+      cv.setUint32(0, 0x02014b50, true);
+      cv.setUint16(4, 20, true);
+      cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0x0800, true);
+      cv.setUint16(10, 0, true);
+      cv.setUint16(12, stamp.time, true);
+      cv.setUint16(14, stamp.date, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, data.length, true);
+      cv.setUint32(24, data.length, true);
+      cv.setUint16(28, nameBytes.length, true);
+      cv.setUint32(42, offset, true);
+      ch.set(nameBytes, 46);
+      central.push(ch);
+
+      offset += lh.length + data.length;
+    });
+
+    var cdSize = central.reduce(function (a, b) { return a + b.length; }, 0);
+    var eocd = new Uint8Array(22);
+    var ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(8, files.length, true);
+    ev.setUint16(10, files.length, true);
+    ev.setUint32(12, cdSize, true);
+    ev.setUint32(16, offset, true);
+
+    return new Blob(parts.concat(central, [eocd]), { type: mime || 'application/zip' });
+  }
+
+  function inflateRaw(u8) {
+    if (typeof global.DecompressionStream !== 'function') {
+      return Promise.reject(new Error('이 브라우저는 압축 해제를 지원하지 않습니다. CSV 파일로 업로드해 주세요.'));
+    }
+    var ds = new global.DecompressionStream('deflate-raw');
+    var stream = new Blob([u8]).stream().pipeThrough(ds);
+    return new Response(stream).arrayBuffer().then(function (buf) { return new Uint8Array(buf); });
+  }
+
+  /** ArrayBuffer -> Promise<Map<name, Uint8Array>> */
+  function zipRead(buffer) {
+    var u8 = new Uint8Array(buffer);
+    var dv = new DataView(buffer);
+    var eocd = -1;
+    for (var i = u8.length - 22; i >= 0 && i > u8.length - 22 - 65536; i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) return Promise.reject(new Error('올바른 엑셀(zip) 파일이 아닙니다.'));
+
+    var count = dv.getUint16(eocd + 10, true);
+    var cdOffset = dv.getUint32(eocd + 16, true);
+    var entries = [];
+    var p = cdOffset;
+    for (var n = 0; n < count; n++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      var method = dv.getUint16(p + 10, true);
+      var csize = dv.getUint32(p + 20, true);
+      var nameLen = dv.getUint16(p + 28, true);
+      var extraLen = dv.getUint16(p + 30, true);
+      var cmtLen = dv.getUint16(p + 32, true);
+      var lho = dv.getUint32(p + 42, true);
+      var name = dec.decode(u8.subarray(p + 46, p + 46 + nameLen));
+      entries.push({ name: name, method: method, csize: csize, lho: lho });
+      p += 46 + nameLen + extraLen + cmtLen;
+    }
+
+    var out = new Map();
+    return entries.reduce(function (chain, e) {
+      return chain.then(function () {
+        var ln = dv.getUint16(e.lho + 26, true);
+        var le = dv.getUint16(e.lho + 28, true);
+        var start = e.lho + 30 + ln + le;
+        var raw = u8.subarray(start, start + e.csize);
+        if (e.method === 0) { out.set(e.name, raw); return; }
+        if (e.method !== 8) throw new Error('지원하지 않는 압축 방식입니다: ' + e.method);
+        return inflateRaw(raw).then(function (d) { out.set(e.name, d); });
+      });
+    }, Promise.resolve()).then(function () { return out; });
+  }
+
+  /* ------------------------------------------------------------ XLSX 쓰기 */
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+      // 엑셀이 허용하지 않는 제어문자 제거
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  }
+
+  function colLetter(idx) {
+    var s = '', n = idx + 1;
+    while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; }
+    return s;
+  }
+
+  function sheetXml(rows) {
+    var body = rows.map(function (row, r) {
+      var cells = (row || []).map(function (val, c) {
+        if (val === null || val === undefined || val === '') return '';
+        var ref = colLetter(c) + (r + 1);
+        if (typeof val === 'number' && isFinite(val)) {
+          return '<c r="' + ref + '"><v>' + val + '</v></c>';
+        }
+        return '<c r="' + ref + '" t="inlineStr"><is><t xml:space="preserve">' + esc(val) + '</t></is></c>';
+      }).join('');
+      return '<row r="' + (r + 1) + '">' + cells + '</row>';
+    }).join('');
+
+    var widths = '';
+    var maxCols = rows.reduce(function (a, r) { return Math.max(a, (r || []).length); }, 0);
+    if (maxCols) {
+      widths = '<cols>' + Array.from({ length: maxCols }, function (_, i) {
+        var w = rows.reduce(function (a, r) {
+          var v = r && r[i] != null ? String(r[i]) : '';
+          return Math.max(a, v.length + (/[가-힣]/.test(v) ? v.replace(/[^가-힣]/g, '').length : 0));
+        }, 6);
+        return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + Math.min(52, w + 2) + '" customWidth="1"/>';
+      }).join('') + '</cols>';
+    }
+
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      widths + '<sheetData>' + body + '</sheetData></worksheet>';
+  }
+
+  function safeSheetName(name, idx) {
+    var s = String(name || ('Sheet' + (idx + 1))).replace(/[\\\/\?\*\[\]:]/g, ' ').trim();
+    if (!s) s = 'Sheet' + (idx + 1);
+    return s.slice(0, 31);
+  }
+
+  /**
+   * sheets: [{ name, rows: [[...], ...] }]  ->  Blob(.xlsx)
+   */
+  function buildWorkbook(sheets) {
+    var used = {};
+    var names = sheets.map(function (s, i) {
+      var base = safeSheetName(s.name, i), name = base, k = 2;
+      while (used[name]) { name = base.slice(0, 28) + '_' + (k++); }
+      used[name] = true;
+      return name;
+    });
+
+    var files = [];
+    files.push({
+      name: '[Content_Types].xml', data: enc.encode(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+        '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+        sheets.map(function (_, i) {
+          return '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+        }).join('') +
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+        '</Types>')
+    });
+
+    files.push({
+      name: '_rels/.rels', data: enc.encode(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+        '</Relationships>')
+    });
+
+    files.push({
+      name: 'xl/workbook.xml', data: enc.encode(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
+        names.map(function (n, i) {
+          return '<sheet name="' + esc(n) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>';
+        }).join('') + '</sheets></workbook>')
+    });
+
+    files.push({
+      name: 'xl/_rels/workbook.xml.rels', data: enc.encode(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        sheets.map(function (_, i) {
+          return '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>';
+        }).join('') +
+        '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+        '</Relationships>')
+    });
+
+    files.push({
+      name: 'xl/styles.xml', data: enc.encode(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+        '<fonts count="1"><font><sz val="11"/><name val="맑은 고딕"/></font></fonts>' +
+        '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+        '<borders count="1"><border/></borders>' +
+        '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+        '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>' +
+        '</styleSheet>')
+    });
+
+    sheets.forEach(function (s, i) {
+      files.push({ name: 'xl/worksheets/sheet' + (i + 1) + '.xml', data: enc.encode(sheetXml(s.rows || [])) });
+    });
+
+    return zipWrite(files, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  }
+
+  /* ------------------------------------------------------------ XLSX 읽기 */
+  function refToCol(ref) {
+    var m = /^([A-Z]+)/.exec(ref || '');
+    if (!m) return 0;
+    var s = m[1], n = 0;
+    for (var i = 0; i < s.length; i++) n = n * 26 + (s.charCodeAt(i) - 64);
+    return n - 1;
+  }
+
+  function parseXml(u8) {
+    return new DOMParser().parseFromString(dec.decode(u8), 'application/xml');
+  }
+
+  function textOf(node) {
+    // <si> 안의 여러 <t> 조각을 이어붙인다 (rPh 등 발음 정보는 제외)
+    var ts = node.getElementsByTagName('t');
+    var out = '';
+    for (var i = 0; i < ts.length; i++) {
+      if (ts[i].parentNode && ts[i].parentNode.nodeName === 'rPh') continue;
+      out += ts[i].textContent;
+    }
+    return out;
+  }
+
+  /**
+   * ArrayBuffer(.xlsx) -> Promise<{sheets:[{name, rows:[[string]]}]}>
+   */
+  function readWorkbook(buffer) {
+    return zipRead(buffer).then(function (zip) {
+      var shared = [];
+      var ssFile = zip.get('xl/sharedStrings.xml');
+      if (ssFile) {
+        var sdoc = parseXml(ssFile);
+        var sis = sdoc.getElementsByTagName('si');
+        for (var i = 0; i < sis.length; i++) shared.push(textOf(sis[i]));
+      }
+
+      var wb = zip.get('xl/workbook.xml');
+      if (!wb) throw new Error('엑셀 파일 구조를 읽을 수 없습니다.');
+      var wdoc = parseXml(wb);
+      var rels = {};
+      var relFile = zip.get('xl/_rels/workbook.xml.rels');
+      if (relFile) {
+        var rdoc = parseXml(relFile);
+        var rs = rdoc.getElementsByTagName('Relationship');
+        for (var r = 0; r < rs.length; r++) rels[rs[r].getAttribute('Id')] = rs[r].getAttribute('Target');
+      }
+
+      var sheetNodes = wdoc.getElementsByTagName('sheet');
+      var sheets = [];
+      for (var s = 0; s < sheetNodes.length; s++) {
+        var node = sheetNodes[s];
+        var rid = node.getAttribute('r:id') || node.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+        var target = rels[rid] || ('worksheets/sheet' + (s + 1) + '.xml');
+        target = String(target).replace(/^\//, '').replace(/^xl\//, '');
+        var file = zip.get('xl/' + target);
+        if (!file) continue;
+        sheets.push({ name: node.getAttribute('name') || ('Sheet' + (s + 1)), rows: parseSheet(parseXml(file), shared) });
+      }
+      return { sheets: sheets };
+    });
+  }
+
+  function parseSheet(doc, shared) {
+    var rows = [];
+    var rowNodes = doc.getElementsByTagName('row');
+    for (var i = 0; i < rowNodes.length; i++) {
+      var rn = rowNodes[i];
+      var rIdx = parseInt(rn.getAttribute('r') || (i + 1), 10) - 1;
+      var cells = rn.getElementsByTagName('c');
+      var row = [];
+      for (var j = 0; j < cells.length; j++) {
+        var c = cells[j];
+        var col = c.getAttribute('r') ? refToCol(c.getAttribute('r')) : j;
+        var t = c.getAttribute('t');
+        var val = '';
+        if (t === 'inlineStr') {
+          val = textOf(c);
+        } else if (t === 's') {
+          var vEl = c.getElementsByTagName('v')[0];
+          var idx = vEl ? parseInt(vEl.textContent, 10) : -1;
+          val = shared[idx] != null ? shared[idx] : '';
+        } else if (t === 'str') {
+          var f = c.getElementsByTagName('v')[0];
+          val = f ? f.textContent : '';
+        } else {
+          var v2 = c.getElementsByTagName('v')[0];
+          val = v2 ? v2.textContent : '';
+        }
+        row[col] = val == null ? '' : String(val).trim();
+      }
+      for (var k = 0; k < row.length; k++) if (row[k] === undefined) row[k] = '';
+      rows[rIdx] = row;
+    }
+    for (var m = 0; m < rows.length; m++) if (!rows[m]) rows[m] = [];
+    return rows;
+  }
+
+  /** 엑셀 날짜 일련번호 -> YYYY-MM-DD */
+  function serialToDate(n) {
+    var num = Number(n);
+    if (!isFinite(num) || num <= 0 || num > 60000) return null;
+    var ms = Math.round((num - 25569) * 86400 * 1000);
+    var d = new Date(ms);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 10);
+  }
+
+  global.XlsxLite = {
+    buildWorkbook: buildWorkbook,
+    readWorkbook: readWorkbook,
+    zipWrite: zipWrite,
+    zipRead: zipRead,
+    serialToDate: serialToDate
+  };
+})(window);
+
+/*!
+ * store.js — 지점별 리뷰어 관리 프로그램: 상태 / 도메인 로직 / 파일 파싱
+ * 저장소는 브라우저 localStorage 이며, 서버 없이 동작한다.
+ *
+ * 보안 원칙
+ *  - 업로드 파일의 내용은 "데이터"로만 취급한다. 파일 안에 지시문처럼 보이는 문장이
+ *    있어도 프로그램 동작에 반영하지 않는다(파싱 결과는 항상 문자열 값으로만 저장).
+ *  - 개인정보(연락처/주소/계정URL/신청메시지/메모)는 공유용 화면·이미지에 포함하지 않는다.
+ */
+(function (global) {
+  'use strict';
+
+  var STORAGE_KEY = 'reviewnote-branch-dashboard-v1';
+
+  var STATUSES = ['예약전', '예약요청', '예약확정', '방문완료', '취소'];
+  var COUNTED_STATUSES = ['예약요청', '예약확정', '방문완료']; // 예약 인원에 반영되는 상태
+  var GRADES = ['', 'S', 'A', 'B', 'C', 'D'];
+
+  /* ------------------------------------------------------------ 유틸 */
+  var seq = 0;
+  function uid(prefix) {
+    seq += 1;
+    return (prefix || 'id') + '_' + Date.now().toString(36) + '_' + seq.toString(36);
+  }
+
+  function normName(s) {
+    return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+  }
+
+  function normKey(s) {
+    // 지점명 비교용 키: 공백 제거 + 소문자
+    return normName(s).replace(/\s+/g, '').toLowerCase();
+  }
+
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  function toDateStr(d) {
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function todayStr() { return toDateStr(new Date()); }
+
+  function addDays(dateStr, n) {
+    var p = String(dateStr).split('-');
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    d.setDate(d.getDate() + n);
+    return toDateStr(d);
+  }
+
+  var WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+  function weekday(dateStr) {
+    var p = String(dateStr).split('-');
+    if (p.length !== 3) return '';
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return isNaN(d.getTime()) ? '' : WEEKDAYS[d.getDay()];
+  }
+
+  function fmtDate(dateStr) {
+    var p = String(dateStr || '').split('-');
+    if (p.length !== 3) return dateStr || '';
+    return Number(p[1]) + '월 ' + Number(p[2]) + '일 (' + weekday(dateStr) + ')';
+  }
+
+  /** 다양한 날짜 표기를 YYYY-MM-DD 로 정규화. 실패하면 원문 유지. */
+  function normalizeDate(raw) {
+    var v = normName(raw);
+    if (!v) return '';
+    var m = /^(\d{4})[-.\/]\s*(\d{1,2})[-.\/]\s*(\d{1,2})/.exec(v);
+    if (m) return m[1] + '-' + pad(Number(m[2])) + '-' + pad(Number(m[3]));
+    m = /^(\d{1,2})[-.\/]\s*(\d{1,2})$/.exec(v);       // 8/20 → 올해
+    if (m) return new Date().getFullYear() + '-' + pad(Number(m[1])) + '-' + pad(Number(m[2]));
+    m = /^(\d{1,2})월\s*(\d{1,2})일/.exec(v);           // 8월 20일
+    if (m) return new Date().getFullYear() + '-' + pad(Number(m[1])) + '-' + pad(Number(m[2]));
+    m = /^(\d{8})$/.exec(v);                            // 20260820
+    if (m) return v.slice(0, 4) + '-' + v.slice(4, 6) + '-' + v.slice(6, 8);
+    if (/^\d{5}(\.\d+)?$/.test(v)) {                    // 엑셀 날짜 일련번호
+      var s = global.XlsxLite && global.XlsxLite.serialToDate(v);
+      if (s) return s;
+    }
+    return v;
+  }
+
+  /** 다양한 시간 표기를 HH:MM 으로 정규화. 실패하면 원문 유지. */
+  function normalizeTime(raw) {
+    var v = normName(raw);
+    if (!v) return '';
+    var ampm = /오후|pm/i.test(v) ? 'pm' : (/오전|am/i.test(v) ? 'am' : '');
+    var m = /(\d{1,2})\s*[:시]\s*(\d{1,2})?/.exec(v);
+    if (!m) {
+      m = /^(\d{1,2})$/.exec(v);
+      if (!m) return v;
+      return pad(applyAmPm(Number(m[1]), ampm)) + ':00';
+    }
+    var h = Number(m[1]);
+    var min = m[2] ? Number(m[2]) : 0;
+    h = applyAmPm(h, ampm);
+    if (h > 23 || min > 59) return v;
+    return pad(h) + ':' + pad(min);
+  }
+
+  function applyAmPm(h, ampm) {
+    if (ampm === 'pm' && h < 12) return h + 12;
+    if (ampm === 'am' && h === 12) return 0;
+    return h;
+  }
+
+  function normalizeStatus(raw) {
+    var v = normName(raw).replace(/\s+/g, '');
+    if (!v) return '예약전';
+    var map = {
+      '예약전': '예약전', '미예약': '예약전', '대기': '예약전',
+      '예약요청': '예약요청', '요청': '예약요청', '신청': '예약요청',
+      '예약확정': '예약확정', '확정': '예약확정',
+      '방문완료': '방문완료', '완료': '방문완료', '방문': '방문완료',
+      '취소': '취소', '취소됨': '취소', '노쇼': '취소'
+    };
+    return map[v] || (STATUSES.indexOf(v) >= 0 ? v : '예약전');
+  }
+
+  function truthy(raw) {
+    var v = normName(raw).toLowerCase();
+    return ['y', 'yes', 'o', 'true', '1', '완료', '등록', '등록완료', '작성완료', 'ok'].indexOf(v) >= 0;
+  }
+
+  /* ------------------------------------------------------------ 샘플 데이터 */
+  function sampleState() {
+    var base = todayStr();
+    var d = function (n) { return addDays(base, n); };
+
+    var branches = [
+      makeBranch('브라운도트 포항죽도점', [d(2), d(3), d(4), d(5), d(6)], ['11:00', '13:00', '15:00', '17:00', '19:00'], 2),
+      makeBranch('브라운도트 진주성점', [d(2), d(3), d(4), d(5)], ['12:00', '14:00', '16:00', '18:00'], 2),
+      makeBranch('스테이레브소유 거제점', [d(3), d(4), d(5), d(6), d(7)], ['15:00', '17:00', '19:00'], 1)
+    ];
+    branches[0].slotOverrides[d(2) + '|11:00'] = 3;
+    branches[2].slotOverrides[d(4) + '|17:00'] = 2;
+
+    var rows = [
+      ['브라운도트 포항죽도점', '리뷰하는곰돌', 'https://blog.naver.com/sample_bear', '010-1234-5678', '경북 포항시 북구 죽도동', 92, 'S', 1800, '주말 방문 희망합니다.', 'VIP 재방문', d(2), '11:00', '예약확정', 'N'],
+      ['브라운도트 포항죽도점', '포항맛집러', 'https://www.instagram.com/sample_pohang', '010-2345-6789', '경북 포항시 남구 상도동', 78, 'A', 1200, '평일 오전 가능', '', d(2), '11:00', '방문완료', 'Y'],
+      ['브라운도트 포항죽도점', '데일리쭈', 'https://blog.naver.com/sample_daily', '010-3456-7890', '경북 포항시 북구 양덕동', 64, 'B', 640, '', '연락 잘 됨', d(2), '13:00', '예약요청', 'N'],
+      ['브라운도트 포항죽도점', '리뷰천사', 'https://blog.naver.com/sample_angel', '010-4567-8901', '경북 포항시 남구 효자동', 55, 'B', 430, '가족과 방문 예정', '', d(3), '15:00', '예약확정', 'N'],
+      ['브라운도트 포항죽도점', '동해바다', 'https://blog.naver.com/sample_sea', '010-5678-9012', '경북 포항시 북구 흥해읍', 48, 'C', 300, '', '', '', '', '예약전', 'N'],
+      ['브라운도트 포항죽도점', '취소한리뷰어', 'https://blog.naver.com/sample_cancel', '010-6789-0123', '경북 포항시 남구 대잠동', 51, 'C', 280, '일정 변경 요청', '개인사정 취소', d(3), '17:00', '취소', 'N'],
+
+      ['브라운도트 진주성점', '진주에서만', 'https://blog.naver.com/sample_jinju', '010-7890-1234', '경남 진주시 성지동', 85, 'S', 1500, '촬영 장비 지참합니다.', '', d(2), '12:00', '예약확정', 'N'],
+      ['브라운도트 진주성점', '남강야경', 'https://www.instagram.com/sample_river', '010-8901-2345', '경남 진주시 칠암동', 70, 'A', 900, '', '사진 퀄리티 좋음', d(2), '14:00', '예약요청', 'N'],
+      ['브라운도트 진주성점', '주말러버', 'https://blog.naver.com/sample_weekend', '010-9012-3456', '경남 진주시 신안동', 61, 'B', 520, '주말만 가능', '', d(3), '12:00', '예약전', 'N'],
+      ['브라운도트 진주성점', '진주리뷰왕', 'https://blog.naver.com/sample_king', '010-0123-4567', '경남 진주시 평거동', 88, 'S', 1700, '', '재계약 후보', d(3), '14:00', '방문완료', 'Y'],
+
+      ['스테이레브소유 거제점', '거제스테이', 'https://blog.naver.com/sample_geoje', '010-1122-3344', '경남 거제시 고현동', 74, 'A', 980, '1박 2일 예정', '', d(3), '15:00', '예약확정', 'N'],
+      ['스테이레브소유 거제점', '바다뷰맛집', 'https://www.instagram.com/sample_view', '010-2233-4455', '경남 거제시 옥포동', 66, 'B', 700, '', '', d(4), '17:00', '예약요청', 'N'],
+      ['스테이레브소유 거제점', '숙소탐험대', 'https://blog.naver.com/sample_stay', '010-3344-5566', '경남 거제시 장승포동', 59, 'B', 450, '주차 문의드립니다.', '', d(4), '17:00', '예약요청', 'N'],
+      ['스테이레브소유 거제점', '느린여행', 'https://blog.naver.com/sample_slow', '010-4455-6677', '경남 거제시 일운면', 44, 'C', 260, '', '', '', '', '예약전', 'N'],
+
+      // 미매칭 지점 예시 (등록된 지점명과 다름 → 관리자 확인 필요)
+      ['브라운도트 포항죽도', '표기다른리뷰어', 'https://blog.naver.com/sample_mismatch', '010-5566-7788', '경북 포항시 북구 죽도동', 57, 'B', 380, '지점명 표기가 다릅니다.', '업로드 원본 그대로', d(4), '13:00', '예약요청', 'N']
+    ];
+
+    var reviewers = rows.map(function (r) {
+      return makeReviewer({
+        branchName: r[0], name: r[1], accountUrl: r[2], phone: r[3], address: r[4],
+        exposureScore: r[5], grade: r[6], dailyVisits: r[7], applyMessage: r[8], memo: r[9],
+        wishDate: r[10], wishTime: r[11], status: r[12], reviewRegistered: truthy(r[13])
+      });
+    });
+
+    var state = {
+      version: 1,
+      branches: branches,
+      reviewers: reviewers,
+      settings: { maskPII: false, shareNote: '예약은 선착순이며, 마감된 시간대는 선택할 수 없습니다.' },
+      isSample: true
+    };
+    relinkBranches(state);
+    return state;
+  }
+
+  function makeBranch(name, dates, times, capacity) {
+    return {
+      id: uid('br'),
+      name: normName(name),
+      dates: (dates || []).slice(),
+      times: (times || []).slice(),
+      defaultCapacity: capacity == null ? 2 : Number(capacity),
+      slotOverrides: {},
+      memo: ''
+    };
+  }
+
+  function makeReviewer(o) {
+    o = o || {};
+    return {
+      id: uid('rv'),
+      branchId: null,
+      branchName: normName(o.branchName),
+      name: normName(o.name),
+      accountUrl: normName(o.accountUrl),
+      phone: normName(o.phone),
+      address: normName(o.address),
+      exposureScore: o.exposureScore === '' || o.exposureScore == null ? '' : String(o.exposureScore),
+      grade: normName(o.grade),
+      dailyVisits: o.dailyVisits === '' || o.dailyVisits == null ? '' : String(o.dailyVisits),
+      applyMessage: String(o.applyMessage == null ? '' : o.applyMessage).trim(),
+      memo: String(o.memo == null ? '' : o.memo).trim(),
+      wishDate: normalizeDate(o.wishDate),
+      wishTime: normalizeTime(o.wishTime),
+      status: normalizeStatus(o.status),
+      reviewRegistered: !!o.reviewRegistered
+    };
+  }
+
+  /* ------------------------------------------------------------ 상태 관리 */
+  var state = null;
+  var listeners = [];
+
+  /** localStorage 사용 가능 여부 (샌드박스 iframe 등에서는 막힐 수 있다) */
+  var storageOK = (function () {
+    try {
+      var k = '__rv_probe__';
+      global.localStorage.setItem(k, '1');
+      global.localStorage.removeItem(k);
+      return true;
+    } catch (e) { return false; }
+  })();
+
+  function load() {
+    var raw = null;
+    try { raw = global.localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
+    if (raw) {
+      try {
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.branches) && Array.isArray(parsed.reviewers)) {
+          state = migrate(parsed);
+          relinkBranches(state);
+          return state;
+        }
+      } catch (e) { /* 손상된 저장본은 무시하고 샘플로 시작 */ }
+    }
+    state = sampleState();
+    save();
+    return state;
+  }
+
+  function migrate(s) {
+    s.version = 1;
+    s.settings = s.settings || {};
+    if (s.settings.maskPII == null) s.settings.maskPII = false;
+    if (s.settings.shareNote == null) s.settings.shareNote = '';
+    s.branches.forEach(function (b) {
+      b.id = b.id || uid('br');
+      b.dates = Array.isArray(b.dates) ? b.dates : [];
+      b.times = Array.isArray(b.times) ? b.times : [];
+      b.slotOverrides = b.slotOverrides || {};
+      if (b.defaultCapacity == null) b.defaultCapacity = 2;
+    });
+    s.reviewers.forEach(function (r) {
+      r.id = r.id || uid('rv');
+      r.status = normalizeStatus(r.status);
+      r.reviewRegistered = !!r.reviewRegistered;
+    });
+    return s;
+  }
+
+  function save() {
+    try {
+      global.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      global.console && console.warn('저장 실패:', e);
+    }
+  }
+
+  function get() { return state || load(); }
+
+  function subscribe(fn) { listeners.push(fn); }
+
+  function commit(silent) {
+    save();
+    if (!silent) listeners.forEach(function (fn) { fn(state); });
+  }
+
+  function reset(useSample) {
+    state = useSample ? sampleState() : {
+      version: 1, branches: [], reviewers: [],
+      settings: { maskPII: false, shareNote: '' }, isSample: false
+    };
+    commit();
+  }
+
+  function replaceState(next) {
+    if (!next || !Array.isArray(next.branches) || !Array.isArray(next.reviewers)) {
+      throw new Error('올바른 백업 파일이 아닙니다.');
+    }
+    state = migrate(next);
+    relinkBranches(state);
+    commit();
+  }
+
+  /* ------------------------------------------------------------ 지점 매칭 */
+  function branchByName(name) {
+    var key = normKey(name);
+    if (!key) return null;
+    var s = get();
+    for (var i = 0; i < s.branches.length; i++) {
+      if (normKey(s.branches[i].name) === key) return s.branches[i];
+    }
+    return null;
+  }
+
+  function branchById(id) {
+    var s = get();
+    for (var i = 0; i < s.branches.length; i++) if (s.branches[i].id === id) return s.branches[i];
+    return null;
+  }
+
+  /** 리뷰어의 branchName 을 기준으로 branchId 를 다시 연결한다. 못 찾으면 null(미매칭). */
+  function relinkBranches(s) {
+    s = s || get();
+    var byKey = {};
+    s.branches.forEach(function (b) { byKey[normKey(b.name)] = b.id; });
+    s.reviewers.forEach(function (r) {
+      var id = byKey[normKey(r.branchName)];
+      r.branchId = id || null;
+    });
+    return s;
+  }
+
+  /** 등록된 지점과 매칭되지 않는 지점명 목록 */
+  function unmatchedBranchNames() {
+    var s = get();
+    var map = {};
+    s.reviewers.forEach(function (r) {
+      if (r.branchId) return;
+      var key = normKey(r.branchName) || '(지점명 없음)';
+      if (!map[key]) map[key] = { name: r.branchName || '(지점명 없음)', count: 0 };
+      map[key].count += 1;
+    });
+    return Object.keys(map).map(function (k) { return map[k]; });
+  }
+
+  /* ------------------------------------------------------------ 예약 계산 */
+  function slotKey(date, time) { return date + '|' + time; }
+
+  function capacityOf(branch, date, time) {
+    if (!branch) return 0;
+    var ov = branch.slotOverrides[slotKey(date, time)];
+    if (ov === '' || ov == null) return Number(branch.defaultCapacity) || 0;
+    return Math.max(0, Number(ov) || 0);
+  }
+
+  function isCounted(status) { return COUNTED_STATUSES.indexOf(status) >= 0; }
+
+  function reviewersInSlot(branchId, date, time) {
+    return get().reviewers.filter(function (r) {
+      return r.branchId === branchId && r.wishDate === date && r.wishTime === time;
+    });
+  }
+
+  function bookedCount(branchId, date, time) {
+    return reviewersInSlot(branchId, date, time).filter(function (r) { return isCounted(r.status); }).length;
+  }
+
+  function slotInfo(branch, date, time) {
+    var cap = capacityOf(branch, date, time);
+    var booked = bookedCount(branch.id, date, time);
+    var remain = cap - booked;
+    return {
+      branchId: branch.id, branchName: branch.name, date: date, time: time,
+      capacity: cap, booked: booked,
+      remaining: Math.max(0, remain),
+      over: remain < 0 ? -remain : 0,
+      closed: remain <= 0,
+      label: remain <= 0 ? '마감' : ('가능 ' + remain)
+    };
+  }
+
+  function slotsOfBranch(branch, range) {
+    var out = [];
+    (branch.dates || []).slice().sort().forEach(function (date) {
+      if (range && range.from && date < range.from) return;
+      if (range && range.to && date > range.to) return;
+      (branch.times || []).slice().sort().forEach(function (time) {
+        out.push(slotInfo(branch, date, time));
+      });
+    });
+    return out;
+  }
+
+  function statsFor(reviewers, branches, range) {
+    var stat = { total: reviewers.length, 예약전: 0, 예약요청: 0, 예약확정: 0, 방문완료: 0, 취소: 0, 리뷰등록: 0, capacity: 0, booked: 0, remaining: 0 };
+    reviewers.forEach(function (r) {
+      if (stat[r.status] != null) stat[r.status] += 1;
+      if (r.reviewRegistered) stat.리뷰등록 += 1;
+    });
+    (branches || []).forEach(function (b) {
+      slotsOfBranch(b, range).forEach(function (s) {
+        stat.capacity += s.capacity;
+        stat.booked += s.booked;
+        stat.remaining += s.remaining;
+      });
+    });
+    return stat;
+  }
+
+  /* ------------------------------------------------------------ CSV 파싱 */
+  function detectDelimiter(text) {
+    var head = text.split(/\r?\n/).slice(0, 5).join('\n');
+    var counts = { ',': 0, '\t': 0, ';': 0 };
+    var inQ = false;
+    for (var i = 0; i < head.length; i++) {
+      var ch = head[i];
+      if (ch === '"') inQ = !inQ;
+      else if (!inQ && counts[ch] != null) counts[ch] += 1;
+    }
+    var best = ',', bestN = -1;
+    Object.keys(counts).forEach(function (k) { if (counts[k] > bestN) { bestN = counts[k]; best = k; } });
+    return best;
+  }
+
+  function parseCSV(text, delim) {
+    text = String(text).replace(/^﻿/, '');
+    delim = delim || detectDelimiter(text);
+    var rows = [], row = [], field = '', inQ = false;
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (inQ) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; }
+          else inQ = false;
+        } else field += ch;
+      } else if (ch === '"') {
+        inQ = true;
+      } else if (ch === delim) {
+        row.push(field); field = '';
+      } else if (ch === '\n') {
+        row.push(field); rows.push(row); row = []; field = '';
+      } else if (ch === '\r') {
+        // 무시 (\r\n 처리)
+      } else field += ch;
+    }
+    if (field !== '' || row.length) { row.push(field); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (c) { return String(c).trim() !== ''; }); });
+  }
+
+  /* --------------------------------------------------- 헤더 매핑 / 가져오기 */
+  var FIELD_ALIASES = [
+    { key: 'branchName', label: '지점명', aliases: ['지점명', '지점', '매장', '매장명', '업체', '업체명', 'branch', 'store'] },
+    { key: 'name', label: '리뷰어명', aliases: ['리뷰어명', '리뷰어', '이름', '성명', '닉네임', '체험단명', 'name', 'reviewer'] },
+    { key: 'accountUrl', label: '계정 URL', aliases: ['계정url', '계정 url', '계정', 'url', '블로그', '블로그주소', '채널', '링크', 'sns', 'accounturl'] },
+    { key: 'phone', label: '연락처', aliases: ['연락처', '전화번호', '휴대폰', '핸드폰', '전화', 'phone', 'tel', 'mobile'] },
+    { key: 'address', label: '주소', aliases: ['주소', '거주지', 'address'] },
+    { key: 'exposureScore', label: '노출점수', aliases: ['노출점수', '노출 점수', '점수', 'score', '노출'] },
+    { key: 'grade', label: '등급', aliases: ['등급', '레벨', 'grade', 'level'] },
+    { key: 'dailyVisits', label: '일 방문 수', aliases: ['일방문수', '일 방문 수', '일방문자수', '방문수', '일일방문자', 'visits', 'dailyvisits'] },
+    { key: 'applyMessage', label: '신청메시지', aliases: ['신청메시지', '신청 메시지', '신청내용', '메시지', 'message', '신청글'] },
+    { key: 'memo', label: '메모', aliases: ['메모', '비고', 'note', 'memo', '특이사항'] },
+    { key: 'wishDate', label: '희망일', aliases: ['희망일', '희망날짜', '예약일', '방문일', '날짜', 'date'] },
+    { key: 'wishTime', label: '희망시간', aliases: ['희망시간', '예약시간', '방문시간', '시간', '시간대', 'time'] },
+    { key: 'status', label: '예약상태', aliases: ['예약상태', '상태', 'status', '진행상태'] },
+    { key: 'reviewRegistered', label: '리뷰등록', aliases: ['리뷰등록', '리뷰 등록', '리뷰등록여부', '리뷰작성', '리뷰', 'review'] }
+  ];
+
+  function matchHeader(cell) {
+    var v = normName(cell).replace(/\s+/g, '').toLowerCase();
+    if (!v) return null;
+    for (var i = 0; i < FIELD_ALIASES.length; i++) {
+      var f = FIELD_ALIASES[i];
+      for (var j = 0; j < f.aliases.length; j++) {
+        var a = f.aliases[j].replace(/\s+/g, '').toLowerCase();
+        if (v === a) return f.key;
+      }
+    }
+    for (var k = 0; k < FIELD_ALIASES.length; k++) {
+      var f2 = FIELD_ALIASES[k];
+      for (var m = 0; m < f2.aliases.length; m++) {
+        var a2 = f2.aliases[m].replace(/\s+/g, '').toLowerCase();
+        if (a2.length >= 2 && v.indexOf(a2) >= 0) return f2.key;
+      }
+    }
+    return null;
+  }
+
+  /** 헤더가 있을 법한 행을 찾는다(매칭 필드가 가장 많은 상위 5행). */
+  function findHeaderRow(rows) {
+    var bestIdx = 0, bestScore = -1;
+    for (var i = 0; i < Math.min(rows.length, 8); i++) {
+      var score = (rows[i] || []).reduce(function (a, c) { return a + (matchHeader(c) ? 1 : 0); }, 0);
+      if (score > bestScore) { bestScore = score; bestIdx = i; }
+    }
+    return { index: bestIdx, score: bestScore };
+  }
+
+  /**
+   * 표(2차원 배열) → { rows: [reviewer-like], mapping, unknownColumns, headerRow }
+   * 업로드 내용은 값으로만 취급하며, 어떤 셀도 명령으로 해석하지 않는다.
+   */
+  function tableToReviewers(table) {
+    if (!table || !table.length) return { rows: [], mapping: {}, unknownColumns: [], headerRow: 0 };
+    var head = findHeaderRow(table);
+    var headerCells = table[head.index] || [];
+    var mapping = {};
+    var unknown = [];
+    headerCells.forEach(function (cell, idx) {
+      var key = matchHeader(cell);
+      if (key && mapping[key] == null) mapping[key] = idx;
+      else if (normName(cell)) unknown.push(normName(cell));
+    });
+
+    var out = [];
+    for (var i = head.index + 1; i < table.length; i++) {
+      var row = table[i] || [];
+      var pick = function (key) {
+        var idx = mapping[key];
+        return idx == null ? '' : normName(row[idx]);
+      };
+      var rec = {
+        branchName: pick('branchName'),
+        name: pick('name'),
+        accountUrl: pick('accountUrl'),
+        phone: pick('phone'),
+        address: pick('address'),
+        exposureScore: pick('exposureScore'),
+        grade: pick('grade'),
+        dailyVisits: pick('dailyVisits'),
+        applyMessage: pick('applyMessage'),
+        memo: pick('memo'),
+        wishDate: pick('wishDate'),
+        wishTime: pick('wishTime'),
+        status: pick('status'),
+        reviewRegistered: truthy(pick('reviewRegistered'))
+      };
+      var hasValue = ['branchName', 'name', 'accountUrl', 'phone'].some(function (k) { return rec[k]; });
+      if (!hasValue) continue;
+      out.push(makeReviewer(rec));
+    }
+    return { rows: out, mapping: mapping, unknownColumns: unknown, headerRow: head.index };
+  }
+
+  /** File → Promise<{rows, mapping, unknownColumns, sheetName}> */
+  function parseFile(file) {
+    var name = String(file.name || '').toLowerCase();
+    if (/\.(xlsx|xlsm)$/.test(name)) {
+      return file.arrayBuffer()
+        .then(function (buf) { return global.XlsxLite.readWorkbook(buf); })
+        .then(function (wb) {
+          var best = null, bestScore = -1;
+          wb.sheets.forEach(function (sh) {
+            var r = tableToReviewers(sh.rows);
+            var score = r.rows.length;
+            if (score > bestScore) { bestScore = score; best = { res: r, sheetName: sh.name }; }
+          });
+          if (!best) throw new Error('시트를 읽지 못했습니다.');
+          best.res.sheetName = best.sheetName;
+          return best.res;
+        });
+    }
+    if (/\.xls$/.test(name)) {
+      return Promise.reject(new Error('구형 .xls 형식은 지원하지 않습니다. .xlsx 또는 CSV로 저장해 주세요.'));
+    }
+    return file.text().then(function (text) {
+      var res = tableToReviewers(parseCSV(text));
+      res.sheetName = file.name;
+      return res;
+    });
+  }
+
+  /* ------------------------------------------------------------ CSV 출력 */
+  /** CSV 수식 인젝션 방지: =, +, -, @ 로 시작하는 값 앞에 ' 를 붙인다. */
+  function csvSafe(v) {
+    var s = v == null ? '' : String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return s;
+  }
+
+  function toCSV(rows) {
+    return '﻿' + rows.map(function (row) {
+      return row.map(function (cell) {
+        var s = csvSafe(cell);
+        return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(',');
+    }).join('\r\n');
+  }
+
+  global.Store = {
+    STORAGE_KEY: STORAGE_KEY,
+    storageOK: storageOK,
+    STATUSES: STATUSES,
+    COUNTED_STATUSES: COUNTED_STATUSES,
+    GRADES: GRADES,
+    FIELD_ALIASES: FIELD_ALIASES,
+
+    uid: uid, normName: normName, normKey: normKey,
+    todayStr: todayStr, addDays: addDays, toDateStr: toDateStr, fmtDate: fmtDate, weekday: weekday,
+    normalizeDate: normalizeDate, normalizeTime: normalizeTime, normalizeStatus: normalizeStatus,
+
+    load: load, get: get, save: save, commit: commit, subscribe: subscribe,
+    reset: reset, replaceState: replaceState, sampleState: sampleState,
+    makeBranch: makeBranch, makeReviewer: makeReviewer,
+
+    branchByName: branchByName, branchById: branchById,
+    relinkBranches: relinkBranches, unmatchedBranchNames: unmatchedBranchNames,
+
+    slotKey: slotKey, capacityOf: capacityOf, isCounted: isCounted,
+    reviewersInSlot: reviewersInSlot, bookedCount: bookedCount,
+    slotInfo: slotInfo, slotsOfBranch: slotsOfBranch, statsFor: statsFor,
+
+    parseCSV: parseCSV, parseFile: parseFile, tableToReviewers: tableToReviewers,
+    toCSV: toCSV, csvSafe: csvSafe
+  };
+})(window);
+
 /*!
  * app.js — 지점별 리뷰어 관리 프로그램 UI
  * 화면: 대시보드 / 리뷰어 명단 / 예약 현황 / 공유용 일정표 / 설정
@@ -1642,3 +3296,5 @@
 
   global.ReviewerApp = { render: render, ui: ui };
 })(window);
+
+</script>
