@@ -11,7 +11,6 @@ import fs from 'fs';
 import path from 'path';
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
-const REPO = path.join(ROOT, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 const PAGES = ['index', 'new', 'mystay', 'requests', 'detail', 'approvals',
@@ -26,10 +25,6 @@ let css = read('assets/stay.css').replace(
   'font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo"'
 );
 
-/* ---------- 2. 로고 인라인 ---------- */
-const logo = 'data:image/png;base64,' +
-  fs.readFileSync(path.join(REPO, 'assets/logo-dark.png')).toString('base64');
-
 /* ---------- 3. 공용 스크립트 ---------- */
 const gate  = read('assets/gate.js');
 const store = read('assets/store.js');
@@ -41,15 +36,14 @@ ui = ui.replace(
   'document.body.insertBefore(app, document.body.firstChild);',
   "document.getElementById('stay-root').appendChild(app);"
 );
-/* 로고 경로 → 인라인 데이터 URI */
-ui = ui.replace("src=\\'../assets/logo-dark.png\\'", "src=\\'" + logo + "\\'")
-       .replace('src="../assets/logo-dark.png"', 'src="' + logo + '"');
-/* 사이드바 하단: 매물사이트 상대링크는 단일 파일에서 무의미하므로 미리보기 안내로 교체.
+/* 사이드바 하단: 이용지침 링크 아래에 미리보기 안내를 덧붙인다.
+ * 직원용·관리용 두 분기에 같은 문자열이 있으므로 둘 다 바꿔야 한다.
  * ui.js 의 해당 문자열이 바뀌면 여기서 바로 알 수 있도록 실패시킨다. */
 {
-  const marker = `'<a href="notices.html">이용지침 보기</a> · <a href="../index.html">매물사이트</a>'`;
-  if (!ui.includes(marker)) throw new Error('ui.js 사이드바 푸터 문자열을 찾지 못했습니다 — 원본이 바뀌었는지 확인하세요.');
-  ui = ui.replace(marker,
+  const marker = `'<a href="notices.html">이용지침 보기</a>'`;
+  const hits = ui.split(marker).length - 1;
+  if (hits !== 2) throw new Error(`ui.js 사이드바 푸터 문자열이 ${hits}곳 — 2곳이어야 합니다. 원본이 바뀌었는지 확인하세요.`);
+  ui = ui.split(marker).join(
     `'<a href="notices.html">이용지침 보기</a><br><br>' +
      '<span style="color:#5c5f68">미리보기 · 입력한 내용은<br>이 브라우저에만 저장됩니다</span>'`);
 }

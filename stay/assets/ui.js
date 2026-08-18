@@ -156,7 +156,7 @@
       '<aside class="sidebar" id="sb">' +
         '<div class="sb-brand">' +
           '<button class="sb-close" id="sbclose" aria-label="메뉴 닫기">✕</button>' +
-          '<a href="index.html"><img src="../assets/logo-dark.png" alt="옆커폰부동산에듀" onerror="this.style.display=\'none\'"></a>' +
+          '<a href="index.html" class="wm">옆커폰 <em>부동산팀</em></a>' +
           '<div class="sys">숙박 예약' + (Deploy.isStaff() ? ' <em>신청</em>' : '관리 <em>시스템</em>') + '</div>' +
         '</div>' +
         '<nav class="sb-nav"><div class="sb-group">업무</div>' + nav + '</nav>' +
@@ -165,7 +165,7 @@
             ? '호텔·펜션 예약은<br>전화·카카오톡이 아닌<br><b style="color:#c6c8ce">이곳으로만</b> 신청해주세요.<br>' +
               '<a href="notices.html">이용지침 보기</a>'
             : '모든 호텔·펜션 예약은<br>이 시스템으로만 접수됩니다.<br>' +
-              '<a href="notices.html">이용지침 보기</a> · <a href="../index.html">매물사이트</a>') +
+              '<a href="notices.html">이용지침 보기</a>') +
         '</div>' +
       '</aside>');
 
