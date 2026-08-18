@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>알림센터 | 옆커폰 숙박 예약관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('noti', '알림센터', '내 권한으로 수신되는 알림');
+  var filter = '';
+
+  function render(){
+    var all = Notify.listFor(user);
+    var unread = all.filter(function(n){ return (n.readBy||[]).indexOf(user.id) < 0; });
+    var list = filter ? all.filter(function(n){ return n.type === filter; }) : all;
+    var chan = Store.settings().channels || [];
+
+    root.innerHTML =
+     '<div class="pagehead"><div><h2>알림센터</h2>' +
+       '<p>' + UI.esc(STAY.ROLES[user.role].label) + ' 권한으로 수신되는 알림입니다. 읽지 않은 알림 <b>' + unread.length + '</b>건</p></div>' +
+       '<div class="sp"></div><button class="btn" id="allread">모두 읽음 처리</button></div>' +
+
+     '<div class="grid g-2-1">' +
+       '<div class="card"><div class="card-h"><h3>🔔 알림 목록</h3><span class="sp"></span>' +
+         '<span class="sub">' + list.length + '건</span></div>' +
+         '<div class="card-b" style="padding-bottom:0"><div class="chips">' +
+           '<button class="chip' + (filter===''?' on':'') + '" data-f="">전체<span class="n">' + all.length + '</span></button>' +
+           Object.keys(STAY.NOTI_TYPE).map(function(k){
+             var n = all.filter(function(x){ return x.type===k; }).length;
+             if (!n) return '';
+             return '<button class="chip' + (filter===k?' on':'') + '" data-f="' + k + '">' +
+               STAY.NOTI_TYPE[k].icon + ' ' + STAY.NOTI_TYPE[k].label + '<span class="n">' + n + '</span></button>';
+           }).join('') +
+         '</div></div>' +
+         '<div class="card-b tight" style="margin-top:12px"><div class="list">' +
+           (list.length ? list.map(function(n){
+             var isUnread = (n.readBy||[]).indexOf(user.id) < 0;
+             var meta = STAY.NOTI_TYPE[n.type] || {icon:'🔔', label:n.type};
+             return '<div class="li' + (isUnread?' unread':'') + '" data-n="' + n.id + '" data-b="' + (n.bookingId||'') + '">' +
+               '<span class="ic">' + meta.icon + '</span>' +
+               '<span class="tx"><span class="t1">' + UI.esc(n.title) + '</span>' +
+               '<span class="t2" style="white-space:pre-wrap">' + UI.esc(n.body) + '</span></span>' +
+               '<span class="rt"><span class="t2">' + UI.dtFull(n.at) + '<br>' + UI.ago(n.at) + '</span></span></div>';
+           }).join('') : UI.empty('알림이 없습니다.', '🔔')) +
+         '</div></div></div>' +
+
+       '<div><div class="card"><div class="card-h"><h3>📡 알림 채널</h3></div>' +
+         '<div class="card-b">' +
+           '<p class="muted" style="margin:0 0 12px;font-size:12.5px">현재는 시스템 내부 알림만 동작합니다. ' +
+             '외부 채널은 어댑터만 추가하면 같은 이벤트로 발송됩니다(관리자 > 시스템 설정에서 on/off).</p>' +
+           '<div class="list" style="border:1px solid var(--line);border-radius:10px;overflow:hidden">' +
+           chan.map(function(c){
+             return '<div class="li" style="cursor:default"><span class="ic">' +
+               ({inapp:'🔔',kakao:'💬',sms:'📱',email:'✉️',slack:'💼'}[c.id]||'📡') + '</span>' +
+               '<span class="tx"><span class="t1">' + UI.esc(c.label) + '</span>' +
+               '<span class="t2">' + (c.builtin ? '기본 제공' : '연동 어댑터 필요') + '</span></span>' +
+               '<span class="rt"><span class="tag ' + (c.enabled?'gold':'') + '">' + (c.enabled?'사용중':'미사용') + '</span></span></div>';
+           }).join('') + '</div></div></div>' +
+
+         '<div class="card mt"><div class="card-h"><h3>⚙️ 알림 발생 시점</h3></div>' +
+           '<div class="card-b"><div class="list" style="margin:-16px -18px">' +
+           Object.keys(STAY.NOTI_TYPE).map(function(k){
+             var t = STAY.NOTI_TYPE[k];
+             var targets = (t.roles||[]).map(function(r){ return STAY.ROLES[r].short; });
+             if (['APPROVED','REJECTED','BOOKING_CONFIRMED','BOOKING_CANCELED','CHECKIN_TOMORROW'].indexOf(k)>=0) targets.push('신청자');
+             return '<div class="li" style="cursor:default"><span class="ic">' + t.icon + '</span>' +
+               '<span class="tx"><span class="t1">' + UI.esc(t.label) + '</span>' +
+               '<span class="t2">수신 대상: ' + UI.esc(targets.join(', ') || '해당 신청자') + '</span></span></div>';
+           }).join('') + '</div></div></div>' +
+       '</div>' +
+     '</div>';
+  }
+
+  UI.on(root, 'click', '.chip[data-f]', function(){ filter = this.dataset.f; render(); });
+  UI.on(root, 'click', '#allread', function(){ Notify.markAllRead(user); UI.toast('모두 읽음 처리했습니다.','ok'); location.reload(); });
+  UI.on(root, 'click', '.li[data-n]', function(){
+    Notify.markRead(this.dataset.n, user);
+    if (this.dataset.b) location.href = 'detail.html?id=' + this.dataset.b; else render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>

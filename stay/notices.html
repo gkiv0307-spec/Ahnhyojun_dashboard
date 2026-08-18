@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>공지 · 이용지침 | 옆커폰 숙박 예약관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('notice', '공지 · 이용지침', '숙박 예약 신청방법 · 규정 · FAQ');
+  var canEdit = Auth.can('manageNotice');
+  var cat = '';
+
+  function render(){
+    var all = Store.notices();
+    var list = cat ? all.filter(function(n){ return n.category === cat; }) : all;
+
+    root.innerHTML =
+     '<div class="pagehead"><div><h2>공지 · 이용지침</h2>' +
+       '<p>처음 오신 지점장·신규 직원도 <b>담당자에게 전화하지 않고</b> 이 문서만으로 예약 방법을 알 수 있도록 정리했습니다.</p></div>' +
+       '<div class="sp"></div>' + (canEdit ? '<button class="btn btn-gold" id="add">＋ 공지 등록</button>' : '') + '</div>' +
+
+     '<div class="card" style="margin-bottom:14px"><div class="card-b">' +
+       '<div class="grid g4" style="gap:10px">' +
+         step('1', '예약 신청', '좌측 [예약 신청] 메뉴에서 신청서를 작성합니다. 체크인·체크아웃만 넣으면 숙박일수는 자동 계산됩니다.') +
+         step('2', '접수 · 승인', '예약관리팀이 접수하고 내용을 확인한 뒤, 비용이 발생하는 건은 경영지원팀 승인을 받습니다.') +
+         step('3', '예약 완료', '담당자가 숙소에 예약하고 예약번호·객실정보를 등록하면 신청자에게 알림이 갑니다.') +
+         step('4', '이용 · 정산', '숙박 이용 후 회계팀이 결제·증빙을 확인하고 정산을 완료합니다.') +
+       '</div>' +
+       '<div class="hr"></div>' +
+       '<div class="note">☎️ <b>전화·카카오톡으로 요청하지 마세요.</b> 개인에게 요청이 몰리면 누락·중복 예약이 발생합니다. ' +
+         '부득이하게 전화로 요청하신 경우에도 예약 담당자가 시스템에 대신 등록하며, ' +
+         '<b>시스템에 등록되지 않은 요청은 처리·정산되지 않습니다.</b></div>' +
+     '</div></div>' +
+
+     '<div class="grid g-1-2">' +
+       '<div><div class="card"><div class="card-h"><h3>📇 담당부서 · 연락처</h3></div>' +
+         '<div class="card-b tight"><div class="list">' +
+           contact('📥','예약 접수·진행','예약관리팀', ['u_bk1','u_bk2']) +
+           contact('✅','예약 승인','경영지원팀', ['u_ap1']) +
+           contact('💳','결제·정산·증빙','회계팀', ['u_fi1']) +
+           contact('⚙️','시스템 관리','경영지원팀', ['u_admin']) +
+         '</div></div></div>' +
+         '<div class="card mt"><div class="card-h"><h3>🗂 분류</h3></div><div class="card-b">' +
+           '<div class="chips"><button class="chip' + (cat===''?' on':'') + '" data-c="">전체<span class="n">' + all.length + '</span></button>' +
+           STAY.NOTICE_CAT.map(function(c){
+             var n = all.filter(function(x){ return x.category===c; }).length;
+             return '<button class="chip' + (cat===c?' on':'') + '" data-c="' + UI.esc(c) + '">' + UI.esc(c) +
+               '<span class="n">' + n + '</span></button>';
+           }).join('') + '</div></div></div>' +
+       '</div>' +
+
+       '<div id="docs">' +
+         (list.length ? list.map(function(n){
+           return '<details class="acc"' + (n.pinned ? ' open' : '') + '>' +
+             '<summary>' + (n.pinned ? '<span class="tag gold">중요</span>' : '') +
+               '<span class="tag">' + UI.esc(n.category) + '</span>' +
+               '<span>' + UI.esc(n.title) + '</span></summary>' +
+             '<div class="accb">' + UI.esc(n.body) + '</div>' +
+             '<div class="accb" style="padding-top:0;font-size:11.5px;color:var(--muted);display:flex;gap:8px;align-items:center">' +
+               '작성 ' + UI.esc(n.author) + ' · ' + UI.dateFull(n.createdAt) +
+               (canEdit ? '<span style="margin-left:auto"></span>' +
+                 '<button class="btn btn-sm" data-ed="' + n.id + '">수정</button>' +
+                 '<button class="btn btn-sm btn-danger" data-del="' + n.id + '">삭제</button>' : '') +
+             '</div></details>';
+         }).join('') : '<div class="card"><div class="card-b">' + UI.empty('등록된 공지가 없습니다.','📢') + '</div></div>') +
+       '</div>' +
+     '</div>';
+  }
+  function step(no, t, d){
+    return '<div style="border:1px solid var(--line);border-radius:12px;padding:14px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+      '<span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--gold);' +
+      'display:grid;place-items:center;font-weight:900;font-size:12px">' + no + '</span>' +
+      '<b style="font-size:14px">' + t + '</b></div>' +
+      '<div style="font-size:12.5px;color:var(--text-2);line-height:1.6">' + d + '</div></div>';
+  }
+  function contact(icon, role, dept, ids){
+    var us = ids.map(function(i){ return Store.user(i); }).filter(Boolean);
+    return '<div class="li" style="cursor:default"><span class="ic">' + icon + '</span>' +
+      '<span class="tx"><span class="t1">' + UI.esc(role) + ' <span class="muted" style="font-weight:600">· ' + UI.esc(dept) + '</span></span>' +
+      '<span class="t2">' + us.map(function(u){ return UI.esc(u.name) + ' (' + UI.esc(u.phone) + ')'; }).join(' · ') + '</span></span></div>';
+  }
+
+  function editModal(n){
+    n = n || { category:STAY.NOTICE_CAT[0], pinned:false, author:user.name };
+    UI.modal({
+      title: n.id ? '공지 수정' : '공지 등록', wide:true,
+      body:'<div class="frow f2">' +
+          '<div class="field"><label>분류</label><select class="select" name="category">' +
+            STAY.NOTICE_CAT.map(function(c){ return '<option' + (c===n.category?' selected':'') + '>' + UI.esc(c) + '</option>'; }).join('') +
+          '</select></div>' +
+          '<div class="field"><label>상단 고정</label><select class="select" name="pinned">' +
+            '<option value="false"' + (!n.pinned?' selected':'') + '>일반</option>' +
+            '<option value="true"' + (n.pinned?' selected':'') + '>중요 (상단 고정)</option></select></div>' +
+        '</div>' +
+        '<div class="field"><label>제목</label><input class="input" name="title" value="' + UI.esc(n.title||'') + '"></div>' +
+        '<div class="field"><label>내용</label><textarea class="textarea" name="body" style="min-height:220px">' + UI.esc(n.body||'') + '</textarea></div>',
+      buttons:[{label:'취소'},{label:'저장', cls:'btn-primary', keepOpen:true, onClick:function(mm, close){
+        var out = { id:n.id, author:n.author || user.name };
+        UI.qsa('[name]', mm).forEach(function(i){ out[i.name] = i.value; });
+        if (!out.title.trim()) { UI.toast('제목을 입력해주세요.','bad'); return false; }
+        out.pinned = out.pinned === 'true';
+        Store.saveNotice(out); close(); UI.toast('저장했습니다.','ok'); render();
+      }}]
+    });
+  }
+
+  UI.on(root, 'click', '.chip[data-c]', function(){ cat = this.dataset.c; render(); });
+  UI.on(root, 'click', '#add', function(){ editModal(null); });
+  UI.on(root, 'click', '[data-ed]', function(e){
+    e.preventDefault();
+    var n = Store.notices().filter(function(x){ return x.id === this.dataset.ed; }.bind(this))[0];
+    editModal(n);
+  });
+  UI.on(root, 'click', '[data-del]', function(e){
+    e.preventDefault();
+    var id = this.dataset.del;
+    UI.confirm('공지 삭제', '이 공지를 삭제합니다.', '삭제', true).then(function(ok){
+      if (!ok) return; Store.removeNotice(id); UI.toast('삭제했습니다.','ok'); render();
+    });
+  });
+  render();
+})();
+</script>
+</body>
+</html>

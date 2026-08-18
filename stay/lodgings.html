@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>숙소 관리 | 옆커폰 숙박 예약관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('lodging', '숙소 관리', '호텔 · 펜션 마스터 (직영 / 제휴 구분)');
+  var canEdit = Auth.can('manageLodging');
+  var st = { q:'', type:'', own:'', region:'' };
+
+  function rows(){
+    var list = Store.lodgings();
+    if (st.q){ var q = st.q.toLowerCase();
+      list = list.filter(function(l){ return [l.name,l.address,l.region,l.managerName,l.note]
+        .some(function(v){ return v && String(v).toLowerCase().indexOf(q)>=0; }); }); }
+    if (st.type)   list = list.filter(function(l){ return l.type === st.type; });
+    if (st.own)    list = list.filter(function(l){ return l.ownership === st.own; });
+    if (st.region) list = list.filter(function(l){ return l.region === st.region; });
+    return list;
+  }
+  function usage(loId){
+    var bs = Store.bookings().filter(function(b){ return b.lodgingId===loId && ['CANCELED','REJECTED'].indexOf(b.status)<0; });
+    return { n: bs.length, sum: bs.reduce(function(s,b){ return s + ((b.reservation&&b.reservation.amount)||b.estimatedCost||0); }, 0) };
+  }
+
+  function render(){
+    var all = Store.lodgings();
+    var regions = all.map(function(l){ return l.region; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+    var list = rows();
+    root.innerHTML =
+     '<div class="pagehead"><div><h2>숙소 관리</h2>' +
+       '<p>회사 직영 숙소와 외부 제휴 숙소를 구분해 관리합니다. 예약 신청 화면의 숙소 목록이 여기서 채워집니다.</p></div>' +
+       '<div class="sp"></div>' + (canEdit ? '<button class="btn btn-gold" id="add">＋ 숙소 등록</button>' : '') + '</div>' +
+
+     '<div class="kpis" style="grid-template-columns:repeat(4,1fr)">' +
+       '<div class="kpi k-ink"><div class="lb">전체 숙소</div><div class="vl">' + all.length + '<small>곳</small></div></div>' +
+       '<div class="kpi k-blue"><div class="lb">직영 (회사운영)</div><div class="vl">' +
+         all.filter(function(l){return l.ownership==='DIRECT';}).length + '<small>곳</small></div><div class="sub">숙박비 무료</div></div>' +
+       '<div class="kpi k-violet"><div class="lb">제휴 숙소</div><div class="vl">' +
+         all.filter(function(l){return l.ownership==='PARTNER';}).length + '<small>곳</small></div><div class="sub">제휴가 적용</div></div>' +
+       '<div class="kpi k-gold"><div class="lb">평균 할인율</div><div class="vl">' +
+         Math.round(all.filter(function(l){return l.ownership==="PARTNER";}).reduce(function(s,l){return s+(l.discountRate||0);},0) /
+           Math.max(1, all.filter(function(l){return l.ownership==="PARTNER";}).length)) + '<small>%</small></div>' +
+         '<div class="sub">제휴 숙소 기준</div></div>' +
+     '</div>' +
+
+     '<div class="card mt"><div class="card-b"><div class="filterbar">' +
+       '<div class="field"><label>검색</label><input class="input" id="f_q" value="' + UI.esc(st.q) + '" placeholder="숙소명·주소·담당자"></div>' +
+       '<div class="field"><label>구분</label><select class="select" id="f_type"><option value="">전체</option>' +
+         UI.optionList(STAY.LODGING_TYPE, st.type) + '</select></div>' +
+       '<div class="field"><label>운영형태</label><select class="select" id="f_own"><option value="">전체</option>' +
+         UI.optionList(STAY.OWNERSHIP, st.own) + '</select></div>' +
+       '<div class="field"><label>지역</label><select class="select" id="f_region"><option value="">전체</option>' +
+         regions.map(function(r){ return '<option' + (r===st.region?' selected':'') + '>' + UI.esc(r) + '</option>'; }).join('') + '</select></div>' +
+     '</div></div></div>' +
+
+     '<div class="grid g2 mt" id="cards"></div>';
+
+    UI.qs('#cards').innerHTML = list.length ? list.map(function(l){
+      var u = usage(l.id);
+      return '<div class="card"><div class="card-h">' +
+        '<h3>' + UI.esc(l.name) + '</h3>' +
+        '<span class="tag ' + (l.ownership==='DIRECT'?'direct':'partner') + '">' + UI.esc(STAY.OWNERSHIP[l.ownership]) + '</span>' +
+        '<span class="tag">' + UI.esc(STAY.LODGING_TYPE[l.type]) + '</span>' +
+        (l.active===false ? '<span class="tag" style="color:var(--red)">비활성</span>' : '') +
+        '<span class="sp"></span>' +
+        (canEdit ? '<button class="btn btn-sm" data-ed="' + l.id + '">수정</button>' : '') + '</div>' +
+        '<div class="card-b"><dl class="dl">' +
+          d('지역', UI.esc(l.region)) + d('주소', UI.esc(l.address)) +
+          d('담당자', UI.esc(l.managerName)) + d('연락처', UI.esc(l.managerPhone)) +
+          d('홈페이지', l.homepage ? '<a href="' + UI.esc(l.homepage) + '" target="_blank" rel="noopener" style="text-decoration:underline">' + UI.esc(l.homepage) + '</a>' : '<span class="muted">-</span>') +
+          d('입실/퇴실', UI.esc(l.checkInTime) + ' / ' + UI.esc(l.checkOutTime)) +
+          d('정상가격', STAY.won(l.rackRate)) +
+          d('제휴가격', l.partnerRate ? '<b>' + STAY.won(l.partnerRate) + '</b>' : (l.discountRate===100 ? '<b>무료(직영)</b>' : '<span class="muted">-</span>')) +
+          d('할인율', (l.discountRate||0) + '%') +
+          d('이용 실적', u.n + '건 · ' + STAY.won(u.sum)) +
+        '</dl>' +
+        '<div class="hr"></div>' +
+        '<dl class="dl one">' +
+          d('객실정보', UI.esc(l.roomInfo)) +
+          d('이용방법', UI.esc(l.usage)) +
+          d('취소규정', UI.esc(l.cancelPolicy)) +
+          (l.caution ? d('주의사항', '<span style="color:var(--orange)">⚠ ' + UI.esc(l.caution) + '</span>') : '') +
+          (l.note ? d('비고', UI.esc(l.note)) : '') +
+        '</dl></div></div>';
+    }).join('') : '<div class="card"><div class="card-b">' + UI.empty('조건에 맞는 숙소가 없습니다.', '🏨') + '</div></div>';
+
+    ['#f_q','#f_type','#f_own','#f_region'].forEach(function(s){
+      var e = UI.qs(s); e.oninput = e.onchange = function(){
+        st.q = UI.qs('#f_q').value.trim(); st.type = UI.qs('#f_type').value;
+        st.own = UI.qs('#f_own').value; st.region = UI.qs('#f_region').value; render();
+      };
+    });
+  }
+  function d(k, v){ return '<div class="dr"><dt>' + k + '</dt><dd>' + v + '</dd></div>'; }
+
+  function editModal(l){
+    l = l || { type:'HOTEL', ownership:'PARTNER', active:true, discountRate:0,
+               checkInTime:'15:00', checkOutTime:'11:00', rackRate:0, partnerRate:0 };
+    function f(label, name, val, type, ph){
+      return '<div class="field"><label>' + label + '</label><input class="input" type="' + (type||'text') +
+        '" name="' + name + '" value="' + UI.esc(val===0?0:(val||'')) + '"' + (ph?' placeholder="'+UI.esc(ph)+'"':'') + '></div>';
+    }
+    function ta(label, name, val, ph){
+      return '<div class="field"><label>' + label + '</label><textarea class="textarea" name="' + name + '"' +
+        (ph?' placeholder="'+UI.esc(ph)+'"':'') + '>' + UI.esc(val||'') + '</textarea></div>';
+    }
+    UI.modal({
+      title: l.id ? '숙소 정보 수정' : '신규 숙소 등록', wide:true,
+      body:'<div class="frow f2">' +
+          f('숙소명 *','name', l.name) +
+          '<div class="field"><label>구분</label><select class="select" name="type">' + UI.optionList(STAY.LODGING_TYPE, l.type) + '</select></div>' +
+          '<div class="field"><label>운영형태</label><select class="select" name="ownership">' + UI.optionList(STAY.OWNERSHIP, l.ownership) + '</select></div>' +
+          f('지역','region', l.region, 'text', '예) 대구') +
+        '</div>' +
+        f('주소','address', l.address) +
+        '<div class="frow">' +
+          f('담당자','managerName', l.managerName) +
+          f('연락처','managerPhone', l.managerPhone) +
+          f('홈페이지','homepage', l.homepage, 'url') +
+        '</div>' +
+        '<div class="frow f4">' +
+          f('정상가격','rackRate', l.rackRate, 'number') +
+          f('제휴가격','partnerRate', l.partnerRate, 'number') +
+          f('할인율(%)','discountRate', l.discountRate, 'number') +
+          '<div class="field"><label>사용 여부</label><select class="select" name="active">' +
+            '<option value="true"' + (l.active!==false?' selected':'') + '>사용</option>' +
+            '<option value="false"' + (l.active===false?' selected':'') + '>미사용</option></select></div>' +
+        '</div>' +
+        '<div class="frow f2">' + f('입실시간','checkInTime', l.checkInTime, 'time') + f('퇴실시간','checkOutTime', l.checkOutTime, 'time') + '</div>' +
+        ta('객실정보','roomInfo', l.roomInfo, '예) 스탠다드 트윈 10실 / 디럭스 5실') +
+        ta('이용방법','usage', l.usage, '예) 전화 예약 시 "옆커폰 법인" 언급, 월말 일괄 세금계산서') +
+        ta('취소규정','cancelPolicy', l.cancelPolicy, '예) 3일 전 무료, 2일 전 30%, 당일 100%') +
+        ta('이용 시 주의사항','caution', l.caution) +
+        ta('비고','note', l.note),
+      buttons:[
+        (l.id ? { label:'삭제', cls:'btn-danger', keepOpen:true, onClick:function(mm, close){
+            UI.confirm('숙소 삭제', UI.esc(l.name) + ' 을(를) 삭제합니다.\n기존 예약 기록은 유지됩니다.', '삭제', true).then(function(ok){
+              if (!ok) return; Store.removeLodging(l.id); close(); UI.toast('삭제했습니다.','ok'); render();
+            });
+            return false;
+          } } : { label:'취소' }),
+        { label:'저장', cls:'btn-primary', keepOpen:true, onClick:function(mm, close){
+            var out = { id: l.id };
+            UI.qsa('[name]', mm).forEach(function(i){ out[i.name] = i.value; });
+            if (!out.name.trim()) { UI.toast('숙소명을 입력해주세요.','bad'); return false; }
+            ['rackRate','partnerRate','discountRate'].forEach(function(k){ out[k] = Number(out[k])||0; });
+            out.active = out.active === 'true';
+            Store.saveLodging(out);
+            close(); UI.toast('저장했습니다.','ok'); render();
+          } }
+      ]
+    });
+  }
+
+  UI.on(root, 'click', '#add', function(){ editModal(null); });
+  UI.on(root, 'click', '[data-ed]', function(){ editModal(Store.lodging(this.dataset.ed)); });
+  render();
+})();
+</script>
+</body>
+</html>

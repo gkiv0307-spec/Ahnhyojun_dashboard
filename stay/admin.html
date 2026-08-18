@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>관리자 | 옆커폰 숙박 예약관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('admin', '관리자', '사용자·권한 · 처리로그 · 통계 · 시스템 설정');
+  if (user.role !== 'admin') {
+    root.innerHTML = UI.empty('관리자 권한이 필요한 화면입니다.', '🔒') +
+      '<div class="center"><a class="btn btn-primary" href="index.html">대시보드로</a></div>';
+    return;
+  }
+  var tab = UI.param('tab') || 'stats';
+  var logF = { q:'', user:'', action:'', from:'', to:'' };
+
+  function amount(b){ return (b.reservation && b.reservation.amount) || b.estimatedCost || 0; }
+
+  function render(){
+    root.innerHTML =
+     '<div class="pagehead"><div><h2>관리자</h2><p>전체 예약 · 사용자 · 권한 · 숙소 · 비용 · 로그 · 설정</p></div>' +
+       '<div class="sp"></div><div class="btnrow">' +
+       '<button class="btn" id="exportAll">전체 데이터 내보내기(JSON)</button>' +
+       '<button class="btn btn-danger" id="resetDb">데모 데이터 초기화</button></div></div>' +
+     '<div class="card"><div class="card-h" style="padding:0 18px"><div class="tabs" style="border:none">' +
+       [['stats','📈 통계'],['users','👥 사용자·권한'],['logs','📜 처리 로그'],['perm','🔐 권한 매트릭스'],['settings','⚙️ 시스템 설정']]
+         .map(function(t){ return '<button data-t="' + t[0] + '" class="' + (tab===t[0]?'on':'') + '">' + t[1] + '</button>'; }).join('') +
+     '</div></div><div class="card-b" id="pane"></div></div>';
+    ({ stats:paneStats, users:paneUsers, logs:paneLogs, perm:panePerm, settings:paneSettings }[tab])();
+  }
+
+  /* ---------------- 통계 ---------------- */
+  function paneStats(){
+    var all = Store.bookings();
+    var active = all.filter(function(b){ return ['CANCELED','REJECTED'].indexOf(b.status)<0; });
+    var now = new Date();
+    var months = [];
+    for (var i=11;i>=0;i--){ var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      months.push({ key:d.getFullYear()+'-'+STAY.pad(d.getMonth()+1), label:(d.getMonth()+1)+'월' }); }
+    months.forEach(function(m){
+      var rows = active.filter(function(b){ return (b.checkIn||'').slice(0,7) === m.key; });
+      m.cnt = rows.length; m.sum = rows.reduce(function(s,b){ return s+amount(b); },0);
+      m.nights = rows.reduce(function(s,b){ return s+(b.nights||0); },0);
+    });
+    var maxSum = Math.max.apply(null, months.map(function(m){return m.sum;}).concat([1]));
+
+    var byBranch = {}, byLodging = {}, byBearer = {}, byApplicant = {};
+    active.forEach(function(b){
+      agg(byBranch, b.branch, b); agg(byLodging, b.lodgingName, b);
+      agg(byBearer, STAY.COST_BEARER[b.costBearer], b); agg(byApplicant, b.applicantName + ' (' + b.branch + ')', b);
+    });
+    function agg(o,k,b){ if(!k) return; if(!o[k]) o[k]={n:0,sum:0,nights:0};
+      o[k].n++; o[k].sum+=amount(b); o[k].nights+=(b.nights||0); }
+    function rank(o, limit){
+      return Object.keys(o).map(function(k){ return {k:k, v:o[k]}; })
+        .sort(function(a,b){ return b.v.sum - a.v.sum; }).slice(0, limit||99);
+    }
+    function barTable(title, arr, unit){
+      var mx = Math.max.apply(null, arr.map(function(x){return x.v.sum;}).concat([1]));
+      return '<div class="card"><div class="card-h"><h3>' + title + '</h3></div><div class="card-b"><div class="bars">' +
+        (arr.length ? arr.map(function(x){
+          return '<div class="bar-row"><span class="nm" title="' + UI.esc(x.k) + '">' + UI.esc(x.k) + '</span>' +
+            '<span class="tr"><span class="fi gold" style="width:' + (x.v.sum/mx*100) + '%"></span></span>' +
+            '<span class="vv">' + x.v.n + unit + ' · ' + STAY.wonShort(x.v.sum) + '</span></div>';
+        }).join('') : UI.empty('데이터 없음')) + '</div></div></div>';
+    }
+
+    var totalCost = active.reduce(function(s,b){ return s+amount(b); },0);
+    var settled = all.filter(function(b){ return b.status==='SETTLED'; });
+    var cancelRate = all.length ? Math.round(all.filter(function(b){ return b.status==='CANCELED'; }).length / all.length * 100) : 0;
+    var rejectRate = all.length ? Math.round(all.filter(function(b){ return b.status==='REJECTED'; }).length / all.length * 100) : 0;
+    var avgNight = active.length ? (active.reduce(function(s,b){return s+(b.nights||0);},0)/active.length).toFixed(1) : 0;
+
+    UI.qs('#pane').innerHTML =
+     '<div class="kpis">' +
+       kpiBox('k-ink','전체 예약', all.length + '<small>건</small>', '유효 ' + active.length + '건') +
+       kpiBox('k-gold','누적 숙박비용', STAY.wonShort(totalCost) + '<small>원</small>', '취소·반려 제외') +
+       kpiBox('k-green','정산완료', settled.length + '<small>건</small>', STAY.won(settled.reduce(function(s,b){return s+(b.payment.paidAmount||0);},0))) +
+       kpiBox('k-red','취소율 / 반려율', cancelRate + '<small>%</small> / ' + rejectRate + '<small>%</small>', '평균 ' + avgNight + '박') +
+     '</div>' +
+     '<div class="card mt"><div class="card-h"><h3>📈 월별 숙박비용 (최근 12개월)</h3><span class="sp"></span>' +
+       '<span class="sub">체크인 월 기준</span></div><div class="card-b"><div class="cols" style="height:180px">' +
+       months.map(function(m){
+         return '<div class="col"><span class="cv">' + (m.sum?STAY.wonShort(m.sum):'') + '</span>' +
+           '<span class="cb" style="height:' + Math.max(3, m.sum/maxSum*100) + '%"></span>' +
+           '<span class="cl">' + m.label + '</span></div>';
+       }).join('') + '</div>' +
+       '<div class="hr"></div><div class="tablewrap"><table class="tbl"><thead><tr><th>월</th>' +
+         months.map(function(m){ return '<th class="num">' + m.label + '</th>'; }).join('') + '</tr></thead><tbody>' +
+         '<tr style="cursor:default"><td>건수</td>' + months.map(function(m){ return '<td class="num">' + m.cnt + '</td>'; }).join('') + '</tr>' +
+         '<tr style="cursor:default"><td>박수</td>' + months.map(function(m){ return '<td class="num">' + m.nights + '</td>'; }).join('') + '</tr>' +
+         '<tr style="cursor:default"><td>비용</td>' + months.map(function(m){ return '<td class="num">' + (m.sum?STAY.wonShort(m.sum):'-') + '</td>'; }).join('') + '</tr>' +
+       '</tbody></table></div></div></div>' +
+     '<div class="grid g2 mt">' +
+       barTable('🏢 지점별 이용현황', rank(byBranch), '건') +
+       barTable('🏨 숙소별 이용현황', rank(byLodging), '건') +
+     '</div>' +
+     '<div class="grid g2 mt">' +
+       barTable('💰 비용 부담주체별', rank(byBearer), '건') +
+       barTable('👤 신청자별 (상위 10)', rank(byApplicant, 10), '건') +
+     '</div>';
+  }
+  function kpiBox(cls, lb, vl, sub){
+    return '<div class="kpi ' + cls + '"><div class="lb">' + lb + '</div><div class="vl">' + vl + '</div>' +
+      '<div class="sub">' + sub + '</div></div>';
+  }
+
+  /* ---------------- 사용자 ---------------- */
+  function paneUsers(){
+    var users = Store.users();
+    UI.qs('#pane').innerHTML =
+     '<div class="btnrow" style="margin-bottom:12px"><button class="btn btn-gold" id="addUser">＋ 사용자 등록</button>' +
+       '<span class="muted" style="font-size:12.5px">전체 ' + users.length + '명</span></div>' +
+     '<div class="tablewrap"><table class="tbl"><thead><tr>' +
+       '<th>이름</th><th>권한</th><th>지점</th><th>부서</th><th>연락처</th><th>이메일</th>' +
+       '<th class="num">신청건수</th><th>상태</th><th class="no-print"></th></tr></thead><tbody>' +
+       users.map(function(u){
+         var n = Store.bookings().filter(function(b){ return b.applicantId===u.id; }).length;
+         return '<tr style="cursor:default">' +
+           '<td data-l="이름"><b>' + UI.esc(u.name) + '</b></td>' +
+           '<td data-l="권한"><span class="tag ' + (u.role==='admin'?'gold':'') + '">' + UI.esc(STAY.ROLES[u.role].label) + '</span></td>' +
+           '<td data-l="지점">' + UI.esc(u.branch) + '</td><td data-l="부서">' + UI.esc(u.dept) + '</td>' +
+           '<td data-l="연락처">' + UI.esc(u.phone) + '</td><td data-l="이메일">' + UI.esc(u.email||'-') + '</td>' +
+           '<td data-l="신청건수" class="num">' + n + '</td>' +
+           '<td data-l="상태">' + (u.active===false ? '<span class="tag" style="color:var(--red)">비활성</span>' : '<span class="tag">사용</span>') + '</td>' +
+           '<td class="no-print"><div class="btnrow">' +
+             '<button class="btn btn-sm" data-eu="' + u.id + '">수정</button>' +
+             '<button class="btn btn-sm" data-su="' + u.id + '">이 계정으로 보기</button></div></td></tr>';
+       }).join('') + '</tbody></table></div>';
+  }
+  function userModal(u){
+    u = u || { role:'applicant', active:true };
+    UI.modal({
+      title: u.id ? '사용자 정보 수정' : '사용자 등록',
+      body:'<div class="frow f2">' +
+        '<div class="field"><label>이름 *</label><input class="input" name="name" value="' + UI.esc(u.name||'') + '"></div>' +
+        '<div class="field"><label>권한 *</label><select class="select" name="role">' +
+          STAY.ROLE_ORDER.map(function(r){ return '<option value="' + r + '"' + (r===u.role?' selected':'') + '>' +
+            STAY.ROLES[r].label + '</option>'; }).join('') + '</select></div>' +
+        '<div class="field"><label>소속 지점</label><select class="select" name="branch">' +
+          Store.branches().map(function(b){ return '<option' + (b.name===u.branch?' selected':'') + '>' + UI.esc(b.name) + '</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="field"><label>소속 부서</label><input class="input" name="dept" value="' + UI.esc(u.dept||'') + '"></div>' +
+        '<div class="field"><label>연락처</label><input class="input" name="phone" value="' + UI.esc(u.phone||'') + '"></div>' +
+        '<div class="field"><label>이메일</label><input class="input" name="email" value="' + UI.esc(u.email||'') + '"></div>' +
+        '<div class="field"><label>사용 여부</label><select class="select" name="active">' +
+          '<option value="true"' + (u.active!==false?' selected':'') + '>사용</option>' +
+          '<option value="false"' + (u.active===false?' selected':'') + '>비활성</option></select></div>' +
+       '</div>' +
+       '<div class="note info" style="margin:0" id="roleDesc">' + UI.esc(STAY.ROLES[u.role].desc) + '</div>',
+      onOpen:function(mm){
+        UI.qs('[name=role]', mm).onchange = function(){ UI.qs('#roleDesc', mm).textContent = STAY.ROLES[this.value].desc; };
+      },
+      buttons:[
+        (u.id ? { label:'삭제', cls:'btn-danger', keepOpen:true, onClick:function(mm, close){
+            if (u.id === user.id) { UI.toast('현재 로그인 계정은 삭제할 수 없습니다.','bad'); return false; }
+            UI.confirm('사용자 삭제', UI.esc(u.name) + ' 계정을 삭제합니다.\n기존 예약·로그 기록은 유지됩니다.', '삭제', true)
+              .then(function(ok){ if(!ok) return; Store.removeUser(u.id); close(); UI.toast('삭제했습니다.','ok'); render(); });
+            return false;
+          } } : { label:'취소' }),
+        { label:'저장', cls:'btn-primary', keepOpen:true, onClick:function(mm, close){
+          var out = { id:u.id };
+          UI.qsa('[name]', mm).forEach(function(i){ out[i.name] = i.value; });
+          if (!out.name.trim()) { UI.toast('이름을 입력해주세요.','bad'); return false; }
+          out.active = out.active === 'true';
+          Store.saveUser(out); close(); UI.toast('저장했습니다.','ok'); render();
+        } }
+      ]
+    });
+  }
+
+  /* ---------------- 처리 로그 ---------------- */
+  function paneLogs(){
+    var logs = Store.logs();
+    var actions = logs.map(function(l){ return l.action; }).filter(function(v,i,a){ return a.indexOf(v)===i; }).sort();
+    var f = logs.filter(function(l){
+      if (logF.q) { var q = logF.q.toLowerCase();
+        if (![l.bookingCode,l.userName,l.action,l.memo,l.branch].some(function(v){ return v && String(v).toLowerCase().indexOf(q)>=0; })) return false; }
+      if (logF.user && l.userId !== logF.user) return false;
+      if (logF.action && l.action !== logF.action) return false;
+      if (logF.from && STAY.ymd(l.at) < logF.from) return false;
+      if (logF.to && STAY.ymd(l.at) > logF.to) return false;
+      return true;
+    });
+    UI.qs('#pane').innerHTML =
+     '<div class="filterbar" style="margin-bottom:12px">' +
+       '<div class="field"><label>검색</label><input class="input" id="lq" value="' + UI.esc(logF.q) + '" placeholder="예약번호·처리자·내용"></div>' +
+       '<div class="field"><label>처리자</label><select class="select" id="lu"><option value="">전체</option>' +
+         Store.users().map(function(u){ return '<option value="' + u.id + '"' + (u.id===logF.user?' selected':'') + '>' + UI.esc(u.name) + '</option>'; }).join('') + '</select></div>' +
+       '<div class="field"><label>처리내용</label><select class="select" id="la"><option value="">전체</option>' +
+         actions.map(function(a){ return '<option' + (a===logF.action?' selected':'') + '>' + UI.esc(a) + '</option>'; }).join('') + '</select></div>' +
+       '<div class="field"><label>기간</label><div class="btnrow">' +
+         '<input class="input" type="date" id="lf" value="' + logF.from + '">' +
+         '<input class="input" type="date" id="lt" value="' + logF.to + '"></div></div>' +
+     '</div>' +
+     '<div class="btnrow" style="margin-bottom:10px"><span class="muted" style="font-size:12.5px">' + f.length + '건</span>' +
+       '<span class="sp" style="margin-left:auto"></span><button class="btn btn-sm" id="logCsv">CSV 내보내기</button></div>' +
+     '<div class="tablewrap" style="max-height:640px;overflow:auto"><table class="tbl"><thead><tr>' +
+       '<th>일시</th><th>예약번호</th><th>처리자</th><th>권한</th><th>지점</th><th>처리내용</th><th>상태변경</th><th>메모</th>' +
+     '</tr></thead><tbody>' +
+       (f.length ? f.slice(0, 400).map(function(l){
+         return '<tr data-b="' + l.bookingId + '">' +
+           '<td data-l="일시">' + UI.dtFull(l.at) + '</td>' +
+           '<td data-l="예약번호" class="code">' + UI.esc(l.bookingCode) + '</td>' +
+           '<td data-l="처리자">' + UI.esc(l.userName) + '</td>' +
+           '<td data-l="권한">' + UI.esc(STAY.ROLES[l.role] ? STAY.ROLES[l.role].label : l.role) + '</td>' +
+           '<td data-l="지점">' + UI.esc(l.branch||'-') + '</td>' +
+           '<td data-l="처리내용"><b>' + UI.esc(l.action) + '</b></td>' +
+           '<td data-l="상태변경">' + (l.from ? UI.badge(l.from) + ' → ' : '') + (l.to ? UI.badge(l.to) : '<span class="muted">-</span>') + '</td>' +
+           '<td data-l="메모" class="wrapcell">' + (l.memo ? UI.esc(l.memo) : '<span class="muted">-</span>') + '</td></tr>';
+       }).join('') : '<tr><td colspan="8">' + UI.empty('조건에 맞는 로그가 없습니다.','📜') + '</td></tr>') +
+     '</tbody></table></div>' +
+     (f.length > 400 ? '<div class="muted center" style="padding:10px;font-size:12.5px">최근 400건만 표시됩니다. 필터를 좁혀주세요.</div>' : '');
+
+    ['#lq','#lu','#la','#lf','#lt'].forEach(function(s){
+      var e = UI.qs(s); e.oninput = e.onchange = function(){
+        logF.q = UI.qs('#lq').value.trim(); logF.user = UI.qs('#lu').value; logF.action = UI.qs('#la').value;
+        logF.from = UI.qs('#lf').value; logF.to = UI.qs('#lt').value; paneLogs();
+      };
+    });
+    UI.qs('#logCsv').onclick = function(){
+      var head = ['일시','예약번호','처리자','권한','지점','처리내용','이전상태','변경상태','메모'];
+      var body = f.map(function(l){ return [UI.dtFull(l.at), l.bookingCode, l.userName,
+        (STAY.ROLES[l.role]||{}).label||l.role, l.branch||'', l.action,
+        l.from ? STAY.STATUS[l.from].label : '', l.to ? STAY.STATUS[l.to].label : '', l.memo||'']; });
+      UI.download('처리로그_' + STAY.ymd(new Date()) + '.csv', UI.toCsv([head].concat(body)));
+      UI.toast('CSV를 내려받았습니다.','ok');
+    };
+  }
+
+  /* ---------------- 권한 매트릭스 ---------------- */
+  function panePerm(){
+    var ACTIONS = [
+      ['신규 예약 신청', ['applicant','booker','approver','finance','admin']],
+      ['전체 예약 조회', ['booker','approver','finance','admin']],
+      ['본인/소속지점 예약만 조회', ['applicant']],
+      ['예약 접수 · 확인중 전환', ['booker','admin']],
+      ['추가정보 요청', ['booker','admin']],
+      ['승인 요청(상신)', ['booker','admin']],
+      ['승인 / 반려 / 승인의견', ['approver','admin']],
+      ['숙소 예약 진행 · 예약번호/객실/비용 등록', ['booker','admin']],
+      ['예약 완료 처리', ['booker','admin']],
+      ['예약 변경 · 취소', ['booker','admin']],
+      ['예약 수정·취소 요청', ['applicant','booker','approver','finance','admin']],
+      ['이용완료 처리', ['booker','admin']],
+      ['결제확인·결제방법·증빙·비용처리·정산완료', ['finance','admin']],
+      ['메모 작성', ['applicant','booker','approver','finance','admin']],
+      ['숙소 관리', ['booker','admin']],
+      ['공지 작성·수정', ['admin']],
+      ['사용자·권한 관리', ['admin']],
+      ['전체 처리로그 조회', ['admin']],
+      ['시스템 설정', ['admin']]
+    ];
+    UI.qs('#pane').innerHTML =
+     '<p class="muted" style="margin:0 0 12px;font-size:12.5px">시스템에 하드코딩된 권한 규칙입니다. ' +
+       '(정의 위치: <code>stay/assets/auth.js</code> 의 <code>CAN</code>, <code>stay/assets/store.js</code> 의 <code>FLOW</code>)</p>' +
+     '<div class="tablewrap"><table class="tbl"><thead><tr><th style="min-width:280px">기능 / 행위</th>' +
+       STAY.ROLE_ORDER.map(function(r){ return '<th class="center">' + STAY.ROLES[r].label + '</th>'; }).join('') +
+     '</tr></thead><tbody>' +
+       ACTIONS.map(function(a){
+         return '<tr style="cursor:default"><td data-l="기능"><b>' + UI.esc(a[0]) + '</b></td>' +
+           STAY.ROLE_ORDER.map(function(r){
+             var ok = a[1].indexOf(r) >= 0;
+             return '<td data-l="' + STAY.ROLES[r].label + '" class="center" style="color:' + (ok?'var(--green)':'var(--line)') + ';font-weight:900">' +
+               (ok?'●':'–') + '</td>';
+           }).join('') + '</tr>';
+       }).join('') +
+     '</tbody></table></div>' +
+     '<div class="card mt"><div class="card-h"><h3>🔄 상태 전이 규칙</h3></div><div class="card-b tight">' +
+       '<div class="tablewrap"><table class="tbl"><thead><tr><th>현재 상태</th><th>가능한 처리</th><th>다음 상태</th><th>처리 권한</th><th>필수 입력</th></tr></thead><tbody>' +
+       STAY.STATUS_ORDER.map(function(k){
+         var opts = STAY.FLOW[k] || [];
+         if (!opts.length) return '<tr style="cursor:default"><td data-l="현재">' + UI.badge(k) + '</td>' +
+           '<td colspan="4" class="muted">종료 상태 (더 이상 전이 없음)</td></tr>';
+         return opts.map(function(o, i){
+           return '<tr style="cursor:default">' + (i===0 ? '<td data-l="현재" rowspan="' + opts.length + '">' + UI.badge(k) + '</td>' : '') +
+             '<td data-l="처리"><b>' + UI.esc(o.action) + '</b></td>' +
+             '<td data-l="다음">' + UI.badge(o.to) + '</td>' +
+             '<td data-l="권한">' + o.roles.map(function(r){ return STAY.ROLES[r].label; }).join(', ') + '</td>' +
+             '<td data-l="필수입력">' + (o.need ? '<span class="tag gold">있음</span>' : '<span class="muted">-</span>') + '</td></tr>';
+         }).join('');
+       }).join('') + '</tbody></table></div></div></div>';
+  }
+
+  /* ---------------- 시스템 설정 ---------------- */
+  function paneSettings(){
+    var s = Store.settings();
+    UI.qs('#pane').innerHTML =
+     '<div class="grid g2">' +
+       '<div class="card"><div class="card-h"><h3>기본 설정</h3></div><div class="card-b">' +
+         '<div class="field"><label>예약번호 접두어</label><input class="input" id="s_prefix" value="' + UI.esc(s.codePrefix) + '">' +
+           '<div class="hint">예) STAY → STAY-2026-0001</div></div>' +
+         '<div class="field"><label>승인 필요 기준 금액 (원)</label><input class="input" type="number" id="s_thr" value="' + (s.approvalThreshold||0) + '">' +
+           '<div class="hint">이 금액 이상이면 승인 관리에서 “고액”으로 강조 표시됩니다.</div></div>' +
+         '<div class="field"><label>이용예정 자동 전환 기준 (일)</label><input class="input" type="number" id="s_up" value="' + (s.autoUpcomingDays||7) + '">' +
+           '<div class="hint">체크인 N일 전부터 이용예정으로 안내합니다.</div></div>' +
+         '<button class="btn btn-primary" id="saveSet">설정 저장</button>' +
+       '</div></div>' +
+       '<div><div class="card"><div class="card-h"><h3>알림 채널</h3></div><div class="card-b">' +
+         '<p class="muted" style="margin:0 0 10px;font-size:12.5px">외부 채널은 어댑터 등록 후 활성화하면 동일한 이벤트로 발송됩니다. ' +
+           '(어댑터 추가 위치: <code>stay/assets/store.js</code> 의 <code>Notify.channels</code>)</p>' +
+         '<div class="list" style="border:1px solid var(--line);border-radius:10px;overflow:hidden">' +
+         (s.channels||[]).map(function(c){
+           return '<div class="li" style="cursor:default"><span class="ic">' +
+             ({inapp:'🔔',kakao:'💬',sms:'📱',email:'✉️',slack:'💼'}[c.id]||'📡') + '</span>' +
+             '<span class="tx"><span class="t1">' + UI.esc(c.label) + '</span>' +
+             '<span class="t2">' + (c.builtin ? '기본 제공 (항상 동작)' : '어댑터 미구현 — 연동 후 사용 가능') + '</span></span>' +
+             '<span class="rt"><label class="check"><input type="checkbox" data-ch="' + c.id + '"' +
+               (c.enabled?' checked':'') + (c.builtin?' disabled':'') + '> 사용</label></span></div>';
+         }).join('') + '</div></div></div>' +
+         '<div class="card mt"><div class="card-h"><h3>데이터 저장 위치</h3></div><div class="card-b">' +
+           '<dl class="dl one">' +
+             '<div class="dr"><dt>저장소</dt><dd>브라우저 localStorage <code>ykp_stay_v1</code></dd></div>' +
+             '<div class="dr"><dt>예약</dt><dd>' + Store.bookings().length + '건</dd></div>' +
+             '<div class="dr"><dt>처리로그</dt><dd>' + Store.logs().length + '건</dd></div>' +
+             '<div class="dr"><dt>사용자</dt><dd>' + Store.users().length + '명</dd></div>' +
+             '<div class="dr"><dt>숙소</dt><dd>' + Store.lodgings().length + '곳</dd></div>' +
+           '</dl>' +
+           '<div class="note warn" style="margin-top:12px">서버 연동 시 <code>Store._read / _write</code> 를 API 호출로 교체하면 ' +
+             '나머지 화면 로직은 그대로 사용할 수 있습니다. 설계 상세는 <code>stay/DESIGN.md</code> 참고.</div>' +
+         '</div></div>' +
+       '</div>' +
+     '</div>';
+
+    UI.qs('#saveSet').onclick = function(){
+      Store.saveSettings({ codePrefix: UI.qs('#s_prefix').value.trim() || 'STAY',
+        approvalThreshold: Number(UI.qs('#s_thr').value)||0,
+        autoUpcomingDays: Number(UI.qs('#s_up').value)||7 });
+      UI.toast('설정을 저장했습니다.','ok');
+    };
+    UI.qsa('[data-ch]').forEach(function(cb){
+      cb.onchange = function(){
+        var chans = (Store.settings().channels||[]).map(function(c){
+          return c.id === cb.dataset.ch ? Object.assign({}, c, {enabled: cb.checked}) : c; });
+        Store.saveSettings({ channels: chans });
+        UI.toast(cb.checked ? '채널을 활성화했습니다. (어댑터 구현 필요)' : '채널을 비활성화했습니다.', 'ok');
+      };
+    });
+  }
+
+  /* ---------------- 이벤트 ---------------- */
+  UI.on(root, 'click', '.tabs button[data-t]', function(){ tab = this.dataset.t; render(); });
+  UI.on(root, 'click', '#addUser', function(){ userModal(null); });
+  UI.on(root, 'click', '[data-eu]', function(){ userModal(Store.user(this.dataset.eu)); });
+  UI.on(root, 'click', '[data-su]', function(){ Auth.switchTo(this.dataset.su); location.href = 'index.html'; });
+  UI.on(root, 'click', 'tr[data-b]', function(e){
+    if (e.target.closest('button')) return;
+    if (this.dataset.b) location.href = 'detail.html?id=' + this.dataset.b;
+  });
+  UI.on(root, 'click', '#exportAll', function(){
+    var blob = JSON.stringify(Store.raw(), null, 2);
+    var a = document.createElement('a');
+    a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(blob);
+    a.download = 'ykp_stay_' + STAY.ymd(new Date()) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    UI.toast('전체 데이터를 내려받았습니다.','ok');
+  });
+  UI.on(root, 'click', '#resetDb', function(){
+    UI.confirm('데모 데이터 초기화',
+      '지금까지 입력한 모든 예약·로그·설정이 삭제되고 초기 샘플 데이터로 되돌아갑니다.\n계속하시겠습니까?',
+      '초기화', true).then(function(ok){
+      if (!ok) return; Store.reset(); location.reload();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
