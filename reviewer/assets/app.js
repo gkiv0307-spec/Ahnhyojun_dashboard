@@ -301,6 +301,17 @@
       state().settings.maskPII = this.checked; S.commit(true); render();
     });
 
+    // 비밀번호 잠금이 걸려 있을 때만 "잠그기" 버튼을 보여준다 (공용 PC 대비)
+    var lockBtn = $('#btn-lock');
+    if (lockBtn && global.Lock && global.Lock.lockAgain) {
+      lockBtn.hidden = false;
+      lockBtn.addEventListener('click', function () {
+        confirmBox('비밀번호 화면으로 돌아갈까요? 저장된 작업 내용은 그대로 남습니다.', function () {
+          global.Lock.lockAgain();
+        }, '잠그기');
+      });
+    }
+
     $$('.navbtn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         ui.page = btn.getAttribute('data-page');
@@ -1637,8 +1648,14 @@
     render();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  function start() {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  }
+
+  // 비밀번호 잠금이 걸려 있으면 풀린 뒤에 시작한다
+  if (global.Lock) global.Lock.ready(start);
+  else start();
 
   global.ReviewerApp = { render: render, ui: ui };
 })(window);

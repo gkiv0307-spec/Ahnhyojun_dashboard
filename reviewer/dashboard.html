@@ -1,7 +1,4 @@
 <title>리뷰노트 체험단 관리</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
 :root {
   /* 크롬(UI)은 무채색, 색은 오직 "상태"를 뜻한다 —
@@ -442,7 +439,57 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }
 
+/* --------------------------------------------------------------- 잠금 화면 */
+/* 잠금이 풀리기 전에는 관리 화면이 DOM 에 있어도 그려지지 않는다.
+   (자바스크립트가 꺼져 있으면 잠금 화면만 남고 본문은 나오지 않는다) */
+body:not(.unlocked) .topbar,
+body:not(.unlocked) .layout,
+body:not(.unlocked) .toast-wrap { display: none; }
+
+.lock {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: var(--bg);
+}
+.lock[hidden] { display: none; }
+.lock-card {
+  width: min(380px, 100%); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 14px; padding: 26px 24px 20px;
+  box-shadow: var(--shadow); text-align: left;
+}
+.lock-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); margin-bottom: 14px; }
+.lock-card h1 { margin: 0 0 6px; font-size: 19px; letter-spacing: -.02em; }
+.lock-desc { margin: 0 0 18px; font-size: 12.5px; color: var(--ink-3); line-height: 1.5; }
+.lock-field { display: block; margin-bottom: 8px; }
+.lock-field span {
+  display: block; font-size: 10.5px; font-weight: 600; letter-spacing: .12em;
+  color: var(--ink-3); font-family: var(--font-data); margin-bottom: 5px;
+}
+.lock-field input { width: 100%; min-height: 38px; font-size: 14px; }
+.lock-error { visibility: hidden; min-height: 17px; font-size: 12px; color: var(--danger); font-weight: 600; margin-bottom: 8px; }
+.lock-btn { width: 100%; min-height: 38px; font-size: 14px; }
+.lock-btn[disabled] { opacity: .6; cursor: default; }
+.lock-remember { margin-top: 12px; }
+.lock-foot { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 11.5px; color: var(--ink-3); }
+
 </style>
+
+<!-- ─────────────────────────── 비밀번호 잠금 ─────────────────────────── -->
+<div class="lock" id="lock">
+  <div class="lock-card">
+    <div class="lock-mark"></div>
+    <h1>리뷰노트 체험단 관리</h1>
+    <p class="lock-desc">리뷰어 개인정보가 포함된 화면입니다. 전달받은 비밀번호를 입력하세요.</p>
+    <label class="lock-field">
+      <span>비밀번호</span>
+      <input type="password" id="lock-input" autocomplete="current-password" spellcheck="false" placeholder="비밀번호 입력">
+    </label>
+    <div class="lock-error" id="lock-error" role="alert"></div>
+    <button class="btn btn-primary lock-btn" id="lock-submit">열기</button>
+    <label class="switch lock-remember"><input type="checkbox" id="lock-remember" checked> 이 브라우저에서 12시간 동안 기억</label>
+    <p class="lock-foot">비밀번호를 모르면 운영 담당자에게 문의하세요.</p>
+  </div>
+</div>
 
 <!-- ─────────────────────────────── 상단 바 ─────────────────────────────── -->
 <header class="topbar">
@@ -468,6 +515,7 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
       <label class="switch" title="화면 공유 시 개인정보를 가립니다">
         <input type="checkbox" id="f-mask"> 개인정보 가리기
       </label>
+      <button class="btn btn-sm" id="btn-lock" title="비밀번호 화면으로 돌아갑니다" hidden>잠그기</button>
     </div>
   </div>
 </header>
@@ -652,6 +700,192 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
 <div id="modal-root"></div>
 
 <script>
+/*!
+ * lock.js — 대시보드 비밀번호 잠금
+ *
+ * 비밀번호 원문은 이 파일에 들어 있지 않다. PBKDF2-HMAC-SHA256 으로 늘린
+ * 해시와 솔트만 심어두고, 입력값을 같은 방식으로 늘려 비교한다.
+ * 따라서 소스를 열어봐도 비밀번호를 알아낼 수는 없다.
+ *
+ * 다만 이것은 "링크를 아는 사람의 우연한 열람"을 막는 잠금이지,
+ * 서버가 지키는 접근 제어가 아니다. 페이지 코드는 보는 사람 브라우저에서
+ * 돌아가므로, 링크를 가진 사람이 작정하면 화면 자체는 열 수 있다.
+ * 진짜 접근 제어는 아티팩트 공유 범위(비공개/지정 공유)로 해야 한다.
+ * 비밀번호 변경은 set-password.py 를 쓴다.
+ */
+(function (global) {
+  'use strict';
+
+  /* 웹폰트는 비동기로 붙인다.
+     <link rel=stylesheet> 를 문서에 그대로 두면 폰트 서버가 느리거나 막힌 망에서
+     스타일시트를 기다리느라 화면이 빈 채로 멈춘다. 폰트가 안 와도 CSS 의
+     대체 서체 목록으로 그대로 읽히므로, 렌더링을 막지 않는 쪽이 맞다. */
+  (function loadFonts() {
+    var href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700' +
+               '&family=IBM+Plex+Mono:wght@500;600&display=swap';
+    try {
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      (document.head || document.documentElement).appendChild(link);
+    } catch (e) { /* 폰트는 없어도 그만 */ }
+  })();
+
+  var GATE = {
+    salt: '0UeUqND7lBikzh7OFWNDow==',
+    iter: 210000,
+    hash: 'CcfVjtjbFrJqXbdlg8vslS4efGLBbv1QdcwS9/pdPlY='
+  };
+
+  var REMEMBER_HOURS = 12;
+  var STORE_KEY = 'reviewnote-dashboard-unlock';
+  var MAX_TRIES = 5;
+  var COOLDOWN_MS = 30000;
+
+  var ready = [];
+  var unlocked = false;
+  var tries = 0;
+  var blockedUntil = 0;
+
+  /* ----------------------------------------------------------- 유틸 */
+  function b64ToBytes(s) {
+    var bin = atob(s), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u;
+  }
+  function bytesToB64(u) {
+    var s = '';
+    for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+    return btoa(s);
+  }
+  function sameHash(a, b) {                   // 길이가 같을 때 조기 종료하지 않는 비교
+    if (a.length !== b.length) return false;
+    var r = 0;
+    for (var i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return r === 0;
+  }
+
+  function derive(password) {
+    var subtle = global.crypto && global.crypto.subtle;
+    if (!subtle) return Promise.reject(new Error('no-subtle'));
+    return subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits'])
+      .then(function (key) {
+        return subtle.deriveBits(
+          { name: 'PBKDF2', salt: b64ToBytes(GATE.salt), iterations: GATE.iter, hash: 'SHA-256' },
+          key, 256);
+      })
+      .then(function (bits) { return bytesToB64(new Uint8Array(bits)); });
+  }
+
+  /* --------------------------------------------------- 기억하기 (선택) */
+  function readRemembered() {
+    try {
+      var raw = global.localStorage.getItem(STORE_KEY);
+      if (!raw) return false;
+      var v = JSON.parse(raw);
+      return v && v.until > Date.now() && v.tag === GATE.hash.slice(0, 12);
+    } catch (e) { return false; }
+  }
+  function remember() {
+    try {
+      global.localStorage.setItem(STORE_KEY, JSON.stringify({
+        until: Date.now() + REMEMBER_HOURS * 3600 * 1000,
+        tag: GATE.hash.slice(0, 12)
+      }));
+    } catch (e) { /* 저장이 막힌 환경에서는 이번 방문에만 열린다 */ }
+  }
+  function forget() {
+    try { global.localStorage.removeItem(STORE_KEY); } catch (e) { /* 무시 */ }
+  }
+
+  /* ----------------------------------------------------------- 화면 */
+  function el(id) { return document.getElementById(id); }
+
+  function setError(msg) {
+    var box = el('lock-error');
+    if (!box) return;
+    box.textContent = msg || '';
+    box.style.visibility = msg ? 'visible' : 'hidden';
+  }
+
+  function open() {
+    unlocked = true;
+    document.body.classList.add('unlocked');
+    var lock = el('lock');
+    if (lock) lock.hidden = true;
+    ready.forEach(function (fn) { fn(); });
+    ready = [];
+  }
+
+  function submit() {
+    var input = el('lock-input');
+    var btn = el('lock-submit');
+    if (!input || !btn) return;
+
+    var left = blockedUntil - Date.now();
+    if (left > 0) {
+      setError(Math.ceil(left / 1000) + '초 후에 다시 시도할 수 있습니다.');
+      return;
+    }
+    var pw = input.value;
+    if (!pw) { setError('비밀번호를 입력하세요.'); input.focus(); return; }
+
+    btn.disabled = true;
+    btn.textContent = '확인 중…';
+    setError('');
+
+    derive(pw).then(function (hash) {
+      if (sameHash(hash, GATE.hash)) {
+        if (el('lock-remember') && el('lock-remember').checked) remember();
+        open();
+        return;
+      }
+      tries += 1;
+      input.value = '';
+      if (tries >= MAX_TRIES) {
+        blockedUntil = Date.now() + COOLDOWN_MS;
+        tries = 0;
+        setError('비밀번호가 여러 번 틀렸습니다. 30초 후에 다시 시도하세요.');
+      } else {
+        setError('비밀번호가 맞지 않습니다. (' + (MAX_TRIES - tries) + '회 남음)');
+      }
+      input.focus();
+    }).catch(function () {
+      setError('이 브라우저에서는 비밀번호 확인 기능을 쓸 수 없습니다. 최신 브라우저에서 열어 주세요.');
+    }).then(function () {
+      btn.disabled = false;
+      btn.textContent = '열기';
+    });
+  }
+
+  function init() {
+    var lock = el('lock');
+    if (!lock) { open(); return; }          // 잠금 화면이 없으면 그대로 진행
+
+    if (readRemembered()) { open(); return; }
+
+    lock.hidden = false;
+    var input = el('lock-input');
+    var btn = el('lock-submit');
+    setError('');
+    if (btn) btn.addEventListener('click', submit);
+    if (input) {
+      input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+      setTimeout(function () { input.focus(); }, 60);
+    }
+  }
+
+  global.Lock = {
+    /** 잠금이 풀린 뒤에 실행할 콜백 등록 */
+    ready: function (fn) { unlocked ? fn() : ready.push(fn); },
+    isUnlocked: function () { return unlocked; },
+    lockAgain: function () { forget(); global.location.reload(); }
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})(window);
+
 /*!
  * xlsx-lite.js — 의존성 없는 최소 XLSX 읽기/쓰기 유틸
  * - 쓰기: ZIP(STORE, 무압축) + inlineStr 시트로 실제 .xlsx 생성
@@ -1179,25 +1413,25 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
     branches[2].slotOverrides[d(4) + '|17:00'] = 2;
 
     var rows = [
-      ['브라운도트 포항죽도점', '리뷰하는곰돌', 'https://blog.naver.com/sample_bear', '010-1234-5678', '경북 포항시 북구 죽도동', 92, 'S', 1800, '주말 방문 희망합니다.', 'VIP 재방문', d(2), '11:00', '예약확정', 'N'],
-      ['브라운도트 포항죽도점', '포항맛집러', 'https://www.instagram.com/sample_pohang', '010-2345-6789', '경북 포항시 남구 상도동', 78, 'A', 1200, '평일 오전 가능', '', d(2), '11:00', '방문완료', 'Y'],
-      ['브라운도트 포항죽도점', '데일리쭈', 'https://blog.naver.com/sample_daily', '010-3456-7890', '경북 포항시 북구 양덕동', 64, 'B', 640, '', '연락 잘 됨', d(2), '13:00', '예약요청', 'N'],
-      ['브라운도트 포항죽도점', '리뷰천사', 'https://blog.naver.com/sample_angel', '010-4567-8901', '경북 포항시 남구 효자동', 55, 'B', 430, '가족과 방문 예정', '', d(3), '15:00', '예약확정', 'N'],
-      ['브라운도트 포항죽도점', '동해바다', 'https://blog.naver.com/sample_sea', '010-5678-9012', '경북 포항시 북구 흥해읍', 48, 'C', 300, '', '', '', '', '예약전', 'N'],
-      ['브라운도트 포항죽도점', '취소한리뷰어', 'https://blog.naver.com/sample_cancel', '010-6789-0123', '경북 포항시 남구 대잠동', 51, 'C', 280, '일정 변경 요청', '개인사정 취소', d(3), '17:00', '취소', 'N'],
+      ['브라운도트 포항죽도점', '김서연', 'https://blog.naver.com/sample_bear', '010-1234-5678', '경북 포항시 북구 죽도동', 92, 'S', 1800, '주말 방문 희망합니다.', 'VIP 재방문', d(2), '11:00', '예약확정', 'N'],
+      ['브라운도트 포항죽도점', '박준호', 'https://www.instagram.com/sample_pohang', '010-2345-6789', '경북 포항시 남구 상도동', 78, 'A', 1200, '평일 오전 가능', '', d(2), '11:00', '방문완료', 'Y'],
+      ['브라운도트 포항죽도점', '이하늘', 'https://blog.naver.com/sample_daily', '010-3456-7890', '경북 포항시 북구 양덕동', 64, 'B', 640, '', '연락 잘 됨', d(2), '13:00', '예약요청', 'N'],
+      ['브라운도트 포항죽도점', '정미래', 'https://blog.naver.com/sample_angel', '010-4567-8901', '경북 포항시 남구 효자동', 55, 'B', 430, '가족과 방문 예정', '', d(3), '15:00', '예약확정', 'N'],
+      ['브라운도트 포항죽도점', '최동현', 'https://blog.naver.com/sample_sea', '010-5678-9012', '경북 포항시 북구 흥해읍', 48, 'C', 300, '', '', '', '', '예약전', 'N'],
+      ['브라운도트 포항죽도점', '강지우', 'https://blog.naver.com/sample_cancel', '010-6789-0123', '경북 포항시 남구 대잠동', 51, 'C', 280, '일정 변경 요청', '개인사정 취소', d(3), '17:00', '취소', 'N'],
 
-      ['브라운도트 진주성점', '진주에서만', 'https://blog.naver.com/sample_jinju', '010-7890-1234', '경남 진주시 성지동', 85, 'S', 1500, '촬영 장비 지참합니다.', '', d(2), '12:00', '예약확정', 'N'],
-      ['브라운도트 진주성점', '남강야경', 'https://www.instagram.com/sample_river', '010-8901-2345', '경남 진주시 칠암동', 70, 'A', 900, '', '사진 퀄리티 좋음', d(2), '14:00', '예약요청', 'N'],
-      ['브라운도트 진주성점', '주말러버', 'https://blog.naver.com/sample_weekend', '010-9012-3456', '경남 진주시 신안동', 61, 'B', 520, '주말만 가능', '', d(3), '12:00', '예약전', 'N'],
-      ['브라운도트 진주성점', '진주리뷰왕', 'https://blog.naver.com/sample_king', '010-0123-4567', '경남 진주시 평거동', 88, 'S', 1700, '', '재계약 후보', d(3), '14:00', '방문완료', 'Y'],
+      ['브라운도트 진주성점', '윤채원', 'https://blog.naver.com/sample_jinju', '010-7890-1234', '경남 진주시 성지동', 85, 'S', 1500, '촬영 장비 지참합니다.', '', d(2), '12:00', '예약확정', 'N'],
+      ['브라운도트 진주성점', '임도현', 'https://www.instagram.com/sample_river', '010-8901-2345', '경남 진주시 칠암동', 70, 'A', 900, '', '사진 퀄리티 좋음', d(2), '14:00', '예약요청', 'N'],
+      ['브라운도트 진주성점', '오세진', 'https://blog.naver.com/sample_weekend', '010-9012-3456', '경남 진주시 신안동', 61, 'B', 520, '주말만 가능', '', d(3), '12:00', '예약전', 'N'],
+      ['브라운도트 진주성점', '신유진', 'https://blog.naver.com/sample_king', '010-0123-4567', '경남 진주시 평거동', 88, 'S', 1700, '', '재계약 후보', d(3), '14:00', '방문완료', 'Y'],
 
-      ['스테이레브소유 거제점', '거제스테이', 'https://blog.naver.com/sample_geoje', '010-1122-3344', '경남 거제시 고현동', 74, 'A', 980, '1박 2일 예정', '', d(3), '15:00', '예약확정', 'N'],
-      ['스테이레브소유 거제점', '바다뷰맛집', 'https://www.instagram.com/sample_view', '010-2233-4455', '경남 거제시 옥포동', 66, 'B', 700, '', '', d(4), '17:00', '예약요청', 'N'],
-      ['스테이레브소유 거제점', '숙소탐험대', 'https://blog.naver.com/sample_stay', '010-3344-5566', '경남 거제시 장승포동', 59, 'B', 450, '주차 문의드립니다.', '', d(4), '17:00', '예약요청', 'N'],
-      ['스테이레브소유 거제점', '느린여행', 'https://blog.naver.com/sample_slow', '010-4455-6677', '경남 거제시 일운면', 44, 'C', 260, '', '', '', '', '예약전', 'N'],
+      ['스테이레브소유 거제점', '조은비', 'https://blog.naver.com/sample_geoje', '010-1122-3344', '경남 거제시 고현동', 74, 'A', 980, '1박 2일 예정', '', d(3), '15:00', '예약확정', 'N'],
+      ['스테이레브소유 거제점', '배성민', 'https://www.instagram.com/sample_view', '010-2233-4455', '경남 거제시 옥포동', 66, 'B', 700, '', '', d(4), '17:00', '예약요청', 'N'],
+      ['스테이레브소유 거제점', '문지호', 'https://blog.naver.com/sample_stay', '010-3344-5566', '경남 거제시 장승포동', 59, 'B', 450, '주차 문의드립니다.', '', d(4), '17:00', '예약요청', 'N'],
+      ['스테이레브소유 거제점', '노아름', 'https://blog.naver.com/sample_slow', '010-4455-6677', '경남 거제시 일운면', 44, 'C', 260, '', '', '', '', '예약전', 'N'],
 
       // 미매칭 지점 예시 (등록된 지점명과 다름 → 관리자 확인 필요)
-      ['브라운도트 포항죽도', '표기다른리뷰어', 'https://blog.naver.com/sample_mismatch', '010-5566-7788', '경북 포항시 북구 죽도동', 57, 'B', 380, '지점명 표기가 다릅니다.', '업로드 원본 그대로', d(4), '13:00', '예약요청', 'N']
+      ['브라운도트 포항죽도', '서지훈', 'https://blog.naver.com/sample_mismatch', '010-5566-7788', '경북 포항시 북구 죽도동', 57, 'B', 380, '지점명 표기가 다릅니다.', '업로드 원본 그대로', d(4), '13:00', '예약요청', 'N']
     ];
 
     var reviewers = rows.map(function (r) {
@@ -1954,6 +2188,17 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
     $('#f-mask').addEventListener('change', function () {
       state().settings.maskPII = this.checked; S.commit(true); render();
     });
+
+    // 비밀번호 잠금이 걸려 있을 때만 "잠그기" 버튼을 보여준다 (공용 PC 대비)
+    var lockBtn = $('#btn-lock');
+    if (lockBtn && global.Lock && global.Lock.lockAgain) {
+      lockBtn.hidden = false;
+      lockBtn.addEventListener('click', function () {
+        confirmBox('비밀번호 화면으로 돌아갈까요? 저장된 작업 내용은 그대로 남습니다.', function () {
+          global.Lock.lockAgain();
+        }, '잠그기');
+      });
+    }
 
     $$('.navbtn').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -3291,8 +3536,14 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
     render();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  function start() {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  }
+
+  // 비밀번호 잠금이 걸려 있으면 풀린 뒤에 시작한다
+  if (global.Lock) global.Lock.ready(start);
+  else start();
 
   global.ReviewerApp = { render: render, ui: ui };
 })(window);

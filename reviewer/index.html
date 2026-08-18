@@ -5,12 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
 <title>리뷰노트 체험단 관리</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
+
+<!-- ─────────────────────────── 비밀번호 잠금 ─────────────────────────── -->
+<div class="lock" id="lock">
+  <div class="lock-card">
+    <div class="lock-mark"></div>
+    <h1>리뷰노트 체험단 관리</h1>
+    <p class="lock-desc">리뷰어 개인정보가 포함된 화면입니다. 전달받은 비밀번호를 입력하세요.</p>
+    <label class="lock-field">
+      <span>비밀번호</span>
+      <input type="password" id="lock-input" autocomplete="current-password" spellcheck="false" placeholder="비밀번호 입력">
+    </label>
+    <div class="lock-error" id="lock-error" role="alert"></div>
+    <button class="btn btn-primary lock-btn" id="lock-submit">열기</button>
+    <label class="switch lock-remember"><input type="checkbox" id="lock-remember" checked> 이 브라우저에서 12시간 동안 기억</label>
+    <p class="lock-foot">비밀번호를 모르면 운영 담당자에게 문의하세요.</p>
+  </div>
+</div>
 
 <!-- ─────────────────────────────── 상단 바 ─────────────────────────────── -->
 <header class="topbar">
@@ -36,6 +50,7 @@
       <label class="switch" title="화면 공유 시 개인정보를 가립니다">
         <input type="checkbox" id="f-mask"> 개인정보 가리기
       </label>
+      <button class="btn btn-sm" id="btn-lock" title="비밀번호 화면으로 돌아갑니다" hidden>잠그기</button>
     </div>
   </div>
 </header>
@@ -219,6 +234,7 @@
 <div class="toast-wrap" id="toast-wrap"></div>
 <div id="modal-root"></div>
 
+<script src="assets/lock.js"></script>
 <script src="assets/xlsx-lite.js"></script>
 <script src="assets/store.js"></script>
 <script src="assets/app.js"></script>
