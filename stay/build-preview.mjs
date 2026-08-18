@@ -224,8 +224,9 @@ start();
 }
 
 /* 공유 링크 비밀번호. 바꾸려면 이 값을 고치고 다시 빌드·배포한다.
+ * 관리용은 전 지점 예약·비용·연락처가 모두 보이므로 직원용과 다른 번호를 쓴다.
  * 브라우저에서 도는 코드라 우회가 가능하므로 실수 유입을 막는 문턱일 뿐이다. */
 bundle({ file:'preview.html',       title:'옆커폰 숙박 예약관리',
-         mode:'admin', pageList: PAGES,       passcode:'0000' });
+         mode:'admin', pageList: PAGES,       passcode:'0130' });
 bundle({ file:'preview-staff.html', title:'옆커폰 숙박 예약 신청',
          mode:'staff', pageList: STAFF_PAGES, passcode:'0000' });
