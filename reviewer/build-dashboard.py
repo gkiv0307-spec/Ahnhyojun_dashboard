@@ -14,7 +14,7 @@ HERE = pathlib.Path(__file__).parent
 html = (HERE / 'index.html').read_text(encoding='utf-8')
 css = (HERE / 'assets/app.css').read_text(encoding='utf-8')
 scripts = [(HERE / f'assets/{n}').read_text(encoding='utf-8')
-           for n in ('lock.js', 'xlsx-lite.js', 'store.js', 'app.js')]
+           for n in ('lock.js', 'share.js', 'xlsx-lite.js', 'store.js', 'app.js')]
 
 # <body> 안쪽만 사용
 body = re.search(r'<body>(.*)</body>', html, re.S)
@@ -35,7 +35,7 @@ out = f"""<title>{title}</title>
 
 {markup}
 
-<script>
+<script id="app-script">
 {joined}
 </script>
 """

@@ -124,6 +124,8 @@
 }
 
 * { box-sizing: border-box; }
+/* display 를 지정한 규칙이 hidden 속성을 덮어쓰지 않도록 (버튼·배지 등) */
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
   margin: 0;
@@ -469,3 +471,15 @@ body:not(.unlocked) .toast-wrap { display: none; }
 .lock-btn[disabled] { opacity: .6; cursor: default; }
 .lock-remember { margin-top: 12px; }
 .lock-foot { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 11.5px; color: var(--ink-3); }
+
+/* --------------------------------------------------------------- 공유 상태 */
+.share-state {
+  font-size: 11px; font-weight: 600; color: var(--ink-3);
+  font-family: var(--font-data); white-space: nowrap;
+}
+.share-state[hidden] { display: none; }
+.share-state.dirty { color: var(--warn); }
+#btn-share-save.dirty::after {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--warn); display: inline-block; margin-left: 2px;
+}

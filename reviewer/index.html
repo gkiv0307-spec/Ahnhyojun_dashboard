@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
+<div id="app-root">
 
 <!-- ─────────────────────────── 비밀번호 잠금 ─────────────────────────── -->
 <div class="lock" id="lock">
@@ -50,6 +51,8 @@
       <label class="switch" title="화면 공유 시 개인정보를 가립니다">
         <input type="checkbox" id="f-mask"> 개인정보 가리기
       </label>
+      <button class="btn btn-sm btn-primary" id="btn-share-save" title="지금 내용을 링크를 가진 사람 모두에게 반영합니다" hidden>팀에 공유 저장</button>
+      <span class="share-state" id="share-state" hidden></span>
       <button class="btn btn-sm" id="btn-lock" title="비밀번호 화면으로 돌아갑니다" hidden>잠그기</button>
     </div>
   </div>
@@ -233,8 +236,13 @@
 
 <div class="toast-wrap" id="toast-wrap"></div>
 <div id="modal-root"></div>
+</div><!-- /app-root -->
+
+<!-- 팀 공유 저장본이 들어오는 자리 (암호화된 상태). 로컬 실행 시에는 비어 있다. -->
+<script id="seed-data" type="application/json">null</script>
 
 <script src="assets/lock.js"></script>
+<script src="assets/share.js"></script>
 <script src="assets/xlsx-lite.js"></script>
 <script src="assets/store.js"></script>
 <script src="assets/app.js"></script>

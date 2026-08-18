@@ -92,6 +92,7 @@
    *    엑셀은 CSV 로 대체하고, 그것도 막히면 같은 내용을 .txt 로 넘긴다.
    */
   var IS_HOSTED = !!(global.claude && typeof global.claude.use === 'function');
+  var share = { seedVersion: null, dirty: false, saving: false, suppress: false };
   var SHEET_LABEL = IS_HOSTED ? 'CSV' : '엑셀';   // 발행 링크에서는 .xlsx 저장이 허용되지 않는다
 
   function anchorSave(blob, filename) {
@@ -365,6 +366,12 @@
         })
       ]));
       box.appendChild(warn);
+    }
+
+    if (pendingNotice) {
+      var pn = h('div', { class: 'notice' });
+      pn.appendChild(h('div', null, [h('b', { text: '공유 데이터를 열지 못했습니다' }), h('div', { text: pendingNotice })]));
+      box.appendChild(pn);
     }
 
     var un = S.unmatchedBranchNames();
@@ -1607,6 +1614,81 @@
   }
 
   /* ============================================================ 초기화 */
+  function initShare() {
+    var btn = $('#btn-share-save');
+    if (!btn) return;
+    if (!IS_HOSTED || !global.Share) { renderShareState(); return; }
+
+    btn.hidden = false;
+    btn.addEventListener('click', function () {
+      if (share.saving) return;
+      var info = global.Share.seedInfo();
+      var msg = info
+        ? '지금 내용을 팀 공유본에 반영할까요? 링크를 가진 사람 모두에게 이 내용이 보입니다.'
+        : '지금 내용을 팀 공유본으로 저장할까요? 이후 링크를 여는 사람은 이 명단을 함께 보게 됩니다. (비밀번호를 아는 사람만 열 수 있습니다)';
+      confirmBox(msg, function () {
+        doPublish();
+      }, '공유 저장');
+    });
+    renderShareState();
+  }
+
+  function doPublish() {
+    var btn = $('#btn-share-save');
+    share.saving = true;
+    btn.disabled = true;
+    btn.textContent = '저장 중…';
+
+    var payload = JSON.parse(JSON.stringify(state()));
+    delete payload.__seedVersion;
+    delete payload.__dirty;
+    payload.isSample = false;
+
+    global.Share.publish(payload).then(function (res) {
+      if (res.ok) {
+        // 발행이 끝나면 화면이 새 버전으로 다시 불린다. 로컬 초안은 지워 충돌을 막는다.
+        try { global.localStorage.removeItem(S.STORAGE_KEY); } catch (e) { /* 무시 */ }
+        toast('팀 공유본에 저장했습니다. 최신 내용을 불러옵니다.', 'ok');
+        return;
+      }
+      if (res.code === 'conflict') { toast(res.message); return; }
+      toast(res.message, 'err');
+      if (global.Share.isReadOnly()) {
+        btn.hidden = true;
+        renderShareState();
+      }
+    }).catch(function () {
+      toast('공유 저장에 실패했습니다. 잠시 후 다시 시도하세요.', 'err');
+    }).then(function () {
+      share.saving = false;
+      btn.disabled = false;
+      btn.textContent = '팀에 공유 저장';
+      btn.classList.toggle('dirty', share.dirty);
+    });
+  }
+
+  function renderShareState() {
+    var box = $('#share-state');
+    var btn = $('#btn-share-save');
+    if (!box) return;
+    var info = global.Share && global.Share.seedInfo();
+
+    if (global.Share && global.Share.isReadOnly()) {
+      box.hidden = false;
+      box.textContent = '보기 전용';
+      box.classList.remove('dirty');
+      if (btn) btn.hidden = true;
+      return;
+    }
+    if (!info) { box.hidden = !share.dirty; box.textContent = share.dirty ? '저장 안 됨' : ''; return; }
+
+    box.hidden = false;
+    var when = info.savedAt ? info.savedAt.slice(5, 16).replace('T', ' ') : '';
+    box.textContent = share.dirty ? '저장 안 된 변경 있음' : ('공유본 ' + when);
+    box.classList.toggle('dirty', share.dirty);
+    if (btn) btn.classList.toggle('dirty', share.dirty);
+  }
+
   function initFilters() {
     $('#f-status').addEventListener('change', function () { ui.status = this.value; renderReviewers(); });
     $('#f-unmatched-only').addEventListener('change', function () { ui.unmatchedOnly = this.checked; renderReviewers(); });
@@ -1639,13 +1721,85 @@
   }
 
   function boot() {
+    // 화면을 그리기 전에 페이지 원본을 붙잡아 둔다 (공유 저장 시 이 원본으로 다시 만든다)
+    if (global.Share) global.Share.capture();
+    hookCommit();
+
+    var started = false;
+    var start = function () {
+      if (started) return;
+      started = true;
+      initTopbar();
+      initUpload();
+      initFilters();
+      initSettings();
+      initShare();
+      initExports();
+      render();
+    };
+
+    if (global.Share && global.Share.hasSeed()) {
+      global.Share.loadSeed().then(function (seed) {
+        if (seed && seed.state) {
+          share.seedVersion = seed.version;
+          adoptSharedState(seed);
+        }
+      }).catch(function () {
+        // 비밀번호로 공유본을 풀지 못한 경우 (비밀번호가 바뀐 뒤 등)
+        S.load();
+        pendingNotice = '공유된 데이터를 열지 못했습니다. 비밀번호가 바뀌었을 수 있습니다. 담당자에게 확인하세요.';
+      }).then(start);
+      return;
+    }
+
     S.load();
-    initTopbar();
-    initUpload();
-    initFilters();
-    initSettings();
-    initExports();
-    render();
+    start();
+  }
+
+  var pendingNotice = null;
+
+  /**
+   * 공유본을 이 화면의 상태로 삼는다.
+   * 같은 공유본을 기준으로 한 로컬 작업이 남아 있으면 그쪽을 살려서
+   * 저장하지 않은 편집이 새로고침으로 사라지지 않게 한다.
+   */
+  function adoptSharedState(seed) {
+    share.suppress = true;
+    try { adopt(seed); } finally { share.suppress = false; }
+  }
+
+  function adopt(seed) {
+    var local = null;
+    try { local = JSON.parse(global.localStorage.getItem(S.STORAGE_KEY)); } catch (e) { local = null; }
+
+    if (local && local.__seedVersion === seed.version) {
+      S.replaceState(local);
+      share.dirty = !!local.__dirty;
+      return;
+    }
+    seed.state.__seedVersion = seed.version;
+    seed.state.__dirty = false;
+    S.replaceState(seed.state);
+    share.dirty = false;
+  }
+
+  /** 상태가 바뀔 때마다 "공유본과 달라졌다"고 표시한다. commit 을 감싸 한 곳에서 처리. */
+  function hookCommit() {
+    var original = S.commit;
+    S.commit = function (silent) {
+      markDirty();
+      return original.call(S, silent);
+    };
+  }
+
+  function markDirty() {
+    if (share.suppress) return;
+    if (!share.seedVersion && !IS_HOSTED) return;
+    share.dirty = true;
+    var st = S.get();
+    st.__seedVersion = share.seedVersion;
+    st.__dirty = true;
+    renderShareState();
   }
 
   function start() {

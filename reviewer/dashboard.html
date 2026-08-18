@@ -126,6 +126,8 @@
 }
 
 * { box-sizing: border-box; }
+/* display 를 지정한 규칙이 hidden 속성을 덮어쓰지 않도록 (버튼·배지 등) */
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
   margin: 0;
@@ -472,7 +474,21 @@ body:not(.unlocked) .toast-wrap { display: none; }
 .lock-remember { margin-top: 12px; }
 .lock-foot { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 11.5px; color: var(--ink-3); }
 
+/* --------------------------------------------------------------- 공유 상태 */
+.share-state {
+  font-size: 11px; font-weight: 600; color: var(--ink-3);
+  font-family: var(--font-data); white-space: nowrap;
+}
+.share-state[hidden] { display: none; }
+.share-state.dirty { color: var(--warn); }
+#btn-share-save.dirty::after {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--warn); display: inline-block; margin-left: 2px;
+}
+
 </style>
+
+<div id="app-root">
 
 <!-- ─────────────────────────── 비밀번호 잠금 ─────────────────────────── -->
 <div class="lock" id="lock">
@@ -515,6 +531,8 @@ body:not(.unlocked) .toast-wrap { display: none; }
       <label class="switch" title="화면 공유 시 개인정보를 가립니다">
         <input type="checkbox" id="f-mask"> 개인정보 가리기
       </label>
+      <button class="btn btn-sm btn-primary" id="btn-share-save" title="지금 내용을 링크를 가진 사람 모두에게 반영합니다" hidden>팀에 공유 저장</button>
+      <span class="share-state" id="share-state" hidden></span>
       <button class="btn btn-sm" id="btn-lock" title="비밀번호 화면으로 돌아갑니다" hidden>잠그기</button>
     </div>
   </div>
@@ -698,8 +716,12 @@ body:not(.unlocked) .toast-wrap { display: none; }
 
 <div class="toast-wrap" id="toast-wrap"></div>
 <div id="modal-root"></div>
+</div><!-- /app-root -->
 
-<script>
+<!-- 팀 공유 저장본이 들어오는 자리 (암호화된 상태). 로컬 실행 시에는 비어 있다. -->
+<script id="seed-data" type="application/json">null</script>
+
+<script id="app-script">
 /*!
  * lock.js — 대시보드 비밀번호 잠금
  *
@@ -765,6 +787,12 @@ body:not(.unlocked) .toast-wrap { display: none; }
     return r === 0;
   }
 
+  /**
+   * 비밀번호에서 512비트를 뽑아 절반씩 나눠 쓴다.
+   *  - 앞 32바이트: 비밀번호가 맞는지 확인하는 해시 (페이지에 심겨 있는 값과 비교)
+   *  - 뒤 32바이트: 공유 데이터를 풀고 잠그는 키 (페이지에는 저장하지 않는다)
+   * 확인용 해시가 노출돼도 키를 역산할 수 없도록 서로 다른 구간을 쓴다.
+   */
   function derive(password) {
     var subtle = global.crypto && global.crypto.subtle;
     if (!subtle) return Promise.reject(new Error('no-subtle'));
@@ -772,9 +800,21 @@ body:not(.unlocked) .toast-wrap { display: none; }
       .then(function (key) {
         return subtle.deriveBits(
           { name: 'PBKDF2', salt: b64ToBytes(GATE.salt), iterations: GATE.iter, hash: 'SHA-256' },
-          key, 256);
+          key, 512);
       })
-      .then(function (bits) { return bytesToB64(new Uint8Array(bits)); });
+      .then(function (bits) {
+        var all = new Uint8Array(bits);
+        return { verify: bytesToB64(all.slice(0, 32)), keyBytes: all.slice(32) };
+      });
+  }
+
+  var keyBytes = null;                       // 잠금 해제 후 메모리에만 둔다
+
+  function importKey(bytes) {
+    var subtle = global.crypto && global.crypto.subtle;
+    if (!subtle || !bytes) return Promise.resolve(null);
+    return subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+      .catch(function () { return null; });
   }
 
   /* --------------------------------------------------- 기억하기 (선택) */
@@ -783,18 +823,22 @@ body:not(.unlocked) .toast-wrap { display: none; }
       var raw = global.localStorage.getItem(STORE_KEY);
       if (!raw) return false;
       var v = JSON.parse(raw);
-      return v && v.until > Date.now() && v.tag === GATE.hash.slice(0, 12);
+      if (!v || v.until <= Date.now() || v.tag !== GATE.hash.slice(0, 12)) return false;
+      if (v.k) keyBytes = b64ToBytes(v.k);
+      return true;
     } catch (e) { return false; }
   }
   function remember() {
     try {
       global.localStorage.setItem(STORE_KEY, JSON.stringify({
         until: Date.now() + REMEMBER_HOURS * 3600 * 1000,
-        tag: GATE.hash.slice(0, 12)
+        tag: GATE.hash.slice(0, 12),
+        k: keyBytes ? bytesToB64(keyBytes) : null
       }));
     } catch (e) { /* 저장이 막힌 환경에서는 이번 방문에만 열린다 */ }
   }
   function forget() {
+    keyBytes = null;
     try { global.localStorage.removeItem(STORE_KEY); } catch (e) { /* 무시 */ }
   }
 
@@ -834,8 +878,9 @@ body:not(.unlocked) .toast-wrap { display: none; }
     btn.textContent = '확인 중…';
     setError('');
 
-    derive(pw).then(function (hash) {
-      if (sameHash(hash, GATE.hash)) {
+    derive(pw).then(function (out) {
+      if (sameHash(out.verify, GATE.hash)) {
+        keyBytes = out.keyBytes;
         if (el('lock-remember') && el('lock-remember').checked) remember();
         open();
         return;
@@ -878,12 +923,228 @@ body:not(.unlocked) .toast-wrap { display: none; }
   global.Lock = {
     /** 잠금이 풀린 뒤에 실행할 콜백 등록 */
     ready: function (fn) { unlocked ? fn() : ready.push(fn); },
+    /** 공유 데이터 암복호화 키 (없으면 null) */
+    key: function () { return importKey(keyBytes); },
+    hasKey: function () { return !!keyBytes; },
     isUnlocked: function () { return unlocked; },
     lockAgain: function () { forget(); global.location.reload(); }
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+})(window);
+
+/*!
+ * share.js — 팀 공유 저장
+ *
+ * 링크를 가진 사람들이 "같은 데이터"를 보게 하는 부분이다.
+ * 저장 버튼을 누르면 현재 상태를 페이지 자체에 심어 새 버전으로 발행하고,
+ * 이후 링크를 여는 모든 사람이 그 데이터를 받는다.
+ *
+ * 개인정보 보호
+ *  - 공유 데이터는 비밀번호에서 유도한 키로 AES-GCM 암호화해서 심는다.
+ *    따라서 링크만 있고 비밀번호를 모르면 소스를 열어도 명단을 읽을 수 없다.
+ *  - 키는 페이지에 저장하지 않는다. 비밀번호를 넣어야 그때 만들어진다.
+ *
+ * 페이지 재구성
+ *  - 발행에는 완전한 HTML 문서가 필요하다. 살아 있는 DOM 을 그대로 직렬화하면
+ *    실행 중 상태와 런타임이 끼어들므로, 페이지의 원본 조각(스타일·스크립트·
+ *    최초 마크업)을 부팅 시점에 붙잡아 두고 거기에 데이터만 갈아 끼워 다시 만든다.
+ */
+(function (global) {
+  'use strict';
+
+  var SEED_ID = 'seed-data';
+  var ROOT_ID = 'app-root';
+
+  var pristine = null;      // 부팅 직후의 원본 조각
+  var seedMeta = null;      // 지금 보고 있는 공유본 정보
+  var readOnly = false;     // 쓰기 거부를 한 번이라도 받으면 true
+
+  /* ------------------------------------------------------------ 원본 확보 */
+  /**
+   * 페이지의 원본 조각을 붙잡는다.
+   *
+   * 반드시 "아무것도 실행되기 전"에 찍어야 한다. 화면이 조금이라도 움직인 뒤에
+   * 찍으면 그 순간의 실행 상태가 그대로 발행본에 굳는다.
+   * (실제로 잠금 해제 직후에 찍었더니 "확인 중…" 상태의 비활성 버튼이 박혀서
+   *  다음 사람이 비밀번호를 넣을 수 없게 되는 문제가 있었다.)
+   * 그래서 이 파일이 로드되는 시점에 바로 한 번 찍어 둔다.
+   */
+  function capture() {
+    if (pristine) return pristine;
+    var root = document.getElementById(ROOT_ID);
+    var style = document.querySelector('style');
+    var script = document.getElementById('app-script');
+    pristine = {
+      title: (document.querySelector('title') || {}).textContent || '리뷰노트 체험단 관리',
+      markup: root ? root.innerHTML : '',
+      style: style ? style.textContent : '',
+      script: script ? script.textContent : ''
+    };
+    return pristine;
+  }
+
+  /* ------------------------------------------------------------ 암복호화 */
+  function bytesToB64(u) {
+    var s = '', CHUNK = 0x8000;
+    for (var i = 0; i < u.length; i += CHUNK) s += String.fromCharCode.apply(null, u.subarray(i, i + CHUNK));
+    return btoa(s);
+  }
+  function b64ToBytes(b) {
+    var bin = atob(b), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u;
+  }
+
+  function encrypt(text) {
+    if (!global.Lock || !global.Lock.hasKey()) return Promise.reject(new Error('no-key'));
+    var iv = global.crypto.getRandomValues(new Uint8Array(12));
+    return global.Lock.key().then(function (key) {
+      if (!key) throw new Error('no-key');
+      return global.crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(text));
+    }).then(function (buf) {
+      return { iv: bytesToB64(iv), data: bytesToB64(new Uint8Array(buf)) };
+    });
+  }
+
+  function decrypt(payload) {
+    if (!global.Lock || !global.Lock.hasKey()) return Promise.reject(new Error('no-key'));
+    return global.Lock.key().then(function (key) {
+      if (!key) throw new Error('no-key');
+      return global.crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: b64ToBytes(payload.iv) }, key, b64ToBytes(payload.data));
+    }).then(function (buf) { return new TextDecoder().decode(buf); });
+  }
+
+  /* --------------------------------------------------------- 공유본 읽기 */
+  function rawSeed() {
+    var el = document.getElementById(SEED_ID);
+    if (!el) return null;
+    var txt = (el.textContent || '').trim();
+    if (!txt || txt === 'null') return null;
+    try { return JSON.parse(txt); } catch (e) { return null; }
+  }
+
+  function hasSeed() { return !!rawSeed(); }
+
+  /**
+   * 공유본을 풀어서 돌려준다.
+   * 반환: Promise<{state, version} | null>  — 비밀번호가 안 맞으면 reject
+   */
+  function loadSeed() {
+    var seed = rawSeed();
+    if (!seed) return Promise.resolve(null);
+    seedMeta = { version: seed.version, savedAt: seed.savedAt, savedBy: seed.savedBy };
+    return decrypt(seed.payload).then(function (json) {
+      return { state: JSON.parse(json), version: seed.version, savedAt: seed.savedAt };
+    });
+  }
+
+  function seedInfo() { return seedMeta; }
+  function isReadOnly() { return readOnly; }
+
+  /* --------------------------------------------------------- 페이지 만들기 */
+  function escapeForScript(json) {
+    // <\/script> 로 스크립트가 끊기지 않도록 여는 꺾쇠를 이스케이프한다
+    return json.replace(/</g, '\\u003c');
+  }
+
+  function buildPage(seedObj) {
+    var p = capture();
+    return '<!doctype html>\n<html lang="ko">\n<head>\n' +
+      '<meta charset="utf-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      '<meta name="robots" content="noindex, nofollow">\n' +
+      '<title>' + p.title + '</title>\n' +
+      '<style>\n' + p.style + '\n</style>\n' +
+      '</head>\n<body>\n' +
+      '<div id="' + ROOT_ID + '">' + p.markup + '</div>\n' +
+      '<script id="' + SEED_ID + '" type="application/json">' +
+      escapeForScript(JSON.stringify(seedObj)) + '<\/script>\n' +
+      '<script id="app-script">\n' + p.script + '\n<\/script>\n' +
+      '</body>\n</html>\n';
+  }
+
+  /* ------------------------------------------------------------ 발행 */
+  var MESSAGES = {
+    not_writer: '이 대시보드를 수정할 권한이 없습니다. 보기 전용으로 이용하세요.',
+    not_granted: '이 대시보드를 수정할 권한이 없습니다. 보기 전용으로 이용하세요.',
+    consent_required: '이 대시보드를 수정할 권한이 없습니다. 보기 전용으로 이용하세요.',
+    capability_disabled: '이 화면에서는 공유 저장을 쓸 수 없습니다.',
+    capability_removed: '이 화면에서는 공유 저장을 쓸 수 없습니다.',
+    not_declared: '이 화면에서는 공유 저장을 쓸 수 없습니다.',
+    too_large: '데이터가 너무 커서 공유 저장에 실패했습니다. 지난 기간 자료를 정리한 뒤 다시 시도하세요.',
+    rate_limited: '저장이 너무 잦습니다. 잠시 후 한 번에 저장하세요.',
+    invalid_content: '페이지를 만들지 못했습니다. 새로고침 후 다시 시도하세요.',
+    transform_error: '페이지를 만들지 못했습니다. 새로고침 후 다시 시도하세요.'
+  };
+
+  var READ_ONLY_CODES = ['not_writer', 'not_granted', 'consent_required', 'not_declared',
+    'capability_disabled', 'capability_removed'];
+
+  /**
+   * 현재 상태를 새 버전으로 발행한다.
+   * 성공하면 이 화면을 포함해 열려 있는 모든 화면이 새 버전으로 다시 불린다.
+   * 반환: Promise<{ok:true} | {ok:false, code, message}>
+   */
+  function publish(state, meta) {
+    if (!global.claude || typeof global.claude.use !== 'function') {
+      return Promise.resolve({ ok: false, code: 'unsupported',
+        message: '발행된 링크에서만 팀 공유 저장을 쓸 수 있습니다.' });
+    }
+    if (!global.Lock || !global.Lock.hasKey()) {
+      return Promise.resolve({ ok: false, code: 'no-key',
+        message: '비밀번호를 다시 입력한 뒤 저장하세요.' });
+    }
+
+    var p = capture();
+    if (!p.script || !p.markup) {
+      return Promise.resolve({ ok: false, code: 'no-source',
+        message: '페이지 원본을 읽지 못해 저장할 수 없습니다. 새로고침 후 다시 시도하세요.' });
+    }
+
+    return global.claude.use('artifact').then(function (artifact) {
+      if (!artifact) {
+        readOnly = true;
+        return { ok: false, code: 'not_granted', message: MESSAGES.not_granted };
+      }
+      return encrypt(JSON.stringify(state)).then(function (payload) {
+        var seedObj = {
+          version: String(Date.now()),
+          savedAt: new Date().toISOString(),
+          savedBy: (meta && meta.by) || '',
+          payload: payload
+        };
+        return artifact.publish(buildPage(seedObj));
+      }).then(function () {
+        return { ok: true };
+      }).catch(function (err) {
+        var code = (err && err.code) || 'upstream_error';
+        if (READ_ONLY_CODES.indexOf(code) >= 0) readOnly = true;
+        if (code === 'conflict') {
+          // 다른 사람이 먼저 저장했다. 화면은 이미 최신본으로 다시 불리는 중이라 할 일이 없다.
+          return { ok: false, code: 'conflict',
+            message: '다른 사람이 먼저 저장했습니다. 최신 내용을 불러옵니다.' };
+        }
+        return { ok: false, code: code,
+          message: MESSAGES[code] || '공유 저장에 실패했습니다. 잠시 후 다시 시도하세요.' };
+      });
+    });
+  }
+
+  // 스크립트가 읽히는 시점에 원본을 확보한다 (아직 아무 핸들러도 돌지 않은 상태)
+  try { capture(); } catch (e) { /* 원본을 못 찍으면 공유 저장만 막힌다 */ }
+
+  global.Share = {
+    capture: capture,
+    hasSeed: hasSeed,
+    loadSeed: loadSeed,
+    seedInfo: seedInfo,
+    isReadOnly: isReadOnly,
+    publish: publish,
+    buildPage: buildPage
+  };
 })(window);
 
 /*!
@@ -1980,6 +2241,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
    *    엑셀은 CSV 로 대체하고, 그것도 막히면 같은 내용을 .txt 로 넘긴다.
    */
   var IS_HOSTED = !!(global.claude && typeof global.claude.use === 'function');
+  var share = { seedVersion: null, dirty: false, saving: false, suppress: false };
   var SHEET_LABEL = IS_HOSTED ? 'CSV' : '엑셀';   // 발행 링크에서는 .xlsx 저장이 허용되지 않는다
 
   function anchorSave(blob, filename) {
@@ -2253,6 +2515,12 @@ body:not(.unlocked) .toast-wrap { display: none; }
         })
       ]));
       box.appendChild(warn);
+    }
+
+    if (pendingNotice) {
+      var pn = h('div', { class: 'notice' });
+      pn.appendChild(h('div', null, [h('b', { text: '공유 데이터를 열지 못했습니다' }), h('div', { text: pendingNotice })]));
+      box.appendChild(pn);
     }
 
     var un = S.unmatchedBranchNames();
@@ -3495,6 +3763,81 @@ body:not(.unlocked) .toast-wrap { display: none; }
   }
 
   /* ============================================================ 초기화 */
+  function initShare() {
+    var btn = $('#btn-share-save');
+    if (!btn) return;
+    if (!IS_HOSTED || !global.Share) { renderShareState(); return; }
+
+    btn.hidden = false;
+    btn.addEventListener('click', function () {
+      if (share.saving) return;
+      var info = global.Share.seedInfo();
+      var msg = info
+        ? '지금 내용을 팀 공유본에 반영할까요? 링크를 가진 사람 모두에게 이 내용이 보입니다.'
+        : '지금 내용을 팀 공유본으로 저장할까요? 이후 링크를 여는 사람은 이 명단을 함께 보게 됩니다. (비밀번호를 아는 사람만 열 수 있습니다)';
+      confirmBox(msg, function () {
+        doPublish();
+      }, '공유 저장');
+    });
+    renderShareState();
+  }
+
+  function doPublish() {
+    var btn = $('#btn-share-save');
+    share.saving = true;
+    btn.disabled = true;
+    btn.textContent = '저장 중…';
+
+    var payload = JSON.parse(JSON.stringify(state()));
+    delete payload.__seedVersion;
+    delete payload.__dirty;
+    payload.isSample = false;
+
+    global.Share.publish(payload).then(function (res) {
+      if (res.ok) {
+        // 발행이 끝나면 화면이 새 버전으로 다시 불린다. 로컬 초안은 지워 충돌을 막는다.
+        try { global.localStorage.removeItem(S.STORAGE_KEY); } catch (e) { /* 무시 */ }
+        toast('팀 공유본에 저장했습니다. 최신 내용을 불러옵니다.', 'ok');
+        return;
+      }
+      if (res.code === 'conflict') { toast(res.message); return; }
+      toast(res.message, 'err');
+      if (global.Share.isReadOnly()) {
+        btn.hidden = true;
+        renderShareState();
+      }
+    }).catch(function () {
+      toast('공유 저장에 실패했습니다. 잠시 후 다시 시도하세요.', 'err');
+    }).then(function () {
+      share.saving = false;
+      btn.disabled = false;
+      btn.textContent = '팀에 공유 저장';
+      btn.classList.toggle('dirty', share.dirty);
+    });
+  }
+
+  function renderShareState() {
+    var box = $('#share-state');
+    var btn = $('#btn-share-save');
+    if (!box) return;
+    var info = global.Share && global.Share.seedInfo();
+
+    if (global.Share && global.Share.isReadOnly()) {
+      box.hidden = false;
+      box.textContent = '보기 전용';
+      box.classList.remove('dirty');
+      if (btn) btn.hidden = true;
+      return;
+    }
+    if (!info) { box.hidden = !share.dirty; box.textContent = share.dirty ? '저장 안 됨' : ''; return; }
+
+    box.hidden = false;
+    var when = info.savedAt ? info.savedAt.slice(5, 16).replace('T', ' ') : '';
+    box.textContent = share.dirty ? '저장 안 된 변경 있음' : ('공유본 ' + when);
+    box.classList.toggle('dirty', share.dirty);
+    if (btn) btn.classList.toggle('dirty', share.dirty);
+  }
+
   function initFilters() {
     $('#f-status').addEventListener('change', function () { ui.status = this.value; renderReviewers(); });
     $('#f-unmatched-only').addEventListener('change', function () { ui.unmatchedOnly = this.checked; renderReviewers(); });
@@ -3527,13 +3870,85 @@ body:not(.unlocked) .toast-wrap { display: none; }
   }
 
   function boot() {
+    // 화면을 그리기 전에 페이지 원본을 붙잡아 둔다 (공유 저장 시 이 원본으로 다시 만든다)
+    if (global.Share) global.Share.capture();
+    hookCommit();
+
+    var started = false;
+    var start = function () {
+      if (started) return;
+      started = true;
+      initTopbar();
+      initUpload();
+      initFilters();
+      initSettings();
+      initShare();
+      initExports();
+      render();
+    };
+
+    if (global.Share && global.Share.hasSeed()) {
+      global.Share.loadSeed().then(function (seed) {
+        if (seed && seed.state) {
+          share.seedVersion = seed.version;
+          adoptSharedState(seed);
+        }
+      }).catch(function () {
+        // 비밀번호로 공유본을 풀지 못한 경우 (비밀번호가 바뀐 뒤 등)
+        S.load();
+        pendingNotice = '공유된 데이터를 열지 못했습니다. 비밀번호가 바뀌었을 수 있습니다. 담당자에게 확인하세요.';
+      }).then(start);
+      return;
+    }
+
     S.load();
-    initTopbar();
-    initUpload();
-    initFilters();
-    initSettings();
-    initExports();
-    render();
+    start();
+  }
+
+  var pendingNotice = null;
+
+  /**
+   * 공유본을 이 화면의 상태로 삼는다.
+   * 같은 공유본을 기준으로 한 로컬 작업이 남아 있으면 그쪽을 살려서
+   * 저장하지 않은 편집이 새로고침으로 사라지지 않게 한다.
+   */
+  function adoptSharedState(seed) {
+    share.suppress = true;
+    try { adopt(seed); } finally { share.suppress = false; }
+  }
+
+  function adopt(seed) {
+    var local = null;
+    try { local = JSON.parse(global.localStorage.getItem(S.STORAGE_KEY)); } catch (e) { local = null; }
+
+    if (local && local.__seedVersion === seed.version) {
+      S.replaceState(local);
+      share.dirty = !!local.__dirty;
+      return;
+    }
+    seed.state.__seedVersion = seed.version;
+    seed.state.__dirty = false;
+    S.replaceState(seed.state);
+    share.dirty = false;
+  }
+
+  /** 상태가 바뀔 때마다 "공유본과 달라졌다"고 표시한다. commit 을 감싸 한 곳에서 처리. */
+  function hookCommit() {
+    var original = S.commit;
+    S.commit = function (silent) {
+      markDirty();
+      return original.call(S, silent);
+    };
+  }
+
+  function markDirty() {
+    if (share.suppress) return;
+    if (!share.seedVersion && !IS_HOSTED) return;
+    share.dirty = true;
+    var st = S.get();
+    st.__seedVersion = share.seedVersion;
+    st.__dirty = true;
+    renderShareState();
   }
 
   function start() {

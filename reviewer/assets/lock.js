@@ -63,6 +63,12 @@
     return r === 0;
   }
 
+  /**
+   * 비밀번호에서 512비트를 뽑아 절반씩 나눠 쓴다.
+   *  - 앞 32바이트: 비밀번호가 맞는지 확인하는 해시 (페이지에 심겨 있는 값과 비교)
+   *  - 뒤 32바이트: 공유 데이터를 풀고 잠그는 키 (페이지에는 저장하지 않는다)
+   * 확인용 해시가 노출돼도 키를 역산할 수 없도록 서로 다른 구간을 쓴다.
+   */
   function derive(password) {
     var subtle = global.crypto && global.crypto.subtle;
     if (!subtle) return Promise.reject(new Error('no-subtle'));
@@ -70,9 +76,21 @@
       .then(function (key) {
         return subtle.deriveBits(
           { name: 'PBKDF2', salt: b64ToBytes(GATE.salt), iterations: GATE.iter, hash: 'SHA-256' },
-          key, 256);
+          key, 512);
       })
-      .then(function (bits) { return bytesToB64(new Uint8Array(bits)); });
+      .then(function (bits) {
+        var all = new Uint8Array(bits);
+        return { verify: bytesToB64(all.slice(0, 32)), keyBytes: all.slice(32) };
+      });
+  }
+
+  var keyBytes = null;                       // 잠금 해제 후 메모리에만 둔다
+
+  function importKey(bytes) {
+    var subtle = global.crypto && global.crypto.subtle;
+    if (!subtle || !bytes) return Promise.resolve(null);
+    return subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+      .catch(function () { return null; });
   }
 
   /* --------------------------------------------------- 기억하기 (선택) */
@@ -81,18 +99,22 @@
       var raw = global.localStorage.getItem(STORE_KEY);
       if (!raw) return false;
       var v = JSON.parse(raw);
-      return v && v.until > Date.now() && v.tag === GATE.hash.slice(0, 12);
+      if (!v || v.until <= Date.now() || v.tag !== GATE.hash.slice(0, 12)) return false;
+      if (v.k) keyBytes = b64ToBytes(v.k);
+      return true;
     } catch (e) { return false; }
   }
   function remember() {
     try {
       global.localStorage.setItem(STORE_KEY, JSON.stringify({
         until: Date.now() + REMEMBER_HOURS * 3600 * 1000,
-        tag: GATE.hash.slice(0, 12)
+        tag: GATE.hash.slice(0, 12),
+        k: keyBytes ? bytesToB64(keyBytes) : null
       }));
     } catch (e) { /* 저장이 막힌 환경에서는 이번 방문에만 열린다 */ }
   }
   function forget() {
+    keyBytes = null;
     try { global.localStorage.removeItem(STORE_KEY); } catch (e) { /* 무시 */ }
   }
 
@@ -132,8 +154,9 @@
     btn.textContent = '확인 중…';
     setError('');
 
-    derive(pw).then(function (hash) {
-      if (sameHash(hash, GATE.hash)) {
+    derive(pw).then(function (out) {
+      if (sameHash(out.verify, GATE.hash)) {
+        keyBytes = out.keyBytes;
         if (el('lock-remember') && el('lock-remember').checked) remember();
         open();
         return;
@@ -176,6 +199,9 @@
   global.Lock = {
     /** 잠금이 풀린 뒤에 실행할 콜백 등록 */
     ready: function (fn) { unlocked ? fn() : ready.push(fn); },
+    /** 공유 데이터 암복호화 키 (없으면 null) */
+    key: function () { return importKey(keyBytes); },
+    hasKey: function () { return !!keyBytes; },
     isUnlocked: function () { return unlocked; },
     lockAgain: function () { forget(); global.location.reload(); }
   };
