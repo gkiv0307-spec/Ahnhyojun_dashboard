@@ -30,9 +30,9 @@
   })();
 
   var GATE = {
-    salt: '0UeUqND7lBikzh7OFWNDow==',
+    salt: 'sn0Ex8bdQc1fWObFdXCMsA==',
     iter: 210000,
-    hash: 'CcfVjtjbFrJqXbdlg8vslS4efGLBbv1QdcwS9/pdPlY='
+    hash: '4D9cuevDI22VrsEcTUARFu9D6+bQXO1sf3ZGybhXypQ='
   };
 
   var REMEMBER_HOURS = 12;
