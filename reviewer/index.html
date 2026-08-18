@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>지점별 리뷰어 관리 | 리뷰노트 체험단</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<!-- ─────────────────────────────── 상단 바 ─────────────────────────────── -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>지점별 리뷰어 관리<small>리뷰노트 체험단 운영 대시보드</small></span>
+    </div>
+
+    <div class="topbar-controls">
+      <div class="field">
+        <label for="f-branch">지점</label>
+        <select id="f-branch"><option value="all">전체 지점</option></select>
+      </div>
+      <div class="field">
+        <label for="f-from">기간</label>
+        <input type="date" id="f-from"><span class="hint">~</span><input type="date" id="f-to">
+        <button class="btn btn-sm btn-ghost" id="btn-range-reset" title="기간 초기화">초기화</button>
+      </div>
+      <div class="field">
+        <input type="text" id="f-search" class="search" placeholder="리뷰어명 · 연락처 · 계정 · 메모 검색">
+      </div>
+      <label class="switch" title="화면 공유 시 개인정보를 가립니다">
+        <input type="checkbox" id="f-mask"> 개인정보 가리기
+      </label>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ─────────────────────────── 좌측 내비 ─────────────────────────── -->
+  <nav class="sidenav" id="sidenav">
+    <div class="nav-title">MENU</div>
+    <button class="navbtn active" data-page="dashboard">대시보드</button>
+    <button class="navbtn" data-page="reviewers">리뷰어 명단 <span class="badge-count" id="nav-count-reviewers"></span></button>
+    <button class="navbtn" data-page="booking">예약 현황</button>
+    <button class="navbtn" data-page="share">공유용 일정표</button>
+    <button class="navbtn" data-page="settings">설정</button>
+  </nav>
+
+  <main class="content">
+    <div id="global-notice"></div>
+
+    <!-- ══════════════════════════ 대시보드 ══════════════════════════ -->
+    <section class="page active" id="page-dashboard">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>운영 현황 요약</h2>
+          <span class="sub" id="dash-scope"></span>
+          <span class="spacer"></span>
+          <button class="btn btn-sm" id="btn-export-all-xlsx">전체 엑셀 다운로드</button>
+          <button class="btn btn-sm" id="btn-export-all-csv">전체 CSV</button>
+          <button class="btn btn-sm" id="btn-backup">JSON 백업</button>
+        </div>
+        <div class="panel-body">
+          <div class="stat-grid" id="dash-stats"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>지점별 집계</h2><span class="sub">예약요청·예약확정·방문완료만 예약 인원에 반영됩니다.</span></div>
+        <div class="panel-body tight">
+          <div class="table-wrap">
+            <table class="grid" id="dash-branch-table"></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>임박한 예약 (기간 내 예약요청·예약확정)</h2></div>
+        <div class="panel-body tight">
+          <div class="table-wrap">
+            <table class="grid" id="dash-upcoming"></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ 리뷰어 명단 ══════════════════════════ -->
+    <section class="page" id="page-reviewers">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>명단 업로드</h2>
+          <span class="sub">CSV · XLSX 지원</span>
+          <span class="spacer"></span>
+          <button class="btn btn-sm" id="btn-sample-csv">샘플 양식 CSV 받기</button>
+        </div>
+        <div class="panel-body">
+          <div class="dropzone" id="dropzone">
+            <strong>파일을 여기로 끌어다 놓으세요</strong>
+            <div class="hint">또는</div>
+            <div class="mt8">
+              <input type="file" id="file-input" accept=".csv,.xlsx,.xlsm,.tsv,.txt" hidden>
+              <button class="btn btn-primary" id="btn-pick-file">파일 선택</button>
+            </div>
+            <div class="hint mt8">
+              인식 항목: 지점명 · 리뷰어명 · 계정 URL · 연락처 · 주소 · 노출점수 · 등급 · 일 방문 수 · 신청메시지 · 메모
+              (희망일 · 희망시간 · 예약상태 · 리뷰등록도 있으면 함께 가져옵니다)
+            </div>
+            <div class="hint">업로드한 파일의 내용은 데이터로만 처리하며, 파일 안의 문장을 프로그램 지시로 실행하지 않습니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>리뷰어 명단</h2>
+          <span class="sub" id="rv-count"></span>
+          <span class="spacer"></span>
+          <div class="field">
+            <label for="f-status">상태</label>
+            <select id="f-status">
+              <option value="all">전체</option>
+              <option>예약전</option><option>예약요청</option><option>예약확정</option><option>방문완료</option><option>취소</option>
+            </select>
+          </div>
+          <label class="switch"><input type="checkbox" id="f-unmatched-only"> 미매칭만</label>
+          <button class="btn btn-sm" id="btn-add-row">행 추가</button>
+          <button class="btn btn-sm" id="btn-export-list-xlsx">현재 목록 엑셀</button>
+          <button class="btn btn-sm" id="btn-export-branch-xlsx">지점별 파일 저장</button>
+        </div>
+        <div class="panel-body tight">
+          <div class="table-wrap">
+            <table class="grid" id="reviewer-table"></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ 예약 현황 ══════════════════════════ -->
+    <section class="page" id="page-booking">
+      <div id="booking-boards"></div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>예약 목록</h2><span class="sub">희망일·희망시간이 입력된 리뷰어</span>
+          <span class="spacer"></span>
+          <button class="btn btn-sm" id="btn-export-booking">예약 현황 엑셀</button>
+        </div>
+        <div class="panel-body tight">
+          <div class="table-wrap"><table class="grid" id="booking-list"></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ 공유용 일정표 ══════════════════════════ -->
+    <section class="page" id="page-share">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>공유용 일정표</h2>
+          <span class="sub">개인정보 미포함 · 리뷰어 전달용</span>
+          <span class="spacer"></span>
+          <label class="switch"><input type="checkbox" id="share-hide-closed"> 마감 시간대 숨기기</label>
+          <label class="switch"><input type="checkbox" id="share-show-count" checked> 잔여 인원 숫자 표시</label>
+          <button class="btn btn-sm" id="btn-share-png">PNG 저장</button>
+          <button class="btn btn-sm" id="btn-share-jpg">JPG 저장</button>
+        </div>
+        <div class="panel-body">
+          <div class="share-toolbar">
+            <div class="field">
+              <label for="share-note">안내문구</label>
+              <input type="text" id="share-note" class="search share-note-input" placeholder="예: 예약은 선착순입니다.">
+            </div>
+            <span class="hint">상단 바의 지점·기간 선택이 그대로 적용됩니다.</span>
+          </div>
+        </div>
+        <div class="share-preview-wrap" id="share-preview"></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ 설정 ══════════════════════════ -->
+    <section class="page" id="page-settings">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>지점 관리</h2>
+          <span class="sub">예약 가능 날짜 · 시간대 · 시간당 인원</span>
+          <span class="spacer"></span>
+          <div class="inline-form">
+            <input type="text" id="new-branch-name" placeholder="새 지점명 입력">
+            <button class="btn btn-primary btn-sm" id="btn-add-branch">지점 추가</button>
+          </div>
+        </div>
+        <div class="panel-body" id="branch-settings"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>데이터 관리</h2></div>
+        <div class="panel-body">
+          <div class="flex">
+            <button class="btn" id="btn-backup-2">JSON 백업 다운로드</button>
+            <input type="file" id="restore-input" accept=".json" hidden>
+            <button class="btn" id="btn-restore">JSON 백업 복원</button>
+            <button class="btn" id="btn-load-sample">샘플 데이터 불러오기</button>
+            <button class="btn btn-danger" id="btn-clear-reviewers">리뷰어 명단 전체 삭제</button>
+            <button class="btn btn-danger" id="btn-reset-all">전체 초기화</button>
+          </div>
+          <p class="hint mt12">
+            모든 데이터는 이 브라우저(localStorage)에만 저장됩니다. 다른 PC에서 이어서 작업하려면 JSON 백업을 사용하세요.
+            개인정보가 포함되므로 공용 PC에서는 작업 후 <b>전체 초기화</b>를 권장합니다.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+<div id="modal-root"></div>
+
+<script src="assets/xlsx-lite.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
