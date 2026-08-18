@@ -216,8 +216,8 @@
 빌드:
 ```bash
 node stay/build-preview.mjs
-#  → stay/preview.html        (관리용, 화면 11개)
-#  → stay/preview-staff.html  (직원용, 화면 4개)
+#  → stay/manage.html         (관리용, 화면 11개)
+#  → stay/apply.html          (직원용, 화면 4개)
 ```
 
 ## 6-2. 공유 링크 잠금 (비밀번호)
