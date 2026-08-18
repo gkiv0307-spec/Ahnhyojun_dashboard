@@ -121,6 +121,7 @@
 
   /* ---------------- 셸 ---------------- */
   function counters(user){
+    if (Deploy.isStaff()) return { requests:0, approve:0, settle:0, noti:0, todayIn:0 };
     var list = Store.visibleBookings(user);
     var today = STAY.ymd(new Date());
     return {
@@ -150,11 +151,16 @@
         '<div class="sb-brand">' +
           '<button class="sb-close" id="sbclose" aria-label="메뉴 닫기">✕</button>' +
           '<a href="index.html"><img src="../assets/logo-dark.png" alt="옆커폰부동산에듀" onerror="this.style.display=\'none\'"></a>' +
-          '<div class="sys">숙박 예약관리 <em>시스템</em></div>' +
+          '<div class="sys">숙박 예약' + (Deploy.isStaff() ? ' <em>신청</em>' : '관리 <em>시스템</em>') + '</div>' +
         '</div>' +
         '<nav class="sb-nav"><div class="sb-group">업무</div>' + nav + '</nav>' +
-        '<div class="sb-foot">모든 호텔·펜션 예약은<br>이 시스템으로만 접수됩니다.<br>' +
-          '<a href="notices.html">이용지침 보기</a> · <a href="../index.html">매물사이트</a></div>' +
+        '<div class="sb-foot">' +
+          (Deploy.isStaff()
+            ? '호텔·펜션 예약은<br>전화·카카오톡이 아닌<br><b style="color:#c6c8ce">이곳으로만</b> 신청해주세요.<br>' +
+              '<a href="notices.html">이용지침 보기</a>'
+            : '모든 호텔·펜션 예약은<br>이 시스템으로만 접수됩니다.<br>' +
+              '<a href="notices.html">이용지침 보기</a> · <a href="../index.html">매물사이트</a>') +
+        '</div>' +
       '</aside>');
 
     var topbar = el(
@@ -162,14 +168,16 @@
         '<button class="burger" aria-label="메뉴">☰</button>' +
         '<div><h1>' + esc(title) + '</h1>' + (crumb ? '<div class="crumb">' + esc(crumb) + '</div>' : '') + '</div>' +
         '<div class="sp"></div>' +
-        '<form class="tb-search" id="gsearch" role="search"><span>🔎</span>' +
-          '<input type="search" placeholder="예약번호·신청자·숙소 검색" aria-label="통합검색"></form>' +
-        '<button class="tb-icon" id="bell" aria-label="알림">🔔' + (c.noti ? '<span class="dot">' + (c.noti>9?'9+':c.noti) + '</span>' : '') + '</button>' +
-        '<button class="userchip" id="uchip">' +
-          '<span class="avatar">' + esc(initials(user.name)) + '</span>' +
-          '<span style="text-align:left"><span class="nm">' + esc(user.name) + '</span><br>' +
-          '<span class="rl">' + esc(STAY.ROLES[user.role].label) + ' · ' + esc(user.branch) + '</span></span>' +
-        '</button>' +
+        (Deploy.isStaff()
+          ? '<span class="tag">지점 직원용 신청 창구</span>'
+          : '<form class="tb-search" id="gsearch" role="search"><span>🔎</span>' +
+              '<input type="search" placeholder="예약번호·신청자·숙소 검색" aria-label="통합검색"></form>' +
+            '<button class="tb-icon" id="bell" aria-label="알림">🔔' + (c.noti ? '<span class="dot">' + (c.noti>9?'9+':c.noti) + '</span>' : '') + '</button>' +
+            '<button class="userchip" id="uchip">' +
+              '<span class="avatar">' + esc(initials(user.name)) + '</span>' +
+              '<span style="text-align:left"><span class="nm">' + esc(user.name) + '</span><br>' +
+              '<span class="rl">' + esc(STAY.ROLES[user.role].label) + ' · ' + esc(user.branch) + '</span></span>' +
+            '</button>') +
       '</header>');
 
     var app = el('<div class="app"></div>');
@@ -194,12 +202,13 @@
     document.addEventListener('keydown', function(e){
       if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSb();
     });
-    /* 사용자 전환 */
-    qs('#uchip', topbar).onclick = function(){ userSwitcher(); };
-    /* 알림 패널 */
-    qs('#bell', topbar).onclick = function(e){ e.stopPropagation(); notifPanel(); };
-    /* 통합검색 */
-    qs('#gsearch', topbar).onsubmit = function(e){
+    /* 아래 세 가지는 관리용 배포에만 존재한다 */
+    var chip = qs('#uchip', topbar);
+    if (chip) chip.onclick = function(){ userSwitcher(); };
+    var bell = qs('#bell', topbar);
+    if (bell) bell.onclick = function(e){ e.stopPropagation(); notifPanel(); };
+    var gs = qs('#gsearch', topbar);
+    if (gs) gs.onsubmit = function(e){
       e.preventDefault();
       var v = this.querySelector('input').value.trim();
       if (v) location.href = 'requests.html?q=' + encodeURIComponent(v);

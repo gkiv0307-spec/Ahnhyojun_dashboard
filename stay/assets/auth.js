@@ -6,10 +6,11 @@
   var MENUS = [
     { id:'dash',     href:'index.html',         icon:'📊', label:'대시보드',        roles:'*' },
     { id:'new',      href:'new.html',           icon:'➕', label:'예약 신청',       roles:'*' },
+    { id:'mystay',   href:'mystay.html',        icon:'🔎', label:'내 예약 조회',    roles:'*', staffOnly:true },
     { id:'requests', href:'requests.html',      icon:'📋', label:'예약 관리',       roles:'*' },
     { id:'approve',  href:'approvals.html',     icon:'✅', label:'승인 관리',       roles:['approver','admin','booker'] },
     { id:'settle',   href:'settlement.html',    icon:'💳', label:'정산 관리',       roles:['finance','admin','booker'] },
-    { id:'lodging',  href:'lodgings.html',      icon:'🏨', label:'숙소 관리',       roles:'*' },
+    { id:'lodging',  href:'lodgings.html',      icon:'🏨', label:'숙소 관리',       roles:'*', staffLabel:'숙소 안내' },
     { id:'noti',     href:'notifications.html', icon:'🔔', label:'알림센터',        roles:'*' },
     { id:'notice',   href:'notices.html',       icon:'📢', label:'공지·이용지침',   roles:'*' },
     { id:'admin',    href:'admin.html',         icon:'⚙️', label:'관리자',          roles:['admin'] }
@@ -36,9 +37,37 @@
     settings:        ['admin']
   };
 
+  /* ------------------------------------------------------------------
+   * 배포 모드
+   *  admin : 부동산팀이 쓰는 전체 관리 시스템 (기본값)
+   *  staff : 지점 직원에게 배포하는 신청 창구 — 신청 / 내 예약 조회 /
+   *          숙소 안내 / 이용지침만 열려 있고 로그인이 없다.
+   * 배포할 때 STAY_MODE 전역을 지정한다 (staff 로 두면 직원용):
+   *   window.STAY_MODE = 'staff';
+   * ------------------------------------------------------------------ */
+  var STAFF_MENUS  = ['new', 'mystay', 'lodging', 'notice'];
+  var STAFF_ROUTES = ['new', 'mystay', 'lodgings', 'notices'];
+
+  var Deploy = {
+    get mode(){ return global.STAY_MODE === 'staff' ? 'staff' : 'admin'; },
+    isStaff: function(){ return Deploy.mode === 'staff'; },
+    /** 직원용 배포에서 열려 있는 메뉴인지 */
+    allowsMenu: function(id){ return !Deploy.isStaff() || STAFF_MENUS.indexOf(id) >= 0; },
+    /** 직원용 배포에서 열려 있는 화면인지 (주소를 직접 쳐서 들어오는 경우 차단) */
+    allowsRoute: function(page){ return !Deploy.isStaff() || STAFF_ROUTES.indexOf(page) >= 0; },
+    /** 배포 모드별 첫 화면 */
+    home: function(){ return Deploy.isStaff() ? 'new' : 'index'; }
+  };
+
+  /* 직원용 배포에는 로그인이 없다. 신청자가 이름·지점을 직접 입력한다. */
+  var GUEST = { id:'guest', name:'', role:'applicant', branch:'', dept:'', phone:'', email:'', guest:true };
+
   var Auth = {
     MENUS: MENUS,
+    Deploy: Deploy,
+    GUEST: GUEST,
     current: function () {
+      if (Deploy.isStaff()) return GUEST;
       var d = Store.raw();
       var id = (d.session && d.session.userId) || 'u_bk1';
       return Store.user(id) || Store.users()[0];
@@ -75,9 +104,17 @@
     },
     menus: function (user) {
       user = user || Auth.current();
-      return MENUS.filter(function (m) { return m.roles === '*' || m.roles.indexOf(user.role) >= 0; });
+      return MENUS.filter(function (m) {
+        if (!Deploy.allowsMenu(m.id)) return false;
+        if (m.staffOnly && !Deploy.isStaff()) return false;   /* '내 예약 조회'는 직원용 전용 */
+        return m.roles === '*' || m.roles.indexOf(user.role) >= 0;
+      }).map(function (m) {
+        /* 같은 화면이라도 직원용에서는 '관리'가 아니라 '안내'로 보여야 한다 */
+        return (Deploy.isStaff() && m.staffLabel) ? Object.assign({}, m, { label: m.staffLabel }) : m;
+      });
     }
   };
 
   global.Auth = Auth;
+  global.Deploy = Deploy;
 })(window);

@@ -14,8 +14,11 @@ const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const REPO = path.join(ROOT, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-const PAGES = ['index', 'new', 'requests', 'detail', 'approvals',
+const PAGES = ['index', 'new', 'mystay', 'requests', 'detail', 'approvals',
                'settlement', 'lodgings', 'notifications', 'notices', 'admin'];
+
+/* 직원용 배포에 들어가는 화면만. 나머지는 번들에서 아예 빠진다. */
+const STAFF_PAGES = ['new', 'mystay', 'lodgings', 'notices'];
 
 /* ---------- 1. CSS: Pretendard(CDN 차단됨) 대신 Noto Sans KR 폴백 추가 ---------- */
 let css = read('assets/stay.css').replace(
@@ -40,11 +43,15 @@ ui = ui.replace(
 /* 로고 경로 → 인라인 데이터 URI */
 ui = ui.replace("src=\\'../assets/logo-dark.png\\'", "src=\\'" + logo + "\\'")
        .replace('src="../assets/logo-dark.png"', 'src="' + logo + '"');
-/* 사이드바 하단: 미리보기 안내로 교체 (매물사이트 상대링크는 단일파일에서 무의미) */
-ui = ui.replace(
-  "'<div class=\"sb-foot\">모든 호텔·펜션 예약은<br>이 시스템으로만 접수됩니다.<br>' +\n          '<a href=\"notices.html\">이용지침 보기</a> · <a href=\"../index.html\">매물사이트</a></div>' +",
-  "'<div class=\"sb-foot\">모든 호텔·펜션 예약은<br>이 시스템으로만 접수됩니다.<br>' +\n          '<a href=\"notices.html\">이용지침 보기</a><br><br>' +\n          '<span style=\"color:#5c5f68\">미리보기 · 샘플 데이터<br>입력한 내용은 이 브라우저에만 저장됩니다</span></div>' +"
-);
+/* 사이드바 하단: 매물사이트 상대링크는 단일 파일에서 무의미하므로 미리보기 안내로 교체.
+ * ui.js 의 해당 문자열이 바뀌면 여기서 바로 알 수 있도록 실패시킨다. */
+{
+  const marker = `'<a href="notices.html">이용지침 보기</a> · <a href="../index.html">매물사이트</a>'`;
+  if (!ui.includes(marker)) throw new Error('ui.js 사이드바 푸터 문자열을 찾지 못했습니다 — 원본이 바뀌었는지 확인하세요.');
+  ui = ui.replace(marker,
+    `'<a href="notices.html">이용지침 보기</a><br><br>' +
+     '<span style="color:#5c5f68">미리보기 · 샘플 데이터<br>입력한 내용은 이 브라우저에만 저장됩니다</span>'`);
+}
 
 /* 파일 저장: 아티팩트 뷰어는 <a download> 를 막으므로 downloads 능력으로 우회한다.
  * 능력이 없으면(로컬에서 파일로 열었을 때 등) 기존 앵커 방식으로 되돌아간다. */
@@ -74,6 +81,10 @@ ui = ui.replace(
     toast(filename + ' 파일을 내려받았습니다.', 'ok');`);
 }
 
+/* 인라인 <script> 안에 </script> 문자열이 있으면 HTML 파서가 거기서 스크립트를 끊는다.
+ * 주석이든 문자열이든 상관없이 깨지므로, 삽입 직전에 항상 이스케이프한다. */
+const inline = (js) => String(js).replace(/<\/script/gi, '<\\/script');
+
 /* ---------- 4. 페이지 스크립트 ---------- */
 function pageScript(name) {
   const html = read(name + '.html');
@@ -81,13 +92,6 @@ function pageScript(name) {
   if (!m) throw new Error(name + '.html 에서 인라인 스크립트를 찾지 못했습니다.');
   return m[1];
 }
-let pages = PAGES.map(n => `PAGES[${JSON.stringify(n)}] = function(){\n${pageScript(n)}\n};`).join('\n\n');
-
-/* new.html 의 "취소" 는 단일 파일에서 history.back() 이 아티팩트를 벗어날 수 있으므로 대시보드로 */
-pages = pages.replace(
-  "history.length > 1 ? history.back() : location.href='index.html';",
-  "location.href='index.html';"
-);
 
 /* ---------- 5. 멀티페이지 → 해시 라우팅 변환 ---------- */
 function toHashRouting(src) {
@@ -100,12 +104,11 @@ function toHashRouting(src) {
      * (예: 대시보드 KPI 카드의 'requests.html?status=UPCOMING')까지 포함해야 한다. */
     .replace(/(['"])([a-z]+)\.html/g, '$1#/$2');
 }
-ui    = toHashRouting(ui);
-auth  = toHashRouting(auth);   /* 사이드바 MENUS 의 href 가 여기 들어있다 — 빠뜨리면 메뉴 전체가 죽는다 */
-pages = toHashRouting(pages);
+ui   = toHashRouting(ui);
+auth = toHashRouting(auth);   /* 사이드바 MENUS 의 href 가 여기 들어있다 — 빠뜨리면 메뉴 전체가 죽는다 */
 
 /* 변환 누락 검사 — 놓친 링크가 있으면 죽은 링크가 되므로 빌드를 실패시킨다 */
-for (const [label, src] of [['ui.js', ui], ['auth.js', auth], ['pages', pages]]) {
+for (const [label, src] of [['ui.js', ui], ['auth.js', auth]]) {
   const leftover = src.match(/\b[a-z]+\.html/g);
   if (leftover) throw new Error(`${label}: 변환되지 않은 페이지 링크가 남았습니다 → ${[...new Set(leftover)].join(', ')}`);
 }
@@ -119,7 +122,7 @@ var CUR = { page:'index', q:'' };
 function parseHash(h){
   h = String(h || '').replace(/^#\\/?/, '');
   var i = h.indexOf('?');
-  return { page: (i < 0 ? h : h.slice(0, i)) || 'index', q: i < 0 ? '' : h.slice(i + 1) };
+  return { page: (i < 0 ? h : h.slice(0, i)) || Deploy.home(), q: i < 0 ? '' : h.slice(i + 1) };
 }
 
 var NAV = {
@@ -137,12 +140,17 @@ var NAV = {
 
 function draw(){
   CUR = parseHash(location.hash);
+  /* 직원용 배포에서 주소를 직접 쳐서 관리 화면으로 들어오는 것을 막는다 */
+  if (!Deploy.allowsRoute(CUR.page) || !PAGES[CUR.page]) {
+    var home = Deploy.home();
+    if (CUR.page !== home) { CUR = { page: home, q: '' }; }
+  }
   /* 이전 화면과 떠 있던 오버레이 정리 */
   ['.app', '.pop', '.mask', '.backdrop', '.toasts'].forEach(function(sel){
     Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ el.remove(); });
   });
   document.body.style.overflow = '';
-  var fn = PAGES[CUR.page] || PAGES.index;
+  var fn = PAGES[CUR.page] || PAGES[Deploy.home()];
   try { fn(); }
   catch (e) {
     console.error('[stay] 화면 오류', CUR.page, e);
@@ -155,9 +163,20 @@ function draw(){
 window.addEventListener('hashchange', draw);
 `;
 
-/* ---------- 7. 출력 ---------- */
-const out = `<meta charset="utf-8">
-<title>옆커폰 숙박 예약관리</title>
+/* ---------- 7. 출력 (관리용 / 직원용 두 벌) ---------- */
+function bundle({ file, title, mode, pageList }) {
+  const body = pageList
+    .map(n => `PAGES[${JSON.stringify(n)}] = function(){\n${pageScript(n)}\n};`)
+    .join('\n\n');
+  const routed = toHashRouting(
+    body.replace("history.length > 1 ? history.back() : location.href='index.html';",
+                 "location.href='" + (mode === 'staff' ? 'new' : 'index') + ".html';")
+  );
+  const leftover = routed.match(/\b[a-z]+\.html/g);
+  if (leftover) throw new Error(`${file}: 변환되지 않은 페이지 링크 → ${[...new Set(leftover)].join(', ')}`);
+
+  const out = `<meta charset="utf-8">
+<title>${title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap">
@@ -167,25 +186,31 @@ ${css}
 
 <div id="stay-root"></div>
 
+<script>window.STAY_MODE = ${JSON.stringify(mode)};</script>
 <script>
-${store}
+${inline(store)}
 </script>
 <script>
-${auth}
+${inline(auth)}
 </script>
 <script>
-${ui}
+${inline(ui)}
 </script>
 <script>
-${router}
+${inline(router)}
 </script>
 <script>
-${pages}
+${inline(routed)}
 </script>
 <script>
 draw();
 </script>
 `;
+  fs.writeFileSync(path.join(ROOT, file), out);
+  console.log(`${file.padEnd(22)} ${(out.length / 1024).toFixed(0)}KB  화면 ${pageList.length}개  [${mode}]`);
+}
 
-fs.writeFileSync(path.join(ROOT, 'preview.html'), out);
-console.log('stay/preview.html 생성 완료 —', (out.length / 1024).toFixed(0) + 'KB');
+bundle({ file:'preview.html',       title:'옆커폰 숙박 예약관리',
+         mode:'admin', pageList: PAGES });
+bundle({ file:'preview-staff.html', title:'옆커폰 숙박 예약 신청',
+         mode:'staff', pageList: STAFF_PAGES });

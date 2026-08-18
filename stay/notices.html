@@ -15,7 +15,7 @@
 (function(){
   var user = Auth.current();
   var root = UI.shell('notice', '공지 · 이용지침', '숙박 예약 신청방법 · 규정 · FAQ');
-  var canEdit = Auth.can('manageNotice');
+  var canEdit = !Deploy.isStaff() && Auth.can('manageNotice');
   var cat = '';
 
   function render(){

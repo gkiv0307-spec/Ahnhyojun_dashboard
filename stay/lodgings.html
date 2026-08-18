@@ -14,8 +14,11 @@
 <script>
 (function(){
   var user = Auth.current();
-  var root = UI.shell('lodging', '숙소 관리', '호텔 · 펜션 마스터 (직영 / 제휴 구분)');
-  var canEdit = Auth.can('manageLodging');
+  var isStaff = Deploy.isStaff();
+  var root = UI.shell('lodging',
+    isStaff ? '숙소 안내' : '숙소 관리',
+    isStaff ? '회사 직영 숙소와 제휴 숙소 이용 안내' : '호텔 · 펜션 마스터 (직영 / 제휴 구분)');
+  var canEdit = !isStaff && Auth.can('manageLodging');
   var st = { q:'', type:'', own:'', region:'' };
 
   function rows(){
@@ -26,6 +29,13 @@
     if (st.type)   list = list.filter(function(l){ return l.type === st.type; });
     if (st.own)    list = list.filter(function(l){ return l.ownership === st.own; });
     if (st.region) list = list.filter(function(l){ return l.region === st.region; });
+    if (isStaff) {
+      list = list.filter(function(l){ return l.active !== false; });
+      list.sort(function(a, b){                       /* 직영 숙소를 먼저 안내한다 */
+        if (a.ownership !== b.ownership) return a.ownership === 'DIRECT' ? -1 : 1;
+        return a.name < b.name ? -1 : 1;
+      });
+    }
     return list;
   }
   function usage(loId){
@@ -38,20 +48,22 @@
     var regions = all.map(function(l){ return l.region; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
     var list = rows();
     root.innerHTML =
-     '<div class="pagehead"><div><h2>숙소 관리</h2>' +
-       '<p>회사 직영 숙소와 외부 제휴 숙소를 구분해 관리합니다. 예약 신청 화면의 숙소 목록이 여기서 채워집니다.</p></div>' +
+     '<div class="pagehead"><div><h2>' + (isStaff ? '숙소 안내' : '숙소 관리') + '</h2>' +
+       '<p>' + (isStaff
+         ? '회사가 직접 운영하는 <b>직영 숙소</b>와 <b>제휴 숙소</b>입니다. 예약 신청 시 아래 숙소 중에서 선택해주세요.'
+         : '회사 직영 숙소와 외부 제휴 숙소를 구분해 관리합니다. 예약 신청 화면의 숙소 목록이 여기서 채워집니다.') + '</p></div>' +
        '<div class="sp"></div>' + (canEdit ? '<button class="btn btn-gold" id="add">＋ 숙소 등록</button>' : '') + '</div>' +
 
-     '<div class="kpis" style="grid-template-columns:repeat(4,1fr)">' +
+     '<div class="kpis" style="grid-template-columns:repeat(' + (isStaff?3:4) + ',1fr)">' +
        '<div class="kpi k-ink"><div class="lb">전체 숙소</div><div class="vl">' + all.length + '<small>곳</small></div></div>' +
        '<div class="kpi k-blue"><div class="lb">직영 (회사운영)</div><div class="vl">' +
          all.filter(function(l){return l.ownership==='DIRECT';}).length + '<small>곳</small></div><div class="sub">숙박비 무료</div></div>' +
        '<div class="kpi k-violet"><div class="lb">제휴 숙소</div><div class="vl">' +
          all.filter(function(l){return l.ownership==='PARTNER';}).length + '<small>곳</small></div><div class="sub">제휴가 적용</div></div>' +
-       '<div class="kpi k-gold"><div class="lb">평균 할인율</div><div class="vl">' +
+       (isStaff ? '' : '<div class="kpi k-gold"><div class="lb">평균 할인율</div><div class="vl">' +
          Math.round(all.filter(function(l){return l.ownership==="PARTNER";}).reduce(function(s,l){return s+(l.discountRate||0);},0) /
            Math.max(1, all.filter(function(l){return l.ownership==="PARTNER";}).length)) + '<small>%</small></div>' +
-         '<div class="sub">제휴 숙소 기준</div></div>' +
+         '<div class="sub">제휴 숙소 기준</div></div>') +
      '</div>' +
 
      '<div class="card mt"><div class="card-b"><div class="filterbar">' +
@@ -83,7 +95,7 @@
           d('정상가격', STAY.won(l.rackRate)) +
           d('제휴가격', l.partnerRate ? '<b>' + STAY.won(l.partnerRate) + '</b>' : (l.discountRate===100 ? '<b>무료(직영)</b>' : '<span class="muted">-</span>')) +
           d('할인율', (l.discountRate||0) + '%') +
-          d('이용 실적', u.n + '건 · ' + STAY.won(u.sum)) +
+          (isStaff ? '' : d('이용 실적', u.n + '건 · ' + STAY.won(u.sum))) +
         '</dl>' +
         '<div class="hr"></div>' +
         '<dl class="dl one">' +
