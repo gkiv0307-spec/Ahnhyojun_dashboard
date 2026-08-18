@@ -250,7 +250,7 @@
       ['예약 접수 · 확인중 전환', ['booker','admin']],
       ['추가정보 요청', ['booker','admin']],
       ['승인 요청(상신)', ['booker','admin']],
-      ['승인 / 반려 / 승인의견', ['approver','admin']],
+      ['승인 / 반려 / 승인의견', ['approver','admin'], '+ 승인 권한(canApprove)이 부여된 계정 — 현재 부동산팀 전원'],
       ['숙소 예약 진행 · 예약번호/객실/비용 등록', ['booker','admin']],
       ['예약 완료 처리', ['booker','admin']],
       ['예약 변경 · 취소', ['booker','admin']],
@@ -271,7 +271,8 @@
        STAY.ROLE_ORDER.map(function(r){ return '<th class="center">' + STAY.ROLES[r].label + '</th>'; }).join('') +
      '</tr></thead><tbody>' +
        ACTIONS.map(function(a){
-         return '<tr style="cursor:default"><td data-l="기능"><b>' + UI.esc(a[0]) + '</b></td>' +
+         return '<tr style="cursor:default"><td data-l="기능"><b>' + UI.esc(a[0]) + '</b>' +
+           (a[2] ? '<div class="sub" style="color:var(--orange)">' + UI.esc(a[2]) + '</div>' : '') + '</td>' +
            STAY.ROLE_ORDER.map(function(r){
              var ok = a[1].indexOf(r) >= 0;
              return '<td data-l="' + STAY.ROLES[r].label + '" class="center" style="color:' + (ok?'var(--green)':'var(--line)') + ';font-weight:900">' +
@@ -326,6 +327,10 @@
              '<div class="dr"><dt>저장소</dt><dd>브라우저 localStorage <code>ykp_stay_v1</code></dd></div>' +
              '<div class="dr"><dt>예약</dt><dd>' + Store.bookings().length + '건</dd></div>' +
              '<div class="dr"><dt>처리로그</dt><dd>' + Store.logs().length + '건</dd></div>' +
+             '<div class="dr"><dt>문의 창구</dt><dd>' + UI.esc((Store.settings().contact||{}).team||'-') + ' ' +
+               UI.esc((Store.settings().contact||{}).phone||'') + '</dd></div>' +
+             '<div class="dr"><dt>승인 권한</dt><dd>' +
+               Store.users().filter(function(u){ return u.canApprove; }).length + '명 (부동산팀 전원)</dd></div>' +
              '<div class="dr"><dt>사용자</dt><dd>' + Store.users().length + '명 <span class="muted">(자리표시자 ' +
                Store.users().filter(function(u){ return u.sample; }).length + '명 포함)</span></dd></div>' +
              '<div class="dr"><dt>지점</dt><dd>' + Store.branches().map(function(b){

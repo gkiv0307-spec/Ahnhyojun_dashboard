@@ -8,7 +8,7 @@
     { id:'new',      href:'new.html',           icon:'➕', label:'예약 신청',       roles:'*' },
     { id:'mystay',   href:'mystay.html',        icon:'🔎', label:'내 예약 조회',    roles:'*', staffOnly:true },
     { id:'requests', href:'requests.html',      icon:'📋', label:'예약 관리',       roles:'*' },
-    { id:'approve',  href:'approvals.html',     icon:'✅', label:'승인 관리',       roles:['approver','admin','booker'] },
+    { id:'approve',  href:'approvals.html',     icon:'✅', label:'승인 관리',       roles:['approver','admin','booker'], grant:'canApprove' },
     { id:'settle',   href:'settlement.html',    icon:'💳', label:'정산 관리',       roles:['finance','admin','booker'] },
     { id:'lodging',  href:'lodgings.html',      icon:'🏨', label:'숙소 관리',       roles:'*', staffLabel:'숙소 안내' },
     { id:'noti',     href:'notifications.html', icon:'🔔', label:'알림센터',        roles:'*' },
@@ -22,7 +22,7 @@
     receive:         ['booker','admin'],
     requestInfo:     ['booker','admin'],
     requestApproval: ['booker','admin'],
-    decideApproval:  ['approver','admin'],
+    decideApproval:  ['approver','admin'],   /* + canApprove 플래그 보유자 (아래 Auth.can 참고) */
     doReservation:   ['booker','admin'],
     editReservation: ['booker','admin'],
     cancelBooking:   ['booker','admin'],
@@ -80,12 +80,16 @@
     role: function () { var u = Auth.current(); return u ? u.role : null; },
     roleLabel: function (r) { return (STAY.ROLES[r || Auth.role()] || {}).label || '-'; },
     is: function (r) { return Auth.role() === r; },
+    /* 역할과 별개로 계정에 부여된 권한 플래그 */
+    GRANTS: { decideApproval: 'canApprove' },
     can: function (action, user) {
       user = user || Auth.current();
       var rule = CAN[action];
       if (!rule) return false;
       if (rule === '*') return true;
-      return rule.indexOf(user.role) >= 0;
+      if (rule.indexOf(user.role) >= 0) return true;
+      var g = Auth.GRANTS[action];
+      return !!(g && user[g]);
     },
     /** 예약 1건에 대한 접근 가능 여부 */
     canSee: function (b, user) {
@@ -107,7 +111,8 @@
       return MENUS.filter(function (m) {
         if (!Deploy.allowsMenu(m.id)) return false;
         if (m.staffOnly && !Deploy.isStaff()) return false;   /* '내 예약 조회'는 직원용 전용 */
-        return m.roles === '*' || m.roles.indexOf(user.role) >= 0;
+        if (m.roles === '*' || m.roles.indexOf(user.role) >= 0) return true;
+        return !!(m.grant && user[m.grant]);
       }).map(function (m) {
         /* 같은 화면이라도 직원용에서는 '관리'가 아니라 '안내'로 보여야 한다 */
         return (Deploy.isStaff() && m.staffLabel) ? Object.assign({}, m, { label: m.staffLabel }) : m;

@@ -15,6 +15,7 @@
 (function(){
   var user = Auth.current();
   var root = UI.shell('notice', '공지 · 이용지침', '숙박 예약 신청방법 · 규정 · FAQ');
+  var ct = Store.settings().contact || { team:'부동산팀', name:'', title:'', phone:'' };
   var canEdit = !Deploy.isStaff() && Auth.can('manageNotice');
   var cat = '';
 
@@ -30,24 +31,31 @@
      '<div class="card" style="margin-bottom:14px"><div class="card-b">' +
        '<div class="grid g4" style="gap:10px">' +
          step('1', '예약 신청', '좌측 [예약 신청] 메뉴에서 신청서를 작성합니다. 체크인·체크아웃만 넣으면 숙박일수는 자동 계산됩니다.') +
-         step('2', '접수 · 승인', '예약관리팀이 접수하고 내용을 확인한 뒤, 비용이 발생하는 건은 경영지원팀 승인을 받습니다.') +
-         step('3', '예약 완료', '담당자가 숙소에 예약하고 예약번호·객실정보를 등록하면 신청자에게 알림이 갑니다.') +
-         step('4', '이용 · 정산', '숙박 이용 후 회계팀이 결제·증빙을 확인하고 정산을 완료합니다.') +
+         step('2', '접수 · 승인', '부동산팀이 접수하고 내용을 확인합니다. 승인은 부동산팀원 누구나 할 수 있어 담당자 부재로 지연되지 않습니다.') +
+         step('3', '예약 완료', '부동산팀이 숙소에 예약하고 예약번호·객실정보를 등록하면 신청자에게 알림이 갑니다.') +
+         step('4', '이용 · 정산', '숙박 이용 후 부동산팀 회계 담당이 결제·증빙을 확인하고 정산을 완료합니다.') +
        '</div>' +
        '<div class="hr"></div>' +
-       '<div class="note">☎️ <b>전화·카카오톡으로 요청하지 마세요.</b> 개인에게 요청이 몰리면 누락·중복 예약이 발생합니다. ' +
-         '부득이하게 전화로 요청하신 경우에도 예약 담당자가 시스템에 대신 등록하며, ' +
-         '<b>시스템에 등록되지 않은 요청은 처리·정산되지 않습니다.</b></div>' +
+       '<div class="note">☎️ <b>예약 신청은 전화·카카오톡이 아니라 이 시스템으로 넣어주세요.</b> ' +
+         '개인에게 요청이 몰리면 누락·중복 예약이 발생합니다. 부득이하게 전화로 요청하신 경우에도 ' +
+         '부동산팀이 시스템에 대신 등록하며, <b>등록되지 않은 요청은 처리·정산되지 않습니다.</b><br>' +
+         '문의는 <b>' + UI.esc(ct.team) + ' ' + UI.esc(ct.phone) + '</b> 한 곳으로 주시면 됩니다.</div>' +
      '</div></div>' +
 
      '<div class="grid g-1-2">' +
-       '<div><div class="card"><div class="card-h"><h3>📇 담당부서 · 연락처</h3></div>' +
-         '<div class="card-b tight"><div class="list">' +
-           contact('📥','예약 접수·진행','예약관리팀', ['u_bk1','u_bk2']) +
-           contact('✅','예약 승인','경영지원팀', ['u_ap1']) +
-           contact('💳','결제·정산·증빙','회계팀', ['u_fi1']) +
-           contact('⚙️','시스템 관리','경영지원팀', ['u_admin']) +
-         '</div></div></div>' +
+       '<div><div class="card"><div class="card-h"><h3>📇 문의 창구</h3></div>' +
+         '<div class="card-b">' +
+           '<div class="note" style="margin:0">' +
+             '<div style="font-size:13px;font-weight:800;color:#7a5800">숙박 예약 관련 모든 문의</div>' +
+             '<div style="font-size:20px;font-weight:900;margin:6px 0 2px;color:var(--ink)">' + UI.esc(ct.team) + '</div>' +
+             '<a href="tel:' + UI.esc(ct.phone) + '" style="font-size:17px;font-weight:900;color:var(--ink);text-decoration:underline">' +
+               UI.esc(ct.phone) + '</a>' +
+             '<div style="font-size:12.5px;margin-top:4px;color:#7a5800">' + UI.esc(ct.name) +
+               (ct.title ? ' ' + UI.esc(ct.title) : '') + '</div>' +
+           '</div>' +
+           '<p class="muted" style="font-size:12.5px;margin:12px 0 0">접수·승인·예약·정산은 부동산팀 안에서 나눠 처리합니다. ' +
+             '어느 단계인지 몰라도 위 한 곳으로 문의하시면 됩니다. 팀원 개개인에게 따로 연락하실 필요가 없습니다.</p>' +
+         '</div></div>' +
          '<div class="card mt"><div class="card-h"><h3>🗂 분류</h3></div><div class="card-b">' +
            '<div class="chips"><button class="chip' + (cat===''?' on':'') + '" data-c="">전체<span class="n">' + all.length + '</span></button>' +
            STAY.NOTICE_CAT.map(function(c){
@@ -81,12 +89,6 @@
       'display:grid;place-items:center;font-weight:900;font-size:12px">' + no + '</span>' +
       '<b style="font-size:14px">' + t + '</b></div>' +
       '<div style="font-size:12.5px;color:var(--text-2);line-height:1.6">' + d + '</div></div>';
-  }
-  function contact(icon, role, dept, ids){
-    var us = ids.map(function(i){ return Store.user(i); }).filter(Boolean);
-    return '<div class="li" style="cursor:default"><span class="ic">' + icon + '</span>' +
-      '<span class="tx"><span class="t1">' + UI.esc(role) + ' <span class="muted" style="font-weight:600">· ' + UI.esc(dept) + '</span></span>' +
-      '<span class="t2">' + us.map(function(u){ return UI.esc(u.name) + ' (' + UI.esc(u.phone) + ')'; }).join(' · ') + '</span></span></div>';
   }
 
   function editModal(n){

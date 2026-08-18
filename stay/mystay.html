@@ -14,6 +14,7 @@
 <script>
 (function(){
   var root = UI.shell('mystay', '내 예약 조회', '예약번호와 신청자명으로 진행상황을 확인합니다');
+  var ct = Store.settings().contact || { team:'부동산팀', name:'', title:'', phone:'' };
   var RECENT_KEY = 'ykp_stay_recent';
   var found = null;
 
@@ -75,7 +76,7 @@
 
      (found ? '' :
        '<div class="note info mt">예약번호를 잊으셨나요? 신청 직후 화면과 담당자 안내 메시지에 <b>STAY-연도-일련번호</b> 형식으로 안내됩니다. ' +
-       '찾기 어려우시면 본사 예약관리팀에 문의해주세요.</div>');
+       '찾기 어려우시면 ' + UI.esc(ct.team) + ' ' + UI.esc(ct.phone) + ' 로 문의해주세요.</div>');
 
     if (found) drawResult(found);
 
@@ -138,11 +139,13 @@
         '<dl class="dl">' +
           dr('숙소 예약번호', '<b style="font-size:15px">' + UI.esc(r.confirmNo || '-') + '</b>') +
           dr('객실 정보', UI.esc(r.roomInfo || '-')) +
-          (lo ? dr('숙소 연락처', UI.esc(lo.managerPhone)) : '') +
-          (lo ? dr('주소', UI.esc(lo.address)) : '') +
+          (lo && lo.managerPhone ? dr('숙소 연락처', UI.esc(lo.managerPhone)) : '') +
+          (lo && lo.address ? dr('주소', UI.esc(lo.address)) : '') +
+          dr('문의', UI.esc(ct.team) + ' <a href="tel:' + UI.esc(ct.phone) + '" style="text-decoration:underline">' +
+             UI.esc(ct.phone) + '</a>') +
         '</dl>' +
         (lo && lo.caution ? '<div class="note warn" style="margin-top:10px">⚠ ' + UI.esc(lo.caution) + '</div>' : '') +
-        (lo ? '<div class="note mt" style="margin-top:8px">취소규정: ' + UI.esc(lo.cancelPolicy) + '</div>' : '') +
+        (lo && lo.cancelPolicy ? '<div class="note mt" style="margin-top:8px">취소규정: ' + UI.esc(lo.cancelPolicy) + '</div>' : '') +
       '</div>' : '') +
 
       (b.status === 'REJECTED' && b.approval && b.approval.opinion
@@ -184,7 +187,7 @@
         placeholder:'예) 체크인을 하루 늦춰주세요 (8/21 → 8/22). 인원도 2명 추가됩니다.' }).then(function(v){
         if (v == null) return;
         Store.requestChange(b.id, 'change', v, requester(b));
-        UI.toast('수정 요청을 보냈습니다. 담당자가 확인 후 연락드립니다.', 'ok');
+        UI.toast('수정 요청을 보냈습니다. 부동산팀이 확인 후 연락드립니다.', 'ok');
         found = Store.booking(b.id); render();
       });
     };
@@ -210,17 +213,17 @@
   /* 지금 단계에서 신청자가 무엇을 기다리면 되는지 한 줄로 */
   function statusMessage(b){
     var M = {
-      NEW:              ['info', '신청이 접수 대기 중입니다. 본사 예약관리팀이 확인하면 접수완료로 바뀝니다.'],
-      RECEIVED:         ['info', '예약관리팀이 접수했습니다. 신청 내용을 검토하고 있습니다.'],
+      NEW:              ['info', '신청이 접수 대기 중입니다. 부동산팀이 확인하면 접수완료로 바뀝니다.'],
+      RECEIVED:         ['info', '부동산팀이 접수했습니다. 신청 내용을 검토하고 있습니다.'],
       REVIEWING:        ['info', '신청 내용을 확인하고 있습니다. 추가 정보가 필요하면 연락드립니다.'],
-      APPROVAL_PENDING: ['warn', '승인 담당자의 승인을 기다리고 있습니다.'],
-      APPROVED:         ['info', '승인되었습니다. 담당자가 숙소에 예약을 진행할 예정입니다.'],
-      BOOKING:          ['info', '담당자가 숙소에 예약을 진행하고 있습니다.'],
+      APPROVAL_PENDING: ['warn', '부동산팀 승인을 기다리고 있습니다.'],
+      APPROVED:         ['info', '승인되었습니다. 부동산팀이 숙소에 예약을 진행할 예정입니다.'],
+      BOOKING:          ['info', '부동산팀이 숙소에 예약을 진행하고 있습니다.'],
       BOOKED:           ['',     '예약이 확정되었습니다. 아래 숙소 예약번호로 체크인하시면 됩니다.'],
       UPCOMING:         ['',     '이용 예정입니다. 체크인 날짜를 확인해주세요.'],
-      USED:             ['info', '숙박 이용이 끝났습니다. 회계팀 정산이 진행됩니다.'],
-      SETTLE_WAIT:      ['info', '회계팀 정산 대기 중입니다. 신청자가 따로 하실 일은 없습니다.'],
-      SETTLING:         ['info', '회계팀이 정산 처리 중입니다.'],
+      USED:             ['info', '숙박 이용이 끝났습니다. 부동산팀 정산이 진행됩니다.'],
+      SETTLE_WAIT:      ['info', '정산 대기 중입니다. 신청자가 따로 하실 일은 없습니다.'],
+      SETTLING:         ['info', '부동산팀이 정산 처리 중입니다.'],
       SETTLED:          ['',     '정산까지 모두 완료된 건입니다.'],
       CANCELED:         ['bad',  '취소된 예약입니다.'],
       REJECTED:         ['bad',  '반려된 예약입니다. 사유를 확인하고 조정 후 다시 신청해주세요.']

@@ -70,6 +70,7 @@
            Object.keys(STAY.NOTI_TYPE).map(function(k){
              var t = STAY.NOTI_TYPE[k];
              var targets = (t.roles||[]).map(function(r){ return STAY.ROLES[r].short; });
+             if (t.grant === 'canApprove') targets.push('승인 권한자(부동산팀)');
              if (['APPROVED','REJECTED','BOOKING_CONFIRMED','BOOKING_CANCELED','CHECKIN_TOMORROW'].indexOf(k)>=0) targets.push('신청자');
              return '<div class="li" style="cursor:default"><span class="ic">' + t.icon + '</span>' +
                '<span class="tx"><span class="t1">' + UI.esc(t.label) + '</span>' +

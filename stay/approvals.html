@@ -36,8 +36,8 @@
     var pendingSum = d.pending.reduce(function(s,b){ return s + amount(b); }, 0);
     root.innerHTML =
      '<div class="pagehead"><div><h2>승인 관리</h2>' +
-       '<p>' + (canDecide ? '승인 또는 반려 처리 후 예약 담당자에게 자동으로 알림이 전달됩니다.'
-                          : '읽기 전용입니다. 승인/반려는 승인 담당자만 처리할 수 있습니다.') + '</p></div></div>' +
+       '<p>' + (canDecide ? '부동산팀원 누구나 승인할 수 있습니다. 처리하면 신청자와 예약 담당자에게 자동으로 알림이 전달됩니다.'
+                          : '읽기 전용입니다. 승인/반려는 승인 권한이 있는 부동산팀원만 처리할 수 있습니다.') + '</p></div></div>' +
 
      '<div class="kpis" style="grid-template-columns:repeat(3,1fr)">' +
        '<div class="kpi k-orange"><div class="lb">승인 대기</div><div class="vl">' + d.pending.length + '<small>건</small></div>' +

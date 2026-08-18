@@ -60,8 +60,10 @@
       { to:'CANCELED',  roles:['booker','admin'],   action:'예약 취소' }
     ],
     APPROVAL_PENDING: [
-      { to:'APPROVED',  roles:['approver','admin'], action:'승인' },
-      { to:'REJECTED',  roles:['approver','admin'], action:'반려' }
+      /* grant: 역할과 별개로 이 플래그를 가진 사용자에게도 허용한다.
+       * 부동산팀은 팀원 전체가 승인할 수 있어 각 계정에 canApprove 를 준다. */
+      { to:'APPROVED',  roles:['approver','admin'], grant:'canApprove', action:'승인' },
+      { to:'REJECTED',  roles:['approver','admin'], grant:'canApprove', action:'반려' }
     ],
     APPROVED: [
       { to:'BOOKING',   roles:['booker','admin'],   action:'숙소 예약 진행' },
@@ -114,7 +116,7 @@
 
   var NOTI_TYPE = {
     BOOKING_CREATED:   { label:'신규 예약 신청', icon:'📝', roles:['booker','admin'] },
-    APPROVAL_REQUESTED:{ label:'승인 요청',      icon:'⏳', roles:['approver','admin'] },
+    APPROVAL_REQUESTED:{ label:'승인 요청',      icon:'⏳', roles:['approver','admin'], grant:'canApprove' },
     APPROVED:          { label:'승인 완료',      icon:'✅', roles:['booker','admin'] },
     REJECTED:          { label:'반려',           icon:'🚫', roles:['booker','admin'] },
     BOOKING_CONFIRMED: { label:'예약 완료',      icon:'🏨', roles:['booker','admin'] },
@@ -164,10 +166,14 @@
    * 3. 저장소
    * ===================================================================== */
   var KEY = 'ykp_stay_v1';
+  /* 시드(숙소·구성원·공지)가 바뀌면 이 값을 올린다. 저장된 값과 다르면 다시 시드한다.
+   * 미리보기에서 이미 열어본 브라우저가 옛 숙소·옛 담당자를 계속 보는 것을 막기 위함이다.
+   * 서버 저장소로 옮기면 이 장치는 필요 없다. */
+  var SEED_VERSION = 3;
   var db = null;
 
   function emptyDb(){
-    return { version:1, branches:[], users:[], lodgings:[], bookings:[], logs:[],
+    return { version:1, seedVersion:SEED_VERSION, branches:[], users:[], lodgings:[], bookings:[], logs:[],
              notifications:[], notices:[], settings:{}, seq:{}, session:null };
   }
   function _read(){
@@ -176,7 +182,9 @@
       var raw = global.localStorage.getItem(KEY);
       if (raw) { db = JSON.parse(raw); }
     } catch (e) { db = null; }
-    if (!db || !db.bookings) { db = emptyDb(); seed(db); _write(); }
+    var stale = db && db.seedVersion !== SEED_VERSION;
+    if (stale) console.info('[stay] 기준 정보가 갱신되어 초기 데이터를 다시 불러옵니다.');
+    if (!db || !db.bookings || stale) { db = emptyDb(); seed(db); _write(); }
     return db;
   }
   function _write(){
@@ -206,21 +214,21 @@
      *   applicant 나머지 — 출장 시 숙박을 신청하는 쪽
      * sample:true 인 계정은 실제 지점 담당자 정보를 받으면 교체할 자리표시자다. */
     d.users = [
-      { id:'u_kho', name:'고호정', title:'실장',      role:'admin',     branch:'본사', dept:'부동산팀', phone:'010-6419-0759', email:'', active:true,
+      { id:'u_kho', name:'고호정', title:'실장',      role:'admin',     branch:'본사', dept:'부동산팀', phone:'010-6419-0759', email:'', active:true, canApprove:true,
         duty:'부동산에듀 대표 · 부동산팀 총괄' },
-      { id:'u_msj', name:'문소진', title:'대리/팀장', role:'admin',     branch:'본사', dept:'부동산팀', phone:'010-8592-2699', email:'', active:true,
+      { id:'u_msj', name:'문소진', title:'대리/팀장', role:'admin',     branch:'본사', dept:'부동산팀', phone:'010-8592-2699', email:'', active:true, canApprove:true,
         duty:'부동산팀 총괄 · 숙박 플랫폼 등록/관리 · 문의 응대 · SNS 마케팅' },
-      { id:'u_ahj', name:'안효준', title:'대리',      role:'finance',   branch:'본사', dept:'부동산팀', phone:'010-8550-2699', email:'', active:true,
+      { id:'u_ahj', name:'안효준', title:'대리',      role:'finance',   branch:'본사', dept:'부동산팀', phone:'010-8550-2699', email:'', active:true, canApprove:true,
         duty:'부동산팀 회계 업무 전반' },
-      { id:'u_ldh', name:'이동현', title:'사원',      role:'booker',    branch:'본사', dept:'부동산팀', phone:'010-8347-2699', email:'', active:true,
+      { id:'u_ldh', name:'이동현', title:'사원',      role:'booker',    branch:'본사', dept:'부동산팀', phone:'010-8347-2699', email:'', active:true, canApprove:true,
         duty:'호텔운영관리 · OTA 세팅 및 관리 · 매출 관리 · 주택 관리' },
-      { id:'u_lhc', name:'이현철', title:'소장',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-7777-1976', email:'', active:true,
+      { id:'u_lhc', name:'이현철', title:'소장',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-7777-1976', email:'', active:true, canApprove:true,
         duty:'각 지역 가맹점 계약' },
-      { id:'u_yhr', name:'유현록', title:'주임',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-8554-2699', email:'', active:true,
+      { id:'u_yhr', name:'유현록', title:'주임',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-8554-2699', email:'', active:true, canApprove:true,
         duty:'직영·가맹 매장 계약 관리 · 상가 매물 탐색 및 상권 분석 · 지사/점주 상담' },
-      { id:'u_ljh', name:'이재환', title:'주임',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-3101-2699', email:'', active:true,
+      { id:'u_ljh', name:'이재환', title:'주임',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-3101-2699', email:'', active:true, canApprove:true,
         duty:'시공 현장관리 및 감리 · 자재 구매/운반 · 인테리어 디자인 · 실측' },
-      { id:'u_ygh', name:'여가현', title:'사원',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-6271-2699', email:'', active:true,
+      { id:'u_ygh', name:'여가현', title:'사원',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-6271-2699', email:'', active:true, canApprove:true,
         duty:'부동산 인테리어 모델링 · 인테리어 견적 · 2D/3D 및 견적 관리' },
 
       /* --- 아래 2개는 자리표시자. 실제 지점 담당자를 받으면 교체한다. --- */
@@ -459,20 +467,24 @@
     d.notices = [
       { id:uid('nc'), category:'예약 신청방법', pinned:true, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
         title:'[필독] 호텔·펜션 예약은 전화·카카오톡이 아닌 이 시스템으로만 신청해주세요',
-        body:'그동안 지점별로 회계팀이나 개인에게 전화·카카오톡으로 숙박 예약을 요청하면서 누락·중복 예약이 반복되었습니다.\n\n' +
+        body:'그동안 개인에게 전화·카카오톡으로 숙박 예약을 요청하면서 누락·중복 예약이 반복되었습니다.\n\n' +
              '2026년부터 모든 호텔·펜션 예약은 [예약 신청] 메뉴에서만 접수합니다.\n\n' +
              '1) 좌측 메뉴 [예약 신청] 클릭\n' +
              '2) 신청서 작성 후 제출 (체크인/체크아웃만 넣으면 숙박일수는 자동 계산됩니다)\n' +
              '3) 제출 즉시 예약번호(STAY-연도-일련번호)가 발급되고 부동산팀에 알림이 갑니다\n' +
-             '4) 진행 상황은 [예약 관리]에서 실시간으로 확인할 수 있습니다\n\n' +
-             '※ 부득이하게 전화로 요청하신 경우에도 예약 담당자가 시스템에 대신 등록합니다. 등록되지 않은 요청은 처리되지 않습니다.' },
+             '4) 진행 상황은 [내 예약 조회]에서 예약번호와 신청자명으로 확인할 수 있습니다\n\n' +
+             '※ 부득이하게 전화로 요청하신 경우에도 부동산팀이 시스템에 대신 등록합니다. 등록되지 않은 요청은 처리되지 않습니다.\n' +
+             '   문의는 부동산팀 이동현 사원 010-8347-2699 한 곳으로 주시면 됩니다.' },
       { id:uid('nc'), category:'담당부서', pinned:true, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
-        title:'숙박 예약 담당부서 안내 (회계 담당자는 예약 접수 창구가 아닙니다)',
-        body:'· 예약 접수·진행 : 부동산팀 이동현 사원 (호텔운영관리·OTA) / 문소진 팀장 (숙박 플랫폼 관리)\n' +
-             '· 승인 : 부동산팀 고호정 실장\n' +
-             '· 결제·정산·증빙 : 부동산팀 안효준 대리 (회계)\n\n' +
-             '회계 담당자는 "이미 이용이 끝난 건의 결제·세금계산서·정산"만 처리합니다.\n' +
-             '예약을 새로 잡거나 변경·취소하는 요청을 회계 담당자에게 하시면 처리가 지연됩니다. 반드시 시스템으로 신청해주세요.' },
+        title:'숙박 예약 문의는 부동산팀 한 곳으로 주세요',
+        body:'숙박 예약 관련 모든 문의는 부동산팀에서 받습니다.\n\n' +
+             '📞 부동산팀 대표 연락처 : 이동현 사원 010-8347-2699\n\n' +
+             '접수·승인·예약·정산은 부동산팀 안에서 나눠 처리하므로,\n' +
+             '어느 단계인지 몰라도 위 번호 한 곳으로 문의하시면 됩니다.\n' +
+             '팀원 개개인에게 따로 연락하실 필요가 없습니다.\n\n' +
+             '· 승인은 부동산팀원 누구나 할 수 있어 담당자 부재로 지연되지 않습니다.\n' +
+             '· 다만 예약 신청 자체는 전화가 아니라 [예약 신청] 메뉴로 넣어주세요.\n' +
+             '  전화로 주신 요청도 부동산팀이 시스템에 대신 등록하지만, 등록되지 않으면 처리·정산이 되지 않습니다.' },
       { id:uid('nc'), category:'이용규정', pinned:false, author:'고호정', createdAt:nowIso, updatedAt:nowIso,
         title:'숙박 이용 기준 및 객실 배정 규정',
         body:'· 1객실 2인 기준 배정이 원칙입니다. 1인 1객실은 팀장급 이상 또는 야간 업무 시에만 승인됩니다.\n' +
@@ -516,11 +528,11 @@
       { id:uid('nc'), category:'FAQ', pinned:false, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
         title:'자주 묻는 질문 (FAQ)',
         body:'Q. 급해서 전화로 요청했는데 시스템에도 넣어야 하나요?\n' +
-             'A. 예약 담당자가 대신 등록합니다. 다만 등록 여부는 [예약 관리]에서 직접 확인해주세요. 등록되지 않은 건은 기록이 남지 않아 정산이 불가합니다.\n\n' +
+             'A. 부동산팀이 대신 등록합니다. 다만 등록 여부는 [예약 관리]에서 직접 확인해주세요. 등록되지 않은 건은 기록이 남지 않아 정산이 불가합니다.\n\n' +
              'Q. 예약이 지금 어디까지 진행됐는지 어떻게 아나요?\n' +
-             'A. [예약 관리]에서 본인 건을 클릭하면 진행 타임라인이 나옵니다. 누가 언제 무엇을 처리했는지 전부 표시됩니다.\n\n' +
+             'A. [내 예약 조회]에 예약번호와 신청자명을 넣으면 진행 타임라인이 나옵니다. 누가 언제 무엇을 처리했는지 전부 표시됩니다.\n\n' +
              'Q. 승인은 누가 하나요?\n' +
-             'A. 회사 비용이 발생하는 건은 경영지원팀 팀장이 승인합니다. 승인/반려 시 알림이 갑니다.\n\n' +
+             'A. 부동산팀원 누구나 승인할 수 있습니다. 담당자 부재로 승인이 밀리지 않도록 팀 전체에 권한이 있습니다.\n\n' +
              'Q. 예약번호가 두 개인데 뭐가 다른가요?\n' +
              'A. STAY-로 시작하는 것은 우리 시스템 접수번호이고, 숙소 예약번호는 호텔·펜션이 발급한 번호입니다. 체크인 시에는 숙소 예약번호를 말씀하시면 됩니다.\n\n' +
              'Q. 아이를 데려가도 되나요?\n' +
@@ -528,6 +540,8 @@
     ];
 
     d.settings = {
+      /* 모든 문의를 받는 단일 창구. 개인에게 전화가 몰리지 않도록 한 곳으로 통일한다. */
+      contact: { team:'부동산팀', name:'이동현', title:'사원', phone:'010-8347-2699' },
       codePrefix: 'STAY',
       autoUpcomingDays: 7,
       approvalThreshold: 100000,
@@ -668,7 +682,12 @@
       var opts = FLOW[b.status] || [];
       var hit = null; opts.forEach(function(o){ if (o.to === to) hit = o; });
       if (!hit) return { ok:false, msg:STATUS[b.status].label + ' → ' + STATUS[to].label + ' 로는 변경할 수 없습니다.' };
-      if (hit.roles.indexOf(user.role) < 0) return { ok:false, msg:'이 처리는 ' + hit.roles.map(function(r){return ROLES[r].label;}).join(' / ') + '만 가능합니다.' };
+      var byRole  = hit.roles.indexOf(user.role) >= 0;
+      var byGrant = !!(hit.grant && user[hit.grant]);
+      if (!byRole && !byGrant) {
+        return { ok:false, msg:'이 처리는 ' + hit.roles.map(function(r){ return ROLES[r].label; }).join(' / ') +
+                 (hit.grant === 'canApprove' ? ' 또는 승인 권한을 가진 부동산팀원' : '') + '만 가능합니다.' };
+      }
       if (hit.need) { var e = hit.need(b); if (e) return { ok:false, msg:e }; }
       return { ok:true, opt:hit };
     },
@@ -831,6 +850,7 @@
       if (['APPROVED','REJECTED','BOOKING_CONFIRMED','BOOKING_CANCELED','CHECKIN_TOMORROW'].indexOf(type) >= 0) {
         n.roles = n.roles.concat(['applicant']);
       }
+      if (meta.grant) n.grant = meta.grant;
       Notify.enabledChannels().forEach(function(c){ try { c.send(n, booking); } catch(e){ console.warn('[notify]', c.id, e); } });
       if (!silentStore) _write();
       return n;
@@ -840,6 +860,7 @@
       return _read().notifications.filter(function(n){
         if (user.role === 'admin') return true;
         if (n.userIds && n.userIds.indexOf(user.id) >= 0) return true;
+        if (n.grant && user[n.grant]) return true;
         return (n.roles || []).indexOf(user.role) >= 0;
       });
     },
