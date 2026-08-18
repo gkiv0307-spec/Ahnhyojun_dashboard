@@ -122,6 +122,17 @@
     return ['y', 'yes', 'o', 'true', '1', '완료', '등록', '등록완료', '작성완료', 'ok'].indexOf(v) >= 0;
   }
 
+  /** 아무것도 없는 시작 상태 — 실제 운영은 여기서 지점·명단을 채워 넣는다 */
+  function emptyState() {
+    return {
+      version: 1,
+      branches: [],
+      reviewers: [],
+      settings: { maskPII: false, shareNote: '' },
+      isSample: false
+    };
+  }
+
   /* ------------------------------------------------------------ 샘플 데이터 */
   function sampleState() {
     var base = todayStr();
@@ -231,13 +242,20 @@
       try {
         var parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.branches) && Array.isArray(parsed.reviewers)) {
+          // 둘러보기용 샘플이 저장돼 있으면 실제 운영에 방해가 되므로 버리고 빈 상태로 연다.
+          // 직접 입력하거나 파일에서 가져온 자료(isSample 이 아님)는 그대로 살린다.
+          if (parsed.isSample) {
+            state = emptyState();
+            save();
+            return state;
+          }
           state = migrate(parsed);
           relinkBranches(state);
           return state;
         }
-      } catch (e) { /* 손상된 저장본은 무시하고 샘플로 시작 */ }
+      } catch (e) { /* 손상된 저장본은 무시하고 빈 상태로 시작 */ }
     }
-    state = sampleState();
+    state = emptyState();
     save();
     return state;
   }
@@ -594,7 +612,7 @@
     normalizeDate: normalizeDate, normalizeTime: normalizeTime, normalizeStatus: normalizeStatus,
 
     load: load, get: get, save: save, commit: commit, subscribe: subscribe,
-    reset: reset, replaceState: replaceState, sampleState: sampleState,
+    reset: reset, replaceState: replaceState, sampleState: sampleState, emptyState: emptyState,
     makeBranch: makeBranch, makeReviewer: makeReviewer,
 
     branchByName: branchByName, branchById: branchById,

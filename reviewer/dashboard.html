@@ -713,7 +713,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
             <button class="btn" id="btn-backup-2">JSON 백업 다운로드</button>
             <input type="file" id="restore-input" accept=".json" hidden>
             <button class="btn" id="btn-restore">JSON 백업 복원</button>
-            <button class="btn" id="btn-load-sample">샘플 데이터 불러오기</button>
+            <button class="btn" id="btn-load-sample" title="기능을 둘러보기 위한 예시 데이터입니다">둘러보기용 샘플 불러오기</button>
             <button class="btn btn-danger" id="btn-clear-reviewers">리뷰어 명단 전체 삭제</button>
             <button class="btn btn-danger" id="btn-reset-all">전체 초기화</button>
           </div>
@@ -1673,6 +1673,17 @@ body:not(.unlocked) .toast-wrap { display: none; }
     return ['y', 'yes', 'o', 'true', '1', '완료', '등록', '등록완료', '작성완료', 'ok'].indexOf(v) >= 0;
   }
 
+  /** 아무것도 없는 시작 상태 — 실제 운영은 여기서 지점·명단을 채워 넣는다 */
+  function emptyState() {
+    return {
+      version: 1,
+      branches: [],
+      reviewers: [],
+      settings: { maskPII: false, shareNote: '' },
+      isSample: false
+    };
+  }
+
   /* ------------------------------------------------------------ 샘플 데이터 */
   function sampleState() {
     var base = todayStr();
@@ -1782,13 +1793,20 @@ body:not(.unlocked) .toast-wrap { display: none; }
       try {
         var parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.branches) && Array.isArray(parsed.reviewers)) {
+          // 둘러보기용 샘플이 저장돼 있으면 실제 운영에 방해가 되므로 버리고 빈 상태로 연다.
+          // 직접 입력하거나 파일에서 가져온 자료(isSample 이 아님)는 그대로 살린다.
+          if (parsed.isSample) {
+            state = emptyState();
+            save();
+            return state;
+          }
           state = migrate(parsed);
           relinkBranches(state);
           return state;
         }
-      } catch (e) { /* 손상된 저장본은 무시하고 샘플로 시작 */ }
+      } catch (e) { /* 손상된 저장본은 무시하고 빈 상태로 시작 */ }
     }
-    state = sampleState();
+    state = emptyState();
     save();
     return state;
   }
@@ -2145,7 +2163,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
     normalizeDate: normalizeDate, normalizeTime: normalizeTime, normalizeStatus: normalizeStatus,
 
     load: load, get: get, save: save, commit: commit, subscribe: subscribe,
-    reset: reset, replaceState: replaceState, sampleState: sampleState,
+    reset: reset, replaceState: replaceState, sampleState: sampleState, emptyState: emptyState,
     makeBranch: makeBranch, makeReviewer: makeReviewer,
 
     branchByName: branchByName, branchById: branchById,
@@ -3657,7 +3675,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
     });
 
     $('#btn-load-sample').addEventListener('click', function () {
-      confirmBox('현재 데이터를 모두 지우고 샘플 데이터를 불러올까요?', function () {
+      confirmBox('현재 데이터를 모두 지우고 둘러보기용 샘플 데이터를 불러올까요? 실제 운영 자료가 있으면 먼저 JSON 백업을 받아두세요.', function () {
         S.reset(true);
         var d = defaultRange(); ui.from = d.from; ui.to = d.to;
         $('#f-from').value = ui.from; $('#f-to').value = ui.to;

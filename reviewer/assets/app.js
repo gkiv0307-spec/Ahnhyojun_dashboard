@@ -1495,7 +1495,7 @@
     });
 
     $('#btn-load-sample').addEventListener('click', function () {
-      confirmBox('현재 데이터를 모두 지우고 샘플 데이터를 불러올까요?', function () {
+      confirmBox('현재 데이터를 모두 지우고 둘러보기용 샘플 데이터를 불러올까요? 실제 운영 자료가 있으면 먼저 JSON 백업을 받아두세요.', function () {
         S.reset(true);
         var d = defaultRange(); ui.from = d.from; ui.to = d.to;
         $('#f-from').value = ui.from; $('#f-to').value = ui.to;
