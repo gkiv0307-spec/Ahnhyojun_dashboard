@@ -121,15 +121,18 @@
      '<div class="btnrow" style="margin-bottom:12px"><button class="btn btn-gold" id="addUser">＋ 사용자 등록</button>' +
        '<span class="muted" style="font-size:12.5px">전체 ' + users.length + '명</span></div>' +
      '<div class="tablewrap"><table class="tbl"><thead><tr>' +
-       '<th>이름</th><th>권한</th><th>지점</th><th>부서</th><th>연락처</th><th>이메일</th>' +
+       '<th>이름</th><th>권한</th><th>지점</th><th>부서</th><th>연락처</th><th class="wrapcell">담당 업무</th>' +
        '<th class="num">신청건수</th><th>상태</th><th class="no-print"></th></tr></thead><tbody>' +
        users.map(function(u){
          var n = Store.bookings().filter(function(b){ return b.applicantId===u.id; }).length;
          return '<tr style="cursor:default">' +
-           '<td data-l="이름"><b>' + UI.esc(u.name) + '</b></td>' +
+           '<td data-l="이름"><b>' + UI.esc(u.name) + '</b>' +
+             (u.title ? ' <span class="muted">' + UI.esc(u.title) + '</span>' : '') +
+             (u.sample ? '<div class="sub" style="color:var(--orange)">자리표시자 — 실제 담당자로 교체 필요</div>' : '') + '</td>' +
            '<td data-l="권한"><span class="tag ' + (u.role==='admin'?'gold':'') + '">' + UI.esc(STAY.ROLES[u.role].label) + '</span></td>' +
            '<td data-l="지점">' + UI.esc(u.branch) + '</td><td data-l="부서">' + UI.esc(u.dept) + '</td>' +
-           '<td data-l="연락처">' + UI.esc(u.phone) + '</td><td data-l="이메일">' + UI.esc(u.email||'-') + '</td>' +
+           '<td data-l="연락처">' + (u.phone ? UI.esc(u.phone) : '<span class="muted">-</span>') + '</td>' +
+           '<td data-l="담당 업무" class="wrapcell">' + (u.duty ? UI.esc(u.duty) : '<span class="muted">-</span>') + '</td>' +
            '<td data-l="신청건수" class="num">' + n + '</td>' +
            '<td data-l="상태">' + (u.active===false ? '<span class="tag" style="color:var(--red)">비활성</span>' : '<span class="tag">사용</span>') + '</td>' +
            '<td class="no-print"><div class="btnrow">' +
@@ -150,12 +153,14 @@
           Store.branches().map(function(b){ return '<option' + (b.name===u.branch?' selected':'') + '>' + UI.esc(b.name) + '</option>'; }).join('') +
         '</select></div>' +
         '<div class="field"><label>소속 부서</label><input class="input" name="dept" value="' + UI.esc(u.dept||'') + '"></div>' +
+        '<div class="field"><label>직급</label><input class="input" name="title" value="' + UI.esc(u.title||'') + '" placeholder="예) 대리"></div>' +
         '<div class="field"><label>연락처</label><input class="input" name="phone" value="' + UI.esc(u.phone||'') + '"></div>' +
         '<div class="field"><label>이메일</label><input class="input" name="email" value="' + UI.esc(u.email||'') + '"></div>' +
         '<div class="field"><label>사용 여부</label><select class="select" name="active">' +
           '<option value="true"' + (u.active!==false?' selected':'') + '>사용</option>' +
           '<option value="false"' + (u.active===false?' selected':'') + '>비활성</option></select></div>' +
        '</div>' +
+       '<div class="field"><label>담당 업무</label><textarea class="textarea" name="duty" style="min-height:64px">' + UI.esc(u.duty||'') + '</textarea></div>' +
        '<div class="note info" style="margin:0" id="roleDesc">' + UI.esc(STAY.ROLES[u.role].desc) + '</div>',
       onOpen:function(mm){
         UI.qs('[name=role]', mm).onchange = function(){ UI.qs('#roleDesc', mm).textContent = STAY.ROLES[this.value].desc; };
@@ -321,7 +326,11 @@
              '<div class="dr"><dt>저장소</dt><dd>브라우저 localStorage <code>ykp_stay_v1</code></dd></div>' +
              '<div class="dr"><dt>예약</dt><dd>' + Store.bookings().length + '건</dd></div>' +
              '<div class="dr"><dt>처리로그</dt><dd>' + Store.logs().length + '건</dd></div>' +
-             '<div class="dr"><dt>사용자</dt><dd>' + Store.users().length + '명</dd></div>' +
+             '<div class="dr"><dt>사용자</dt><dd>' + Store.users().length + '명 <span class="muted">(자리표시자 ' +
+               Store.users().filter(function(u){ return u.sample; }).length + '명 포함)</span></dd></div>' +
+             '<div class="dr"><dt>지점</dt><dd>' + Store.branches().map(function(b){
+               return UI.esc(b.name) + (b.sample ? '<span style="color:var(--orange)">*</span>' : ''); }).join(', ') +
+               ' <span class="muted">(*는 실제 지점명 확인 필요)</span></dd></div>' +
              '<div class="dr"><dt>숙소</dt><dd>' + Store.lodgings().length + '곳</dd></div>' +
            '</dl>' +
            '<div class="note warn" style="margin-top:12px">서버 연동 시 <code>Store._read / _write</code> 를 API 호출로 교체하면 ' +

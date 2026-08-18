@@ -230,8 +230,11 @@
         us.map(function(u){
           return '<div class="li' + (u.id===cur.id?' unread':'') + '" data-u="' + u.id + '">' +
             '<span class="avatar">' + esc(initials(u.name)) + '</span>' +
-            '<span class="tx"><span class="t1">' + esc(u.name) + (u.id===cur.id?' <span class="tag gold">현재</span>':'') + '</span>' +
-            '<span class="t2">' + esc(u.branch) + ' · ' + esc(u.dept) + '</span></span></div>';
+            '<span class="tx"><span class="t1">' + esc(u.name) +
+              (u.title ? ' <span class="muted" style="font-weight:600">' + esc(u.title) + '</span>' : '') +
+              (u.id===cur.id?' <span class="tag gold">현재</span>':'') +
+              (u.sample?' <span class="tag" style="color:var(--orange)">자리표시자</span>':'') + '</span>' +
+            '<span class="t2">' + esc(u.branch) + ' · ' + esc(u.dept) + (u.duty ? ' · ' + esc(u.duty) : '') + '</span></span></div>';
         }).join('') + '</div>';
     });
     var m = modal({ title:'사용자 전환 (권한 미리보기)', body:body, buttons:[{label:'닫기'}] });

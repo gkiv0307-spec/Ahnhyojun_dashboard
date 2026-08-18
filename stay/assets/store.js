@@ -192,28 +192,40 @@
     var today = new Date(); today.setHours(0,0,0,0);
     var Y = today.getFullYear();
 
+    /* 지점 목록 — 본사(부동산팀)만 확정. 나머지는 실제 지점명 확인 전까지 샘플이다. */
     d.branches = [
-      { id:'br_hq',   name:'본사',       region:'대구' },
-      { id:'br_dg',   name:'대구점',     region:'대구' },
-      { id:'br_ss',   name:'수성점',     region:'대구' },
-      { id:'br_bs',   name:'부산점',     region:'부산' },
-      { id:'br_sl',   name:'서울강남점', region:'서울' },
-      { id:'br_gj',   name:'광주점',     region:'광주' },
-      { id:'br_dj',   name:'대전점',     region:'대전' }
+      { id:'br_hq', name:'본사',   region:'대구' },
+      { id:'br_dg', name:'대구점', region:'대구', sample:true },
+      { id:'br_bs', name:'부산점', region:'부산', sample:true }
     ];
 
+    /* 부동산팀 실제 구성원. 권한은 담당 업무 기준으로 배정했다.
+     *   admin     고호정(대표·총괄), 문소진(부동산팀 총괄·숙박 플랫폼 관리)
+     *   finance   안효준(회계 업무 전반)
+     *   booker    이동현(호텔운영관리·OTA 세팅 및 관리)
+     *   applicant 나머지 — 출장 시 숙박을 신청하는 쪽
+     * sample:true 인 계정은 실제 지점 담당자 정보를 받으면 교체할 자리표시자다. */
     d.users = [
-      { id:'u_admin', name:'안효준', role:'admin',     branch:'본사',   dept:'경영지원팀',  phone:'010-1000-0001', email:'admin@ykphone.co.kr', active:true },
-      { id:'u_bk1',   name:'박서연', role:'booker',    branch:'본사',   dept:'예약관리팀',  phone:'010-2000-0001', email:'booking1@ykphone.co.kr', active:true },
-      { id:'u_bk2',   name:'정민호', role:'booker',    branch:'본사',   dept:'예약관리팀',  phone:'010-2000-0002', email:'booking2@ykphone.co.kr', active:true },
-      { id:'u_ap1',   name:'이재훈', role:'approver',  branch:'본사',   dept:'경영지원팀',  phone:'010-3000-0001', email:'approve@ykphone.co.kr', active:true },
-      { id:'u_fi1',   name:'최유진', role:'finance',   branch:'본사',   dept:'회계팀',      phone:'010-4000-0001', email:'finance@ykphone.co.kr', active:true },
-      { id:'u_ap2',   name:'김도현', role:'applicant', branch:'대구점', dept:'영업',        phone:'010-5000-0001', email:'dg@ykphone.co.kr', active:true },
-      { id:'u_ap3',   name:'한지수', role:'applicant', branch:'부산점', dept:'영업',        phone:'010-5000-0002', email:'bs@ykphone.co.kr', active:true },
-      { id:'u_ap4',   name:'오세훈', role:'applicant', branch:'서울강남점', dept:'영업',    phone:'010-5000-0003', email:'sl@ykphone.co.kr', active:true },
-      { id:'u_ap5',   name:'배수민', role:'applicant', branch:'광주점', dept:'영업',        phone:'010-5000-0004', email:'gj@ykphone.co.kr', active:true },
-      { id:'u_ap6',   name:'신동욱', role:'applicant', branch:'대전점', dept:'교육',        phone:'010-5000-0005', email:'dj@ykphone.co.kr', active:true },
-      { id:'u_ap7',   name:'류하늘', role:'applicant', branch:'수성점', dept:'영업',        phone:'010-5000-0006', email:'ss@ykphone.co.kr', active:true }
+      { id:'u_kho', name:'고호정', title:'실장',      role:'admin',     branch:'본사', dept:'부동산팀', phone:'010-6419-0759', email:'', active:true,
+        duty:'부동산에듀 대표 · 부동산팀 총괄' },
+      { id:'u_msj', name:'문소진', title:'대리/팀장', role:'admin',     branch:'본사', dept:'부동산팀', phone:'010-8592-2699', email:'', active:true,
+        duty:'부동산팀 총괄 · 숙박 플랫폼 등록/관리 · 문의 응대 · SNS 마케팅' },
+      { id:'u_ahj', name:'안효준', title:'대리',      role:'finance',   branch:'본사', dept:'부동산팀', phone:'010-8550-2699', email:'', active:true,
+        duty:'부동산팀 회계 업무 전반' },
+      { id:'u_ldh', name:'이동현', title:'사원',      role:'booker',    branch:'본사', dept:'부동산팀', phone:'010-8347-2699', email:'', active:true,
+        duty:'호텔운영관리 · OTA 세팅 및 관리 · 매출 관리 · 주택 관리' },
+      { id:'u_lhc', name:'이현철', title:'소장',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-7777-1976', email:'', active:true,
+        duty:'각 지역 가맹점 계약' },
+      { id:'u_yhr', name:'유현록', title:'주임',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-8554-2699', email:'', active:true,
+        duty:'직영·가맹 매장 계약 관리 · 상가 매물 탐색 및 상권 분석 · 지사/점주 상담' },
+      { id:'u_ljh', name:'이재환', title:'주임',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-3101-2699', email:'', active:true,
+        duty:'시공 현장관리 및 감리 · 자재 구매/운반 · 인테리어 디자인 · 실측' },
+      { id:'u_ygh', name:'여가현', title:'사원',      role:'applicant', branch:'본사', dept:'부동산팀', phone:'010-6271-2699', email:'', active:true,
+        duty:'부동산 인테리어 모델링 · 인테리어 견적 · 2D/3D 및 견적 관리' },
+
+      /* --- 아래 2개는 자리표시자. 실제 지점 담당자를 받으면 교체한다. --- */
+      { id:'u_s_dg', name:'대구점 담당자', title:'', role:'applicant', branch:'대구점', dept:'지점', phone:'', email:'', active:true, sample:true, duty:'' },
+      { id:'u_s_bs', name:'부산점 담당자', title:'', role:'applicant', branch:'부산점', dept:'지점', phone:'', email:'', active:true, sample:true, duty:'' }
     ];
 
     /* 회사가 실제 운영 중인 숙소 5곳 (네이버 플레이스에서 이름·주소·전화 확인).
@@ -231,11 +243,11 @@
         roomInfo:'풀빌라 4개동 (1·2·3·4동)', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
         caution:'', note:'단체·워크숍 활용 가능. 운영 정보 확인 필요', active:true },
 
-      { id:'lo_3', name:'스테이레브소유 김해점', type:'ETC', ownership:'DIRECT', region:'경남',
+      { id:'lo_3', name:'스테이레브소유 김해점', type:'HOTEL', ownership:'DIRECT', region:'경남',
         address:'경남 김해시 분성로511번길 8 (어방동 1092-3)', managerName:'', managerPhone:'055-313-7979',
         homepage:'https://naver.me/5Neb8tGx', rackRate:0, partnerRate:0, discountRate:0,
         roomInfo:'', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
-        caution:'', note:'네이버 등록 업종 "여관" — 숙박 유형 확인 필요', active:true },
+        caution:'', note:'', active:true },
 
       { id:'lo_4', name:'브라운도트 포항죽도점', type:'HOTEL', ownership:'DIRECT', region:'경북',
         address:'경북 포항시 북구 죽도로40번길 51 (죽도동 95-39)', managerName:'', managerPhone:'',
@@ -259,61 +271,61 @@
     }
     var rows = [
       /* 과거 완료건 (정산완료) — 월별 비용 그래프용. 최근 12개월을 고르게 덮도록 배치 */
-      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
-      { off:-318, ci:-312, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_ap2', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
-      { off:-286, ci:-280, n:3, st:'SETTLED', u:'u_ap5', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
-      { off:-268, ci:-262, n:1, st:'SETTLED', u:'u_ap7', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'군위 독채 연수', bearer:'COMPANY' },
-      { off:-252, ci:-246, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
-      { off:-238, ci:-232, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
-      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
-      { off:-205, ci:-198, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_5', rm:2, ad:9, ch:0, cost:0, purpose:'진주 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_ap2', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 지점 교육 후 숙박', bearer:'COMPANY' },
-      { off:-172, ci:-166, n:2, st:'SETTLED', u:'u_ap5', lo:'lo_2', rm:2, ad:8, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'BRANCH' },
-      { off:-158, ci:-150, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
-      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 연수', bearer:'COMPANY' },
-      { off:-126, ci:-120, n:1, st:'SETTLED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
-      { off:-112, ci:-106, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_4', rm:1, ad:2, ch:0, cost:224000, purpose:'포항 물건 임장', bearer:'COMPANY' },
-      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_ap2', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
-      { off:-88, ci:-84, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
-      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
-      { off:-64, ci:-60, n:1, st:'SETTLED', u:'u_ap6', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'포항 고객 상담', bearer:'COMPANY' },
-      { off:-58, ci:-54, n:3, st:'SETTLED', u:'u_ap5', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
-      { off:-44, ci:-40, n:1, st:'SETTLED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
-      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_ap2', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
-      { off:-33, ci:-29, n:1, st:'SETTLED', u:'u_ap4', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_ap3', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
+      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-318, ci:-312, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
+      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
+      { off:-286, ci:-280, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
+      { off:-268, ci:-262, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-252, ci:-246, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
+      { off:-238, ci:-232, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
+      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
+      { off:-205, ci:-198, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:9, ch:0, cost:0, purpose:'진주 지역 출장 숙박', bearer:'COMPANY' },
+      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 지점 교육 후 숙박', bearer:'COMPANY' },
+      { off:-172, ci:-166, n:2, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:2, ad:8, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'BRANCH' },
+      { off:-158, ci:-150, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
+      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 연수', bearer:'COMPANY' },
+      { off:-126, ci:-120, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
+      { off:-112, ci:-106, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:2, ch:0, cost:224000, purpose:'포항 물건 임장', bearer:'COMPANY' },
+      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
+      { off:-88, ci:-84, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
+      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-64, ci:-60, n:1, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'포항 고객 상담', bearer:'COMPANY' },
+      { off:-58, ci:-54, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
+      { off:-44, ci:-40, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
+      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-33, ci:-29, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
+      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_s_bs', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
       /* 최근 진행건 */
-      { off:-21, ci:-14, n:2, st:'SETTLED', u:'u_ap6', lo:'lo_5', rm:2, ad:8, ch:0, cost:0, purpose:'서부경남 임장 교육', bearer:'COMPANY' },
-      { off:-16, ci:-8,  n:1, st:'SETTLED', u:'u_ap5', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'경북 동해안 지역 출장', bearer:'COMPANY' },
-      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_ap2', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
-      { off:-12, ci:-5,  n:1, st:'SETTLE_WAIT', u:'u_ap4', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
-      { off:-11, ci:-4,  n:1, st:'SETTLE_WAIT', u:'u_ap7', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
-      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
-      { off:-9,  ci:-1,  n:1, st:'USED', u:'u_ap5', lo:'lo_2', rm:1, ad:4, ch:2, cost:200000, purpose:'거제 단체 연수', bearer:'BRANCH' },
+      { off:-21, ci:-14, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:8, ch:0, cost:0, purpose:'서부경남 임장 교육', bearer:'COMPANY' },
+      { off:-16, ci:-8,  n:1, st:'SETTLED', u:'u_yhr', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'경북 동해안 지역 출장', bearer:'COMPANY' },
+      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_s_dg', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
+      { off:-12, ci:-5,  n:1, st:'SETTLE_WAIT', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
+      { off:-11, ci:-4,  n:1, st:'SETTLE_WAIT', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
+      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
+      { off:-9,  ci:-1,  n:1, st:'USED', u:'u_yhr', lo:'lo_2', rm:1, ad:4, ch:2, cost:200000, purpose:'거제 단체 연수', bearer:'BRANCH' },
       /* 오늘 체크인/체크아웃 */
-      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_ap2', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
-      { off:-7,  ci:0,   n:1, st:'UPCOMING', u:'u_ap6', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
-      { off:-9,  ci:-1,  n:1, st:'UPCOMING', u:'u_ap4', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
+      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_s_dg', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 인근 임장 후 숙박', bearer:'COMPANY' },
+      { off:-7,  ci:0,   n:1, st:'UPCOMING', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
+      { off:-9,  ci:-1,  n:1, st:'UPCOMING', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 물건 임장', bearer:'COMPANY' },
       /* 내일 체크인 */
-      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_ap3', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
-      { off:-5,  ci:3,   n:1, st:'BOOKED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
-      { off:-4,  ci:8,   n:3, st:'BOOKING', u:'u_ap5', lo:'lo_2', rm:3, ad:14, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
-      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_ap2', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
-      { off:-2,  ci:14,  n:1, st:'APPROVAL_PENDING', u:'u_ap4', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
-      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_ap3', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 지역 합동 워크숍', bearer:'COMPANY' },
-      { off:-1,  ci:20,  n:2, st:'REVIEWING', u:'u_ap6', lo:'lo_5', rm:2, ad:10, ch:0, cost:0, purpose:'진주 세미나 진행', bearer:'COMPANY' },
-      { off:-1,  ci:10,  n:1, st:'RECEIVED', u:'u_ap7', lo:'lo_1', rm:1, ad:2, ch:1, cost:0, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
-      { off:0,   ci:18,  n:2, st:'NEW', u:'u_ap2', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 연수', bearer:'COMPANY' },
-      { off:0,   ci:25,  n:1, st:'NEW', u:'u_ap5', lo:'lo_2', rm:2, ad:6, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
+      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_s_bs', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
+      { off:-5,  ci:3,   n:1, st:'BOOKED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
+      { off:-4,  ci:8,   n:3, st:'BOOKING', u:'u_yhr', lo:'lo_2', rm:3, ad:14, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
+      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_s_dg', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
+      { off:-2,  ci:14,  n:1, st:'APPROVAL_PENDING', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
+      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_s_bs', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 지역 합동 워크숍', bearer:'COMPANY' },
+      { off:-1,  ci:20,  n:2, st:'REVIEWING', u:'u_ljh', lo:'lo_5', rm:2, ad:10, ch:0, cost:0, purpose:'진주 세미나 진행', bearer:'COMPANY' },
+      { off:-1,  ci:10,  n:1, st:'RECEIVED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:1, cost:0, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
+      { off:0,   ci:18,  n:2, st:'NEW', u:'u_s_dg', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 연수', bearer:'COMPANY' },
+      { off:0,   ci:25,  n:1, st:'NEW', u:'u_yhr', lo:'lo_2', rm:2, ad:6, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
       /* 취소/반려 */
-      { off:-15, ci:-3,  n:1, st:'CANCELED', u:'u_ap4', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_ap3', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 연수', bearer:'COMPANY' }
+      { off:-15, ci:-3,  n:1, st:'CANCELED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
+      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_s_bs', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 연수', bearer:'COMPANY' }
     ];
 
     var byId = {}; d.users.forEach(function(u){ byId[u.id]=u; });
     var loById = {}; d.lodgings.forEach(function(l){ loById[l.id]=l; });
-    var bookers = ['u_bk1','u_bk2'];
+    var bookers = ['u_ldh','u_msj'];
 
     d.bookings = rows.map(function(r, i){
       var reqAt = addDays(today, r.off); reqAt.setHours(9 + (i%8), (i*7)%60, 0, 0);
@@ -361,14 +373,14 @@
       if (reach >= 4) { b.approval.requestedAt = step(30);
         log(b.approval.requestedAt, assignee, '승인 요청', '예상비용 ' + won(r.cost), 'REVIEWING', 'APPROVAL_PENDING'); }
       if (st === 'REJECTED') {
-        b.approval.result = 'REJECTED'; b.approval.approverId='u_ap1'; b.approval.approverName='이재훈';
+        b.approval.result = 'REJECTED'; b.approval.approverId='u_kho'; b.approval.approverName='고호정';
         b.approval.opinion = '동일 기간 타 지점 예약과 중복되며 인원 대비 객실 수가 과다합니다. 객실 수 조정 후 재신청 바랍니다.';
         b.approval.decidedAt = step(180);
-        log(b.approval.decidedAt, byId['u_ap1'], '반려', b.approval.opinion, 'APPROVAL_PENDING', 'REJECTED');
+        log(b.approval.decidedAt, byId['u_kho'], '반려', b.approval.opinion, 'APPROVAL_PENDING', 'REJECTED');
       } else if (reach >= 5) {
-        b.approval.result = 'APPROVED'; b.approval.approverId='u_ap1'; b.approval.approverName='이재훈';
+        b.approval.result = 'APPROVED'; b.approval.approverId='u_kho'; b.approval.approverName='고호정';
         b.approval.opinion = '업무 목적 확인. 승인합니다.'; b.approval.decidedAt = step(120);
-        log(b.approval.decidedAt, byId['u_ap1'], '승인', b.approval.opinion, 'APPROVAL_PENDING', 'APPROVED');
+        log(b.approval.decidedAt, byId['u_kho'], '승인', b.approval.opinion, 'APPROVAL_PENDING', 'APPROVED');
       }
       if (reach >= 6 && st !== 'REJECTED') log(step(40), assignee, '숙소 예약 진행', lo.name + ' 예약 문의', 'APPROVED', 'BOOKING');
       if (st === 'CANCELED') {
@@ -402,15 +414,15 @@
         b.payment.paidAmount = r.cost;
         b.payment.paidAt = ymd(addDays(today, r.ci + r.n));
         b.payment.status = r.cost ? 'PAY_DONE' : 'PAY_NONE';
-        b.payment.financeId='u_fi1'; b.payment.financeName='최유진';
-        log(step(120), byId['u_fi1'], '정산 시작',
+        b.payment.financeId='u_ahj'; b.payment.financeName='안효준';
+        log(step(120), byId['u_ahj'], '정산 시작',
             '결제방법 ' + b.payment.method + ' / 결제금액 ' + won(r.cost), 'SETTLE_WAIT', 'SETTLING');
       }
       if (reach >= 12 && !terminal) {
         b.payment.taxInvoice = (i % 2 === 0);
         b.payment.receipt = true;
         b.payment.settledAt = step(24*60);
-        log(b.payment.settledAt, byId['u_fi1'], '정산 완료',
+        log(b.payment.settledAt, byId['u_ahj'], '정산 완료',
             (b.payment.taxInvoice ? '세금계산서 수취 완료' : '영수증 확인 완료') + ' / 비용처리 완료', 'SETTLING', 'SETTLED');
       }
       if (i % 5 === 2) {
@@ -445,29 +457,29 @@
     /* 공지 시드 */
     var nowIso = new Date().toISOString();
     d.notices = [
-      { id:uid('nc'), category:'예약 신청방법', pinned:true, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
+      { id:uid('nc'), category:'예약 신청방법', pinned:true, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
         title:'[필독] 호텔·펜션 예약은 전화·카카오톡이 아닌 이 시스템으로만 신청해주세요',
         body:'그동안 지점별로 회계팀이나 개인에게 전화·카카오톡으로 숙박 예약을 요청하면서 누락·중복 예약이 반복되었습니다.\n\n' +
              '2026년부터 모든 호텔·펜션 예약은 [예약 신청] 메뉴에서만 접수합니다.\n\n' +
              '1) 좌측 메뉴 [예약 신청] 클릭\n' +
              '2) 신청서 작성 후 제출 (체크인/체크아웃만 넣으면 숙박일수는 자동 계산됩니다)\n' +
-             '3) 제출 즉시 예약번호(STAY-연도-일련번호)가 발급되고 예약관리팀에 알림이 갑니다\n' +
+             '3) 제출 즉시 예약번호(STAY-연도-일련번호)가 발급되고 부동산팀에 알림이 갑니다\n' +
              '4) 진행 상황은 [예약 관리]에서 실시간으로 확인할 수 있습니다\n\n' +
              '※ 부득이하게 전화로 요청하신 경우에도 예약 담당자가 시스템에 대신 등록합니다. 등록되지 않은 요청은 처리되지 않습니다.' },
-      { id:uid('nc'), category:'담당부서', pinned:true, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
-        title:'숙박 예약 담당부서 안내 (회계팀은 예약 접수 부서가 아닙니다)',
-        body:'· 예약 접수·진행 : 본사 예약관리팀 (박서연 과장 / 정민호 대리)\n' +
-             '· 승인 : 경영지원팀 이재훈 팀장\n' +
-             '· 결제·정산·증빙 : 회계팀 최유진 차장\n\n' +
-             '회계팀은 "이미 이용이 끝난 건의 결제·세금계산서·정산"만 담당합니다.\n' +
-             '예약을 새로 잡거나 변경·취소하는 요청을 회계팀에 하시면 처리가 지연됩니다. 반드시 시스템으로 신청해주세요.' },
-      { id:uid('nc'), category:'이용규정', pinned:false, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
+      { id:uid('nc'), category:'담당부서', pinned:true, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
+        title:'숙박 예약 담당부서 안내 (회계 담당자는 예약 접수 창구가 아닙니다)',
+        body:'· 예약 접수·진행 : 부동산팀 이동현 사원 (호텔운영관리·OTA) / 문소진 팀장 (숙박 플랫폼 관리)\n' +
+             '· 승인 : 부동산팀 고호정 실장\n' +
+             '· 결제·정산·증빙 : 부동산팀 안효준 대리 (회계)\n\n' +
+             '회계 담당자는 "이미 이용이 끝난 건의 결제·세금계산서·정산"만 처리합니다.\n' +
+             '예약을 새로 잡거나 변경·취소하는 요청을 회계 담당자에게 하시면 처리가 지연됩니다. 반드시 시스템으로 신청해주세요.' },
+      { id:uid('nc'), category:'이용규정', pinned:false, author:'고호정', createdAt:nowIso, updatedAt:nowIso,
         title:'숙박 이용 기준 및 객실 배정 규정',
         body:'· 1객실 2인 기준 배정이 원칙입니다. 1인 1객실은 팀장급 이상 또는 야간 업무 시에만 승인됩니다.\n' +
              '· 회사가 직접 운영하는 숙소를 우선 이용합니다. 지역별 운영 숙소는 [숙소 안내]에서 확인하세요.\n' +
              '· 성수기(7~8월, 연말)와 주말은 일반 예약이 많으므로 최소 2주 전에 신청해주세요.\n' +
              '· 가족 동반 숙박은 개인 부담을 원칙으로 하며, 포상 숙박은 별도 승인이 필요합니다.' },
-      { id:uid('nc'), category:'취소규정', pinned:false, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
+      { id:uid('nc'), category:'취소규정', pinned:false, author:'이동현', createdAt:nowIso, updatedAt:nowIso,
         title:'예약 취소·변경 시 반드시 확인할 것',
         body:'취소·변경은 [예약 상세] 화면의 "수정 요청 / 취소 요청" 버튼으로 접수해주세요.\n\n' +
              '숙소별 취소 규정이 다르며 위약금이 발생할 수 있습니다.\n' +
@@ -475,14 +487,14 @@
              '※ 숙소별 정확한 취소 규정은 확인되는 대로 [숙소 안내]와 이 공지에 반영합니다.\n' +
              '   등록 전까지는 예약 담당자에게 확인 후 취소해주세요.\n\n' +
              '위약금이 발생하면 해당 지점 부담으로 처리됩니다.' },
-      { id:uid('nc'), category:'비용처리 기준', pinned:false, author:'최유진', createdAt:nowIso, updatedAt:nowIso,
+      { id:uid('nc'), category:'비용처리 기준', pinned:false, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
         title:'숙박비 비용처리·증빙 기준',
         body:'· 회사 부담 : 법인카드 결제 또는 숙소 월정산. 세금계산서는 회계팀이 직접 수취합니다.\n' +
              '· 지점 부담 : 지점 법인카드로 결제 후 [정산 관리]에 카드전표/영수증을 첨부해주세요.\n' +
              '· 개인 부담(선결제 후 정산) : 영수증 원본 이미지를 반드시 첨부해야 지급됩니다.\n' +
              '· 증빙 미첨부 건은 정산완료 처리되지 않습니다.\n' +
              '· 정산 마감은 매월 5일이며, 전월 이용분은 그때까지 증빙이 등록되어야 합니다.' },
-      { id:uid('nc'), category:'회사 숙소 이용방법', pinned:false, author:'박서연', createdAt:nowIso, updatedAt:nowIso,
+      { id:uid('nc'), category:'회사 숙소 이용방법', pinned:false, author:'이동현', createdAt:nowIso, updatedAt:nowIso,
         title:'회사 운영 숙소 5곳 안내',
         body:'회사가 직접 운영하는 숙소입니다. 업무 목적 숙박은 이 중에서 우선 배정합니다.\n\n' +
              '· 군위 펜션 독채 스테이레브소유 — 대구 군위군 군위읍 장수길 47\n' +
@@ -494,14 +506,14 @@
              '· 브라운도트 호텔 진주성점 — 경남 진주시 진주대로 1136 (0507-1305-1806)\n\n' +
              '※ 객실 수·요금·입퇴실 시간·취소 규정은 확인되는 대로 [숙소 안내]에 등록합니다.\n' +
              '   그 전까지는 예약 담당자가 숙소에 확인 후 안내드립니다.' },
-      { id:uid('nc'), category:'제휴숙소 안내', pinned:false, author:'박서연', createdAt:nowIso, updatedAt:nowIso,
+      { id:uid('nc'), category:'제휴숙소 안내', pinned:false, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
         title:'운영 숙소가 없는 지역 출장은 어떻게 하나요',
         body:'현재 회사 운영 숙소는 대구(군위)·경남(거제·김해·진주)·경북(포항) 5곳입니다.\n\n' +
              '이 지역 출장은 운영 숙소를 우선 이용해주세요.\n' +
              '운영 숙소가 없는 지역은 예약 신청서의 숙박 유형에서 “기타”를 고르고\n' +
              '희망 숙소를 직접 입력해주시면 예약 담당자가 확인 후 진행합니다.\n\n' +
              '※ 외부 제휴 숙소가 생기면 이 공지와 [숙소 안내]에 추가합니다.' },
-      { id:uid('nc'), category:'FAQ', pinned:false, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
+      { id:uid('nc'), category:'FAQ', pinned:false, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
         title:'자주 묻는 질문 (FAQ)',
         body:'Q. 급해서 전화로 요청했는데 시스템에도 넣어야 하나요?\n' +
              'A. 예약 담당자가 대신 등록합니다. 다만 등록 여부는 [예약 관리]에서 직접 확인해주세요. 등록되지 않은 건은 기록이 남지 않아 정산이 불가합니다.\n\n' +
@@ -527,7 +539,7 @@
         { id:'slack', label:'Slack',            enabled:false, builtin:false }
       ]
     };
-    d.session = { userId:'u_bk1' };
+    d.session = { userId:'u_ldh' };
   }
 
   /* =====================================================================
