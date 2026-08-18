@@ -111,7 +111,7 @@
       (isOk ? '승인 의견 (선택)' : '반려 사유 (필수)'),
       { required:!isOk, danger:!isOk, okLabel: isOk?'승인':'반려',
         hint: b.code + ' · ' + b.lodgingName + ' · ' + STAY.won(amount(b)) + ' · ' + b.branch + ' ' + b.applicantName,
-        placeholder: isOk ? '예) 업무 목적 확인. 승인합니다.' : '예) 인원 대비 객실 수 과다. 조정 후 재신청 바랍니다.' })
+        placeholder: isOk ? '예) 이용 목적 확인. 승인합니다.' : '예) 인원 대비 객실 수 과다. 조정 후 재신청 바랍니다.' })
       .then(function(v){
         if (v == null) return;
         var r = Store.transition(id, to, user, v);

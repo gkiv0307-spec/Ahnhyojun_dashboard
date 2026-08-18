@@ -708,7 +708,7 @@ window.STAY_PASSCODE = "0130";
   /* 시드(숙소·구성원·공지)가 바뀌면 이 값을 올린다. 저장된 값과 다르면 다시 시드한다.
    * 미리보기에서 이미 열어본 브라우저가 옛 숙소·옛 담당자를 계속 보는 것을 막기 위함이다.
    * 서버 저장소로 옮기면 이 장치는 필요 없다. */
-  var SEED_VERSION = 5;
+  var SEED_VERSION = 6;
   var db = null;
 
   function emptyDb(){
@@ -785,7 +785,7 @@ window.STAY_PASSCODE = "0130";
         address:'경남 거제시 장목면 흥남길 36-1 (시방리 296), 1·2·3·4동', managerName:'', managerPhone:'',
         homepage:'https://naver.me/5T0y40DT', rackRate:0, partnerRate:0, discountRate:0,
         roomInfo:'풀빌라 4개동 (1·2·3·4동)', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
-        caution:'', note:'단체·워크숍 활용 가능. 운영 정보 확인 필요', active:true },
+        caution:'', note:'단체·가족 여행 활용 가능. 운영 정보 확인 필요', active:true },
 
       { id:'lo_3', name:'스테이레브소유 김해점', type:'HOTEL', ownership:'DIRECT', region:'경남',
         address:'경남 김해시 분성로511번길 8 (어방동 1092-3)', managerName:'', managerPhone:'055-313-7979',
@@ -858,20 +858,20 @@ window.STAY_PASSCODE = "0130";
              '· 정산 마감은 매월 5일이며, 전월 이용분은 그때까지 증빙이 등록되어야 합니다.' },
       { id:uid('nc'), category:'회사 숙소 이용방법', pinned:false, author:'이동현', createdAt:nowIso, updatedAt:nowIso,
         title:'회사 운영 숙소 5곳 안내',
-        body:'회사가 직접 운영하는 숙소입니다. 업무 목적 숙박은 이 중에서 우선 배정합니다.\n\n' +
+        body:'회사가 직접 운영하는 숙소입니다. 숙소 배정은 이 중에서 우선 진행합니다.\n\n' +
              '· 군위 펜션 독채 스테이레브소유 — 대구 군위군 군위읍 장수길 47\n' +
              '  독채(가족실). 대구 도심에서 약 30분. 주차 숙소 내 2대 / 외부 1대\n\n' +
              '· 거제 펜션 풀빌라 스테이레브소유 — 경남 거제시 장목면 흥남길 36-1\n' +
-             '  풀빌라 4개동(1·2·3·4동). 단체·워크숍 활용 가능\n\n' +
+             '  풀빌라 4개동(1·2·3·4동). 단체·가족 여행 활용 가능\n\n' +
              '· 스테이레브소유 김해점 — 경남 김해시 분성로511번길 8 (055-313-7979)\n\n' +
              '· 브라운도트 포항죽도점 — 경북 포항시 북구 죽도로40번길 51\n\n' +
              '· 브라운도트 호텔 진주성점 — 경남 진주시 진주대로 1136 (0507-1305-1806)\n\n' +
              '※ 객실 수·요금·입퇴실 시간·취소 규정은 확인되는 대로 [숙소 안내]에 등록합니다.\n' +
              '   그 전까지는 예약 담당자가 숙소에 확인 후 안내드립니다.' },
       { id:uid('nc'), category:'제휴숙소 안내', pinned:false, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
-        title:'운영 숙소가 없는 지역 출장은 어떻게 하나요',
+        title:'운영 숙소가 없는 지역은 어떻게 하나요',
         body:'현재 회사 운영 숙소는 대구(군위)·경남(거제·김해·진주)·경북(포항) 5곳입니다.\n\n' +
-             '이 지역 출장은 운영 숙소를 우선 이용해주세요.\n' +
+             '이 지역을 방문할 때는 운영 숙소를 우선 이용해주세요.\n' +
              '운영 숙소가 없는 지역은 예약 신청서의 숙박 유형에서 “기타”를 고르고\n' +
              '희망 숙소를 직접 입력해주시면 예약 담당자가 확인 후 진행합니다.\n\n' +
              '※ 외부 제휴 숙소가 생기면 이 공지와 [숙소 안내]에 추가합니다.' },
@@ -925,56 +925,56 @@ window.STAY_PASSCODE = "0130";
     }
     var rows = [
       /* 과거 완료건 (정산완료) — 월별 비용 그래프용. 최근 12개월을 고르게 덮도록 배치 */
-      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
-      { off:-318, ci:-312, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
-      { off:-286, ci:-280, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
-      { off:-268, ci:-262, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'군위 독채 연수', bearer:'COMPANY' },
-      { off:-252, ci:-246, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
-      { off:-238, ci:-232, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
-      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
-      { off:-205, ci:-198, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:9, ch:0, cost:0, purpose:'진주 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 지점 교육 후 숙박', bearer:'COMPANY' },
-      { off:-172, ci:-166, n:2, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:2, ad:8, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'BRANCH' },
-      { off:-158, ci:-150, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해점 매장 점검', bearer:'COMPANY' },
-      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 연수', bearer:'COMPANY' },
-      { off:-126, ci:-120, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
-      { off:-112, ci:-106, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:2, ch:0, cost:224000, purpose:'포항점 매장 점검', bearer:'COMPANY' },
-      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 인근 지점 순회 점검', bearer:'COMPANY' },
-      { off:-88, ci:-84, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
-      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
-      { off:-64, ci:-60, n:1, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'포항 고객 상담', bearer:'COMPANY' },
-      { off:-58, ci:-54, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
-      { off:-44, ci:-40, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
-      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
-      { off:-33, ci:-29, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 지역 합동 워크숍', bearer:'BRANCH' },
+      { off:-330, ci:-326, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 여행', bearer:'BRANCH' },
+      { off:-318, ci:-312, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해 가족 여행', bearer:'COMPANY' },
+      { off:-300, ci:-295, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 주말 여행', bearer:'COMPANY' },
+      { off:-286, ci:-280, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 휴가 여행', bearer:'COMPANY' },
+      { off:-268, ci:-262, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'군위 독채 가족 여행', bearer:'COMPANY' },
+      { off:-252, ci:-246, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 바다 여행', bearer:'BRANCH' },
+      { off:-238, ci:-232, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산 근교 주말 여행', bearer:'COMPANY' },
+      { off:-220, ci:-214, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 일대 가족 여행', bearer:'BRANCH' },
+      { off:-205, ci:-198, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:9, ch:0, cost:0, purpose:'진주 1박 여행', bearer:'COMPANY' },
+      { off:-190, ci:-184, n:1, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 근교 나들이', bearer:'COMPANY' },
+      { off:-172, ci:-166, n:2, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:2, ad:8, ch:2, cost:400000, purpose:'우수사원 포상 휴양', bearer:'BRANCH' },
+      { off:-158, ci:-150, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 주말 휴양', bearer:'COMPANY' },
+      { off:-140, ci:-134, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 여행', bearer:'COMPANY' },
+      { off:-126, ci:-120, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'신입사원 단합 여행', bearer:'COMPANY' },
+      { off:-112, ci:-106, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:2, ch:0, cost:224000, purpose:'포항 바다 나들이', bearer:'COMPANY' },
+      { off:-96, ci:-92, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 근교 힐링 여행', bearer:'COMPANY' },
+      { off:-88, ci:-84, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산 시내 여행', bearer:'COMPANY' },
+      { off:-70, ci:-66, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 여행', bearer:'BRANCH' },
+      { off:-64, ci:-60, n:1, st:'SETTLED', u:'u_ljh', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'포항 1박 여행', bearer:'COMPANY' },
+      { off:-58, ci:-54, n:3, st:'SETTLED', u:'u_yhr', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 휴가 여행', bearer:'COMPANY' },
+      { off:-44, ci:-40, n:1, st:'SETTLED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 주말 여행', bearer:'COMPANY' },
+      { off:-38, ci:-34, n:2, st:'SETTLED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 가족 여행', bearer:'COMPANY' },
+      { off:-33, ci:-29, n:1, st:'SETTLED', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해 가족 여행', bearer:'COMPANY' },
+      { off:-26, ci:-20, n:2, st:'SETTLED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 일대 가족 여행', bearer:'BRANCH' },
       /* 최근 진행건 */
-      { off:-21, ci:-14, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:8, ch:0, cost:0, purpose:'서부경남 지점장 교육', bearer:'COMPANY' },
-      { off:-16, ci:-8,  n:1, st:'SETTLED', u:'u_yhr', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'경북 동해안 지역 출장', bearer:'COMPANY' },
-      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
-      { off:-12, ci:-5,  n:1, st:'SETTLE_WAIT', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해·부산권 고객 상담', bearer:'COMPANY' },
-      { off:-11, ci:-4,  n:1, st:'SETTLE_WAIT', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'신입사원 연수', bearer:'COMPANY' },
-      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
-      { off:-9,  ci:-1,  n:1, st:'USED', u:'u_yhr', lo:'lo_2', rm:1, ad:4, ch:2, cost:200000, purpose:'거제 단체 연수', bearer:'BRANCH' },
+      { off:-21, ci:-14, n:2, st:'SETTLED', u:'u_ljh', lo:'lo_5', rm:2, ad:8, ch:0, cost:0, purpose:'서부경남 가족 여행', bearer:'COMPANY' },
+      { off:-16, ci:-8,  n:1, st:'SETTLED', u:'u_yhr', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'경북 동해안 여행', bearer:'COMPANY' },
+      { off:-13, ci:-6,  n:2, st:'SETTLING', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 근교 나들이', bearer:'BRANCH' },
+      { off:-12, ci:-5,  n:1, st:'SETTLE_WAIT', u:'u_lhc', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산 근교 주말 여행', bearer:'COMPANY' },
+      { off:-11, ci:-4,  n:1, st:'SETTLE_WAIT', u:'u_ygh', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'신입사원 단합 여행', bearer:'COMPANY' },
+      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 휴양', bearer:'COMPANY' },
+      { off:-9,  ci:-1,  n:1, st:'USED', u:'u_yhr', lo:'lo_2', rm:1, ad:4, ch:2, cost:200000, purpose:'거제 단체 여행', bearer:'BRANCH' },
       /* 오늘 체크인/체크아웃 */
-      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 인근 지점 순회 점검', bearer:'COMPANY' },
-      { off:-7,  ci:0,   n:1, st:'UPCOMING', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 지역 출장 숙박', bearer:'BRANCH' },
-      { off:-9,  ci:-1,  n:1, st:'UPCOMING', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해점 매장 점검', bearer:'COMPANY' },
+      { off:-8,  ci:0,   n:2, st:'UPCOMING', u:'u_yhr', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 힐링 여행', bearer:'COMPANY' },
+      { off:-7,  ci:0,   n:1, st:'UPCOMING', u:'u_ljh', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 바다 여행', bearer:'BRANCH' },
+      { off:-9,  ci:-1,  n:1, st:'UPCOMING', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 주말 휴양', bearer:'COMPANY' },
       /* 내일 체크인 */
-      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 워크숍', bearer:'BRANCH' },
-      { off:-5,  ci:3,   n:1, st:'BOOKED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 워크숍', bearer:'COMPANY' },
-      { off:-4,  ci:8,   n:3, st:'BOOKING', u:'u_yhr', lo:'lo_2', rm:3, ad:14, ch:0, cost:600000, purpose:'하계 포상 휴양', bearer:'COMPANY' },
-      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 연수', bearer:'COMPANY' },
-      { off:-2,  ci:14,  n:1, st:'APPROVAL_PENDING', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산권 업무 협의', bearer:'COMPANY' },
-      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_lhc', br:'부산점', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 지역 합동 워크숍', bearer:'COMPANY' },
-      { off:-1,  ci:20,  n:2, st:'REVIEWING', u:'u_ljh', lo:'lo_5', rm:2, ad:10, ch:0, cost:0, purpose:'진주 세미나 진행', bearer:'COMPANY' },
-      { off:-1,  ci:10,  n:1, st:'RECEIVED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:1, cost:0, purpose:'대구 지점 교육 후 숙박', bearer:'BRANCH' },
-      { off:0,   ci:18,  n:2, st:'NEW', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 연수', bearer:'COMPANY' },
-      { off:0,   ci:25,  n:1, st:'NEW', u:'u_yhr', lo:'lo_2', rm:2, ad:6, ch:2, cost:400000, purpose:'우수사원 포상 숙박', bearer:'COMPANY' },
+      { off:-6,  ci:1,   n:2, st:'BOOKED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 여행', bearer:'BRANCH' },
+      { off:-5,  ci:3,   n:1, st:'BOOKED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 주말 여행', bearer:'COMPANY' },
+      { off:-4,  ci:8,   n:3, st:'BOOKING', u:'u_yhr', lo:'lo_2', rm:3, ad:14, ch:0, cost:600000, purpose:'하계 휴가 여행', bearer:'COMPANY' },
+      { off:-3,  ci:12,  n:2, st:'APPROVED', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 가족 여행', bearer:'COMPANY' },
+      { off:-2,  ci:14,  n:1, st:'APPROVAL_PENDING', u:'u_lhc', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산 시내 여행', bearer:'COMPANY' },
+      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', u:'u_lhc', br:'부산점', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 일대 가족 여행', bearer:'COMPANY' },
+      { off:-1,  ci:20,  n:2, st:'REVIEWING', u:'u_ljh', lo:'lo_5', rm:2, ad:10, ch:0, cost:0, purpose:'진주 단체 여행', bearer:'COMPANY' },
+      { off:-1,  ci:10,  n:1, st:'RECEIVED', u:'u_ygh', lo:'lo_1', rm:1, ad:2, ch:1, cost:0, purpose:'대구 근교 나들이', bearer:'BRANCH' },
+      { off:0,   ci:18,  n:2, st:'NEW', u:'u_yhr', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 단합 여행', bearer:'COMPANY' },
+      { off:0,   ci:25,  n:1, st:'NEW', u:'u_yhr', lo:'lo_2', rm:2, ad:6, ch:2, cost:400000, purpose:'우수사원 포상 휴양', bearer:'COMPANY' },
       /* 취소/반려 */
-      { off:-15, ci:-3,  n:1, st:'CANCELED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 지역 출장 숙박', bearer:'COMPANY' },
-      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 연수', bearer:'COMPANY' }
+      { off:-15, ci:-3,  n:1, st:'CANCELED', u:'u_lhc', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 가족 여행', bearer:'COMPANY' },
+      { off:-18, ci:-9,  n:2, st:'REJECTED', u:'u_lhc', br:'부산점', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 여행', bearer:'COMPANY' }
     ];
 
     var bookers = ['u_ldh','u_msj'];
@@ -1032,12 +1032,12 @@ window.STAY_PASSCODE = "0130";
         log(b.approval.decidedAt, byId['u_kho'], '반려', b.approval.opinion, 'APPROVAL_PENDING', 'REJECTED');
       } else if (reach >= 5) {
         b.approval.result = 'APPROVED'; b.approval.approverId='u_kho'; b.approval.approverName='고호정';
-        b.approval.opinion = '업무 목적 확인. 승인합니다.'; b.approval.decidedAt = step(120);
+        b.approval.opinion = '이용 목적 확인. 승인합니다.'; b.approval.decidedAt = step(120);
         log(b.approval.decidedAt, byId['u_kho'], '승인', b.approval.opinion, 'APPROVAL_PENDING', 'APPROVED');
       }
       if (reach >= 6 && st !== 'REJECTED') log(step(40), assignee, '숙소 예약 진행', lo.name + ' 예약 문의', 'APPROVED', 'BOOKING');
       if (st === 'CANCELED') {
-        b.cancelRequest = { at: step(60), reason:'출장 일정이 변경되어 취소 요청드립니다.', by:u.name, handled:true };
+        b.cancelRequest = { at: step(60), reason:'여행 일정이 변경되어 취소 요청드립니다.', by:u.name, handled:true };
         log(b.cancelRequest.at, u, '예약 취소 요청', b.cancelRequest.reason, null, null);
         log(step(30), assignee, '예약 취소', '신청자 요청으로 취소 처리 (위약금 없음)', 'BOOKING', 'CANCELED');
       }
@@ -2292,8 +2292,8 @@ PAGES["new"] = function(){
          '<input class="input" name="dept" id="dept" value="' + UI.esc(user.dept) + '" required></div>' +
      '</div>' +
      '<div class="field"><label>이용 목적<span class="req">*</span></label>' +
-       '<input class="input" name="purpose" placeholder="예) 김해점 매장 점검 및 점주 상담" required>' +
-       '<div class="hint">업무 목적을 구체적으로 적어주시면 승인이 빨라집니다.</div></div>' +
+       '<input class="input" name="purpose" placeholder="예) 가족과 여름 휴가 · 2박 3일" required>' +
+       '<div class="hint">누구와 어떤 일정으로 이용하는지 적어주시면 승인이 빨라집니다.</div></div>' +
    '</fieldset>' +
 
    '<fieldset class="fs"><legend>숙박 정보</legend>' +
@@ -3428,7 +3428,7 @@ PAGES["detail"] = function(){
     if (needOpinion || needReason) {
       UI.prompt(chk.opt.action, needOpinion ? '승인 의견' : '취소 사유',
         { required: to !== 'APPROVED', okLabel: chk.opt.action, danger: to !== 'APPROVED',
-          placeholder: to==='APPROVED' ? '예) 업무 목적 확인. 승인합니다.' :
+          placeholder: to==='APPROVED' ? '예) 이용 목적 확인. 승인합니다.' :
                        to==='REJECTED' ? '예) 인원 대비 객실 수가 과다합니다. 조정 후 재신청 바랍니다.' :
                                          '예) 신청자 요청으로 취소 (위약금 없음)' })
         .then(function(v){
@@ -3672,7 +3672,7 @@ PAGES["approvals"] = function(){
       (isOk ? '승인 의견 (선택)' : '반려 사유 (필수)'),
       { required:!isOk, danger:!isOk, okLabel: isOk?'승인':'반려',
         hint: b.code + ' · ' + b.lodgingName + ' · ' + STAY.won(amount(b)) + ' · ' + b.branch + ' ' + b.applicantName,
-        placeholder: isOk ? '예) 업무 목적 확인. 승인합니다.' : '예) 인원 대비 객실 수 과다. 조정 후 재신청 바랍니다.' })
+        placeholder: isOk ? '예) 이용 목적 확인. 승인합니다.' : '예) 인원 대비 객실 수 과다. 조정 후 재신청 바랍니다.' })
       .then(function(v){
         if (v == null) return;
         var r = Store.transition(id, to, user, v);

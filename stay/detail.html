@@ -354,7 +354,7 @@
     if (needOpinion || needReason) {
       UI.prompt(chk.opt.action, needOpinion ? '승인 의견' : '취소 사유',
         { required: to !== 'APPROVED', okLabel: chk.opt.action, danger: to !== 'APPROVED',
-          placeholder: to==='APPROVED' ? '예) 업무 목적 확인. 승인합니다.' :
+          placeholder: to==='APPROVED' ? '예) 이용 목적 확인. 승인합니다.' :
                        to==='REJECTED' ? '예) 인원 대비 객실 수가 과다합니다. 조정 후 재신청 바랍니다.' :
                                          '예) 신청자 요청으로 취소 (위약금 없음)' })
         .then(function(v){
