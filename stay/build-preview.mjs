@@ -50,7 +50,7 @@ ui = ui.replace("src=\\'../assets/logo-dark.png\\'", "src=\\'" + logo + "\\'")
   if (!ui.includes(marker)) throw new Error('ui.js 사이드바 푸터 문자열을 찾지 못했습니다 — 원본이 바뀌었는지 확인하세요.');
   ui = ui.replace(marker,
     `'<a href="notices.html">이용지침 보기</a><br><br>' +
-     '<span style="color:#5c5f68">미리보기 · 샘플 데이터<br>입력한 내용은 이 브라우저에만 저장됩니다</span>'`);
+     '<span style="color:#5c5f68">미리보기 · 입력한 내용은<br>이 브라우저에만 저장됩니다</span>'`);
 }
 
 /* 파일 저장: 아티팩트 뷰어는 <a download> 를 막으므로 downloads 능력으로 우회한다.
