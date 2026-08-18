@@ -18,7 +18,12 @@
       if (t && root.contains(t)) fn.call(t, e, t);
     });
   }
-  function initials(name){ return (name||'?').slice(-2); }
+  /* 개인 이름은 끝 두 글자(홍길동→길동), 띄어쓰기가 있는 조직명은 각 낱말 첫 글자(옆커폰 부동산팀→옆부) */
+  function initials(name){
+    var n = String(name || '?').trim();
+    if (n.indexOf(' ') > 0) return n.split(/\s+/).slice(0, 2).map(function(w){ return w.charAt(0); }).join('');
+    return n.slice(-2);
+  }
 
   var WD = ['일','월','화','수','목','금','토'];
   function dateK(s){ if (!s) return '-'; var d = new Date(s.length<=10 ? s+'T00:00:00' : s);
@@ -224,25 +229,27 @@
 
   function userSwitcher(){
     var cur = Auth.current();
+    var users = Store.users().filter(function(u){ return u.active !== false; });
+    var c = (Store.settings() || {}).contact || {};
+
+    /* 부동산팀은 접수·승인·예약·정산을 팀으로 함께 처리하므로 역할별로 나누어 보여주지 않는다.
+     * 노출하는 연락처도 팀 대표 번호 하나로 통일한다. */
     var body = '<p class="muted" style="margin:0 0 12px;font-size:12.5px">' +
-      '데모 환경에서는 계정을 전환해 각 권한의 화면을 확인할 수 있습니다. ' +
-      '실제 운영에서는 사내 로그인 계정이 자동으로 적용됩니다.</p>';
-    STAY.ROLE_ORDER.forEach(function(role){
-      var us = Store.users().filter(function(u){ return u.role === role && u.active !== false; });
-      if (!us.length) return;
-      body += '<div class="sb-group" style="color:var(--muted);padding:0;margin:14px 0 6px;font-size:11px">' +
-              esc(STAY.ROLES[role].label) + ' — ' + esc(STAY.ROLES[role].desc) + '</div>';
-      body += '<div class="list" style="border:1px solid var(--line);border-radius:10px;overflow:hidden">' +
-        us.map(function(u){
-          return '<div class="li' + (u.id===cur.id?' unread':'') + '" data-u="' + u.id + '">' +
-            '<span class="avatar">' + esc(initials(u.name)) + '</span>' +
-            '<span class="tx"><span class="t1">' + esc(u.name) +
-              (u.title ? ' <span class="muted" style="font-weight:600">' + esc(u.title) + '</span>' : '') +
-              (u.id===cur.id?' <span class="tag gold">현재</span>':'') +
-              (u.sample?' <span class="tag" style="color:var(--orange)">자리표시자</span>':'') + '</span>' +
-            '<span class="t2">' + esc(u.branch) + ' · ' + esc(u.dept) + (u.duty ? ' · ' + esc(u.duty) : '') + '</span></span></div>';
-        }).join('') + '</div>';
-    });
+      '부동산팀은 접수·승인·예약 진행·정산을 팀으로 함께 처리합니다. ' +
+      '실제 운영에서는 사내 로그인 계정이 자동으로 적용됩니다.</p>' +
+      '<div class="list" style="border:1px solid var(--line);border-radius:10px;overflow:hidden">' +
+      users.map(function(u){
+        return '<div class="li' + (u.id === cur.id ? ' unread' : '') + '" data-u="' + u.id + '">' +
+          '<span class="avatar">' + esc(initials(u.name)) + '</span>' +
+          '<span class="tx"><span class="t1">' + esc(u.name) +
+            (u.title ? ' <span class="muted" style="font-weight:600">' + esc(u.title) + '</span>' : '') +
+            (u.id === cur.id ? ' <span class="tag gold">현재</span>' : '') + '</span>' +
+          '<span class="t2">' + esc((STAY.ROLES[u.role] || {}).label || '') +
+            ' · 예약 접수 · 승인 · 예약 진행 · 정산 전 과정 처리</span></span></div>';
+      }).join('') + '</div>' +
+      '<div class="note info" style="margin-top:12px">숙박 예약 문의는 ' + esc(c.team || '부동산팀') +
+        ' <b>' + esc(c.name || '') + ' ' + esc(c.title || '') + ' ' + esc(c.phone || '') + '</b> 로 주세요.</div>';
+
     var m = modal({ title:'사용자 전환 (권한 미리보기)', body:body, buttons:[{label:'닫기'}] });
     on(m.root, 'click', '.li[data-u]', function(){
       Auth.switchTo(this.dataset.u);
