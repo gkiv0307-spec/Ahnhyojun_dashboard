@@ -5,7 +5,11 @@
  * 바깥(예약 실행 세션)에서 하고, 이 스크립트가 그 내용을 페이지에 심는다.
  *
  * 무엇을 덮어쓰고 무엇을 지키는가
- *  - 리뷰어 명단·예약 상태 : 시트가 원본이므로 매번 새로 만든다.
+ *  - 리뷰어 명단 : 시트가 원본이므로 매번 새로 만든다.
+ *  - 대시보드에서 직접 잡은 예약(localEdit 표시가 붙은 항목) : 그대로 지킨다.
+ *    담당자가 화면에서 배정한 날짜·시간·상태가 동기화 때마다 되돌아가면 쓸 수 없기 때문이다.
+ *  - 시트 값이 비어 있고 대시보드에 값이 있으면 : 대시보드 값을 지킨다(빈 값으로 지우지 않는다).
+ *  - 대시보드에서 직접 추가한 사람(source=manual) : 시트에 없어도 남긴다.
  *  - 지점의 예약 가능 날짜·시간대·인원, 안내문구 : 시트에 없는 정보이므로 발행본에서 그대로 가져온다.
  *  - 시트에 새 지점이 나타나면 지점만 추가하고 일정은 비워 둔다(담당자가 채운다).
  *
@@ -210,11 +214,52 @@ for (const name of new Set(reviewers.map((r) => r.branchName))) {
 }
 
 // 날짜가 잡힌 건은 그 지점 체크인 시각으로 (숙박이라 하루 한 타임)
-reviewers.forEach((r, i) => {
-  r.id = 'rv_' + String(i).padStart(4, '0');
+reviewers.forEach((r) => {
   r.branchId = null;
+  r.source = 'sheet';
+  r.localEdit = {};
   if (r.wishDate) r.wishTime = checkin.get(r.branchName.replace(/\s+/g, '')) || '';
 });
+
+/* --------------------------------------------- 대시보드 편집분과 합치기 */
+const idOf = (r) => {
+  const digits = String(r.phone || '').replace(/\D/g, '');
+  const branch = String(r.branchName || '').replace(/\s+/g, '');
+  return digits ? branch + '|' + digits : branch + '|n:' + String(r.name || '').replace(/\s+/g, '');
+};
+
+const prevList = (prev && prev.reviewers) || [];
+const prevByKey = new Map();
+prevList.forEach((r) => { if (!prevByKey.has(idOf(r))) prevByKey.set(idOf(r), r); });
+
+let keptEdits = 0, keptFilled = 0;
+const usedPrev = new Set();
+
+reviewers.forEach((r) => {
+  const prevR = prevByKey.get(idOf(r));
+  if (!prevR) return;
+  usedPrev.add(prevR);
+  r.id = prevR.id;
+  r.localEdit = prevR.localEdit && typeof prevR.localEdit === 'object' ? prevR.localEdit : {};
+
+  for (const key of ['wishDate', 'wishTime', 'status', 'reviewRegistered', 'memo',
+                     'grade', 'exposureScore', 'dailyVisits', 'address', 'applyMessage', 'accountUrl', 'name']) {
+    const mine = r[key], theirs = prevR[key];
+    if (r.localEdit[key] !== undefined) {           // 대시보드에서 직접 고친 항목은 그대로 둔다
+      r[key] = theirs;
+      keptEdits += 1;
+    } else if ((mine === '' || mine === undefined) && theirs !== '' && theirs !== undefined) {
+      r[key] = theirs;                              // 시트가 비어 있으면 기존 값을 지우지 않는다
+      keptFilled += 1;
+    }
+  }
+});
+
+// 대시보드에서 직접 추가한 사람은 시트에 없어도 남긴다
+const manualKept = prevList.filter((r) => r.source === 'manual' && !usedPrev.has(r));
+reviewers = reviewers.concat(manualKept.map((r) => ({ ...r, branchId: null })));
+
+reviewers.forEach((r, i) => { if (!r.id) r.id = 'rv_' + String(i).padStart(4, '0'); });
 
 const state = {
   version: 1,
@@ -234,6 +279,7 @@ const before = prev ? prev.reviewers.length : 0;
 const byBranch = {};
 reviewers.forEach((r) => { byBranch[r.branchName] = (byBranch[r.branchName] || 0) + 1; });
 console.log(`리뷰어 ${before}명 → ${reviewers.length}명`);
+console.log(`대시보드 편집 유지 ${keptEdits}건 · 시트 빈칸 보존 ${keptFilled}건 · 직접추가 유지 ${manualKept.length}명`);
 console.log('지점별:', JSON.stringify(byBranch, null, 0));
 console.log('지점 설정 유지:', branches.map((b) => `${b.name}(날짜 ${b.dates.length})`).join(', '));
 console.log(`→ ${path.basename(outFile)} (${Math.round(outHtml.length / 1024)}KB) · 이 파일을 발행하세요`);

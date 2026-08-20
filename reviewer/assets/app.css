@@ -265,6 +265,12 @@ table.grid select.cell-input { min-width: 88px; }
 .col-w-lg { min-width: 208px; }
 table.grid td.num .cell-input { text-align: right; }
 table.grid td .cell-input { min-width: 100%; }
+.rownum.edited { position: relative; }
+.rownum.edited::after {
+  content: ''; position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  width: 5px; height: 5px; border-radius: 50%; background: var(--info);
+}
+.b-manual { background: var(--info-soft); color: var(--info); border-color: var(--info-line); }
 .rownum { color: var(--ink-3); font-size: 11px; font-family: var(--font-data); text-align: right; width: 34px; background: var(--panel-2); position: sticky; left: 0; }
 .sticky-name { position: sticky; left: 34px; background: var(--panel); z-index: 2; }
 tbody tr:hover .sticky-name { background: var(--panel-2); }

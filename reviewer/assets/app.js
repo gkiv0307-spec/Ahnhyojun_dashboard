@@ -557,13 +557,27 @@
   ];
 
   function updateReviewer(r, key, value) {
-    r[key] = value;
+    if (key === 'wishDate') value = S.normalizeDate(value);
+    if (key === 'wishTime') value = S.normalizeTime(value);
+
+    var changes = cast(key, value);
+
+    // 날짜만 고르고 시간을 비워 두면 예약 인원에 잡히지 않는다.
+    // 지점 시간대가 하나뿐이면(숙박처럼 하루 한 타임) 그 시간으로 채워 준다.
+    if (key === 'wishDate' && value && !r.wishTime) {
+      var br = S.branchById(r.branchId);
+      if (br && (br.times || []).length === 1) changes.wishTime = br.times[0];
+    }
+    // 날짜를 지우면 시간도 함께 비운다
+    if (key === 'wishDate' && !value) changes.wishTime = '';
+
+    S.editReviewer(r, changes);
     if (key === 'branchName') S.relinkBranches();
-    if (key === 'wishDate') r.wishDate = S.normalizeDate(value);
-    if (key === 'wishTime') r.wishTime = S.normalizeTime(value);
     S.commit();
     render();
   }
+
+  function cast(key, value) { var o = {}; o[key] = value; return o; }
 
   function renderReviewers() {
     var list = filteredReviewers();
@@ -598,7 +612,12 @@
     var tbody = h('tbody');
     list.forEach(function (r, i) {
       var tr = h('tr', { class: r.branchId ? '' : 'row-unmatched' });
-      tr.appendChild(h('td', { class: 'rownum', text: String(i + 1) }));
+      var edited = ['wishDate', 'wishTime', 'status', 'reviewRegistered'].some(function (k) { return S.isEdited(r, k); });
+      tr.appendChild(h('td', {
+        class: 'rownum' + (edited ? ' edited' : ''),
+        text: String(i + 1),
+        title: edited ? '대시보드에서 직접 설정한 예약입니다. 시트를 다시 불러와도 유지됩니다.' : ''
+      }));
       COLS.forEach(function (c) { tr.appendChild(cellFor(r, c)); });
       tr.appendChild(h('td', null, h('button', {
         class: 'btn btn-sm btn-danger btn-icon', text: '삭제', title: r.name + ' 삭제',
@@ -638,6 +657,7 @@
         });
         wrap.appendChild(inp);
         if (!r.branchId) wrap.appendChild(h('span', { class: 'badge b-unmatched', text: '미매칭', title: '등록된 지점명과 일치하지 않습니다.' }));
+        if (r.source === 'manual') wrap.appendChild(h('span', { class: 'badge b-manual', text: '직접추가', title: '대시보드에서 추가한 사람입니다. 시트 동기화로 지워지지 않습니다.' }));
         td.appendChild(wrap);
         return td;
       }
@@ -913,19 +933,22 @@
       if (!masked()) row.appendChild(h('span', { class: 'hint', text: r.phone || '' }));
       var sel = h('select', {
         class: 'status-select s-' + r.status,
-        onchange: function () { r.status = this.value; S.commit(); renderBooking(); }
+        onchange: function () { S.editReviewer(r, { status: this.value }); S.commit(); renderBooking(); }
       }, S.STATUSES.map(function (v) { return h('option', { value: v, text: v }); }));
       sel.value = r.status;
       row.appendChild(sel);
       row.appendChild(h('label', { class: 'switch' }, [
         h('input', {
           type: 'checkbox', checked: !!r.reviewRegistered,
-          onchange: function () { r.reviewRegistered = this.checked; S.commit(); renderBooking(); }
+          onchange: function () { S.editReviewer(r, { reviewRegistered: this.checked }); S.commit(); renderBooking(); }
         }), '리뷰등록'
       ]));
       row.appendChild(h('button', {
         class: 'btn btn-sm btn-ghost', text: '시간 비우기',
-        onclick: function () { r.wishDate = ''; r.wishTime = ''; r.status = '예약전'; S.commit(); renderBooking(); }
+        onclick: function () {
+          S.editReviewer(r, { wishDate: '', wishTime: '', status: '예약전' });
+          S.commit(); renderBooking();
+        }
       }));
       box.appendChild(row);
     });
@@ -945,8 +968,9 @@
           var r = state().reviewers.filter(function (x) { return x.id === pick.value; })[0];
           if (!r) { toast('리뷰어를 선택하세요.', 'err'); return; }
           if (info.closed) { toast('이미 마감된 시간대입니다. 정원을 늘린 뒤 배정하세요.', 'err'); return; }
-          r.wishDate = date; r.wishTime = time;
-          if (r.status === '예약전' || r.status === '취소') r.status = '예약요청';
+          var next = { wishDate: date, wishTime: time };
+          if (r.status === '예약전' || r.status === '취소') next.status = '예약요청';
+          S.editReviewer(r, next);
           S.commit(); renderBooking(); toast('배정했습니다.', 'ok');
         }
       }),
@@ -970,7 +994,7 @@
       var info = (br && r.wishDate && r.wishTime) ? S.slotInfo(br, r.wishDate, r.wishTime) : null;
       var sel = h('select', {
         class: 'status-select s-' + r.status,
-        onchange: function () { r.status = this.value; S.commit(); render(); }
+        onchange: function () { S.editReviewer(r, { status: this.value }); S.commit(); render(); }
       }, S.STATUSES.map(function (v) { return h('option', { value: v, text: v }); }));
       sel.value = r.status;
       tb.appendChild(h('tr', { class: r.branchId ? '' : 'row-unmatched' }, [
@@ -983,7 +1007,7 @@
         h('td', null, sel),
         h('td', null, h('input', {
           type: 'checkbox', checked: !!r.reviewRegistered,
-          onchange: function () { r.reviewRegistered = this.checked; S.commit(); }
+          onchange: function () { S.editReviewer(r, { reviewRegistered: this.checked }); S.commit(); }
         })),
         h('td', null, info
           ? h('span', { class: 'badge ' + (info.closed ? 'b-closed' : 'b-ok'), text: info.over ? '초과 ' + info.over : info.label })
@@ -1960,7 +1984,7 @@
     $('#f-unmatched-only').addEventListener('change', function () { ui.unmatchedOnly = this.checked; renderReviewers(); });
     $('#btn-add-row').addEventListener('click', function () {
       var b = ui.branch !== 'all' && ui.branch !== '__unmatched' ? S.branchById(ui.branch) : state().branches[0];
-      var r = S.makeReviewer({ branchName: b ? b.name : '', status: '예약전' });
+      var r = S.makeReviewer({ branchName: b ? b.name : '', status: '예약전', source: 'manual' });
       state().reviewers.unshift(r);
       S.relinkBranches(); S.commit(); render();
       toast('빈 행을 추가했습니다.');

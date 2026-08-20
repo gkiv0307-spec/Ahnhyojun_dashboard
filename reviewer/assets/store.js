@@ -217,8 +217,35 @@
       wishDate: normalizeDate(o.wishDate),
       wishTime: normalizeTime(o.wishTime),
       status: normalizeStatus(o.status),
-      reviewRegistered: !!o.reviewRegistered
+      reviewRegistered: !!o.reviewRegistered,
+      // 'sheet' = 구글시트에서 온 사람, 'manual' = 대시보드에서 직접 추가한 사람
+      source: o.source === 'manual' ? 'manual' : 'sheet',
+      // 대시보드에서 직접 고친 항목. 시트와 합칠 때 이쪽 값이 이긴다.
+      localEdit: o.localEdit && typeof o.localEdit === 'object' ? o.localEdit : {}
     };
+  }
+
+  /** 대시보드에서 직접 고칠 수 있는 예약 항목 */
+  var EDITABLE = ['wishDate', 'wishTime', 'status', 'reviewRegistered', 'memo',
+    'grade', 'exposureScore', 'dailyVisits', 'address', 'applyMessage', 'accountUrl', 'phone', 'name'];
+
+  /**
+   * 리뷰어 항목을 바꾸고 "대시보드에서 직접 고침"으로 표시한다.
+   * 이 표시가 있어야 구글시트와 다시 합칠 때 이쪽 값이 살아남는다.
+   */
+  function editReviewer(r, changes) {
+    Object.keys(changes).forEach(function (k) {
+      r[k] = changes[k];
+      if (EDITABLE.indexOf(k) >= 0) {
+        if (!r.localEdit) r.localEdit = {};
+        r.localEdit[k] = new Date().toISOString();
+      }
+    });
+    return r;
+  }
+
+  function isEdited(r, key) {
+    return !!(r && r.localEdit && r.localEdit[key]);
   }
 
   /* ------------------------------------------------------------ 상태 관리 */
@@ -276,6 +303,8 @@
       r.id = r.id || uid('rv');
       r.status = normalizeStatus(r.status);
       r.reviewRegistered = !!r.reviewRegistered;
+      if (r.source !== 'manual') r.source = 'sheet';
+      if (!r.localEdit || typeof r.localEdit !== 'object') r.localEdit = {};
     });
     return s;
   }
@@ -614,6 +643,7 @@
     load: load, get: get, save: save, commit: commit, subscribe: subscribe,
     reset: reset, replaceState: replaceState, sampleState: sampleState, emptyState: emptyState,
     makeBranch: makeBranch, makeReviewer: makeReviewer,
+    editReviewer: editReviewer, isEdited: isEdited, EDITABLE: EDITABLE,
 
     branchByName: branchByName, branchById: branchById,
     relinkBranches: relinkBranches, unmatchedBranchNames: unmatchedBranchNames,
