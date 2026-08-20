@@ -953,15 +953,39 @@
       box.appendChild(row);
     });
 
-    // 이 슬롯에 배정 추가
-    var candidates = state().reviewers.filter(function (r) {
+    // 이 슬롯에 배정 추가 — 기본은 이 달 회차에 등록된 사람만 보여준다
+    var ym = String(date).slice(0, 7);
+    var waiting = state().reviewers.filter(function (r) {
       return r.branchId === b.id && (!r.wishDate || !r.wishTime);
     });
-    var pick = h('select', null, [h('option', { value: '', text: '배정할 리뷰어 선택…' })].concat(
-      candidates.map(function (r) { return h('option', { value: r.id, text: (r.name || '(이름 없음)') + ' · ' + (r.grade || '-') + '등급' }); })
+    var monthOnly = ui.assignMonthOnly !== false;
+    var candidates = monthOnly ? waiting.filter(function (r) { return inMonthBatch(r, ym); }) : waiting;
+
+    var pick = h('select', null, [h('option', {
+      value: '',
+      text: candidates.length ? '배정할 리뷰어 선택…' : '배정할 수 있는 리뷰어가 없습니다'
+    })].concat(
+      candidates.map(function (r) {
+        var round = roundOf(r);
+        return h('option', {
+          value: r.id,
+          text: (r.name || '(이름 없음)') + (round ? ' · ' + round + '차' : '') + ' · ' + (r.grade || '-') + '등급'
+        });
+      })
     ));
+
+    var monthToggle = h('label', { class: 'switch', title: '이 달에 진행 중인 회차에 등록된 사람만 보여줍니다' }, [
+      h('input', {
+        type: 'checkbox', checked: monthOnly,
+        onchange: function () { ui.assignMonthOnly = this.checked; renderBooking(); }
+      }),
+      Number(ym.slice(5, 7)) + '월 등록자만'
+    ]);
+
     box.appendChild(h('div', { class: 'inline-form mt8' }, [
       pick,
+      monthToggle,
+      h('span', { class: 'hint', text: candidates.length + '명' + (monthOnly && waiting.length !== candidates.length ? ' (전체 대기 ' + waiting.length + '명)' : '') }),
       h('button', {
         class: 'btn btn-sm btn-primary', text: '이 시간대에 배정',
         onclick: function () {
@@ -1158,6 +1182,41 @@
       panel.appendChild(h('div', { class: 'panel-body' }, grid));
       wrap.appendChild(panel);
     });
+  }
+
+
+  /* ---------------------------------------------- 회차(N차)와 진행 월 */
+  /**
+   * 메모 앞에 붙은 "N차" 로 회차를 읽는다.
+   * 회차가 어느 달에 진행됐는지는, 그 회차에서 이미 날짜가 잡힌 사람들의 달로 판단한다.
+   * (회차 자체에는 기간 정보가 없고, 체험기간이 달을 걸치는 경우도 있어 여러 달이 나올 수 있다)
+   */
+  function roundOf(r) {
+    var m = /^(\d+)차/.exec(r.memo || '');
+    return m ? m[1] : null;
+  }
+
+  var _batchCache = null;
+  function batchMonths() {
+    if (_batchCache) return _batchCache;
+    var map = {};
+    state().reviewers.forEach(function (r) {
+      var round = roundOf(r);
+      if (!round || !r.branchId || !r.wishDate) return;
+      var key = r.branchId + '|' + round;
+      (map[key] || (map[key] = {}))[r.wishDate.slice(0, 7)] = true;
+    });
+    _batchCache = map;
+    return map;
+  }
+
+  /** 그 사람이 대상 월의 회차 소속인지. 회차를 알 수 없으면 막지 않는다. */
+  function inMonthBatch(r, ym) {
+    var round = roundOf(r);
+    if (!round || !r.branchId) return true;
+    var months = batchMonths()[r.branchId + '|' + round];
+    if (!months) return true;
+    return !!months[ym];
   }
 
   /** 달력에서 날짜를 눌렀을 때 그 날 예약자 보기 */
@@ -2090,6 +2149,7 @@
     var original = S.commit;
     S.commit = function (silent) {
       markDirty();
+      _batchCache = null;          // 자료가 바뀌면 회차별 진행 월을 다시 계산한다
       return original.call(S, silent);
     };
   }
