@@ -188,7 +188,8 @@
     sortKey: '', sortDir: 1,
     openSlot: null,         // {branchId, date, time}
     shareHideClosed: false,
-    shareShowCount: true
+    shareShowCount: true,
+    month: null            // 'YYYY-MM' — 월별 현황에서 보고 있는 달
   };
 
   function state() { return S.get(); }
@@ -991,6 +992,179 @@
     });
     if (!rows.length) tb.appendChild(h('tr', null, h('td', { colspan: '9', class: 'empty', text: '조건에 맞는 예약 건이 없습니다.' })));
     table.appendChild(tb);
+  }
+
+
+  /* ============================================================ 월별 현황 */
+  function monthOf(dateStr) { return String(dateStr || '').slice(0, 7); }
+
+  function currentMonth() {
+    if (ui.month) return ui.month;
+    // 처음 열 때는 자료가 있는 달 중 오늘에 가장 가까운 달을 보여준다
+    var today = monthOf(S.todayStr());
+    var months = {};
+    state().branches.forEach(function (b) { (b.dates || []).forEach(function (d) { months[monthOf(d)] = 1; }); });
+    state().reviewers.forEach(function (r) { if (r.wishDate) months[monthOf(r.wishDate)] = 1; });
+    var keys = Object.keys(months).sort();
+    if (!keys.length || keys.indexOf(today) >= 0) return today;
+    var upcoming = keys.filter(function (m) { return m >= today; });
+    ui.month = upcoming.length ? upcoming[0] : keys[keys.length - 1];
+    return ui.month;
+  }
+
+  function shiftMonth(ym, delta) {
+    var y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) + delta;
+    y += Math.floor((m - 1) / 12);
+    m = ((m - 1) % 12 + 12) % 12 + 1;
+    return y + '-' + (m < 10 ? '0' + m : m);
+  }
+
+  /** 그 지점의 그 날짜 상황 */
+  function dayInfo(branch, dateStr) {
+    var registered = (branch.dates || []).indexOf(dateStr) >= 0;
+    var cap = 0;
+    if (registered) {
+      (branch.times || []).forEach(function (t) { cap += S.capacityOf(branch, dateStr, t); });
+    }
+    // 등록되지 않은 시간에 잡힌 건까지 모두 센다
+    var people = state().reviewers.filter(function (r) {
+      return r.branchId === branch.id && r.wishDate === dateStr;
+    });
+    var booked = people.filter(function (r) { return S.isCounted(r.status); }).length;
+    var visited = people.filter(function (r) { return r.status === '방문완료'; }).length;
+    return {
+      registered: registered, capacity: cap, booked: booked, visited: visited,
+      remaining: Math.max(0, cap - booked),
+      closed: registered && cap - booked <= 0
+    };
+  }
+
+  function renderMonth() {
+    var ym = currentMonth();
+    $('#month-label').textContent = Number(ym.slice(0, 4)) + '년 ' + Number(ym.slice(5, 7)) + '월';
+
+    var legend = $('#month-legend');
+    clear(legend);
+    legend.appendChild(h('div', { class: 'month-legend' }, [
+      h('span', { class: 'swatch' }, [h('span', { class: 'box', style: 'background:var(--ok-soft);border-color:var(--ok-line)' }), '등록 · 예약 가능']),
+      h('span', { class: 'swatch' }, [h('span', { class: 'box', style: 'background:var(--danger-soft);border-color:var(--danger-line)' }), '등록 · 마감']),
+      h('span', { class: 'swatch' }, [h('span', { class: 'box', style: 'background:var(--mute-soft);border-color:var(--mute-line)' }), '지난 예약 기록']),
+      h('span', { class: 'hint', text: '칸의 숫자는 예약 인원 / 정원입니다. 날짜를 누르면 그 날 예약자가 보입니다.' })
+    ]));
+
+    var wrap = $('#month-boards');
+    clear(wrap);
+    var branches = ui.branch === '__unmatched' ? [] : scopedBranches();
+    if (!branches.length) {
+      wrap.appendChild(h('div', { class: 'panel' }, h('div', { class: 'empty', text: '표시할 지점이 없습니다. 설정에서 지점을 추가하세요.' })));
+      return;
+    }
+
+    var first = new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)) - 1, 1);
+    var lead = first.getDay();
+    var days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    var today = S.todayStr();
+    var DOW = ['일', '월', '화', '수', '목', '금', '토'];
+
+    branches.forEach(function (b) {
+      var panel = h('div', { class: 'panel' });
+      // 등록일 기준 수치와 그 밖의 기록을 섞지 않는다 (섞으면 잔여를 잘못 읽게 된다)
+      var stat = { dates: 0, capacity: 0, booked: 0, other: 0, visited: 0 };
+      var cells = [];
+
+      for (var i = 0; i < lead; i++) cells.push(h('div', { class: 'month-cell empty' }));
+
+      for (var d = 1; d <= days; d++) {
+        var ds = ym + '-' + (d < 10 ? '0' + d : d);
+        var info = dayInfo(b, ds);
+        var dow = new Date(first.getFullYear(), first.getMonth(), d).getDay();
+        var cls = 'month-cell';
+        if (dow === 0) cls += ' sun';
+        if (dow === 6) cls += ' sat';
+        if (ds === today) cls += ' today';
+        if (info.registered) cls += info.closed ? ' closed' : ' open';
+        else if (info.booked) cls += ' past';
+
+        if (info.registered) {
+          stat.dates += 1;
+          stat.capacity += info.capacity;
+          stat.booked += info.booked;
+        } else {
+          stat.other += info.booked;
+        }
+        stat.visited += info.visited;
+
+        var body = [h('span', { class: 'd', text: String(d) })];
+        if (info.registered) {
+          body.push(h('span', { class: 'v', text: info.closed ? '마감' : '가능 ' + info.remaining }));
+          body.push(h('span', { class: 'c', text: info.booked + '/' + info.capacity }));
+        } else if (info.booked) {
+          body.push(h('span', { class: 'v', text: info.booked + '명' }));
+          if (info.visited) body.push(h('span', { class: 'c', text: '방문 ' + info.visited }));
+        }
+
+        var clickable = info.registered || info.booked;
+        cells.push(h('button', {
+          class: cls + (clickable ? ' clickable' : ''),
+          disabled: !clickable,
+          title: b.name + ' ' + S.fmtDate(ds),
+          onclick: clickable ? (function (date) {
+            return function () { openDayDetail(b, date); };
+          })(ds) : null
+        }, body));
+      }
+
+      panel.appendChild(h('div', { class: 'panel-head' }, [
+        h('h2', { text: b.name }),
+        h('span', { class: 'spacer' }),
+        h('div', { class: 'month-summary' }, [
+          h('span', null, ['등록 ', h('b', { text: String(stat.dates) }), '일']),
+          h('span', null, ['예약 ', h('b', { text: String(stat.booked) }), ' / ', h('b', { text: String(stat.capacity) }), '명']),
+          h('span', null, ['잔여 ', h('b', { text: String(Math.max(0, stat.capacity - stat.booked)) }), '명']),
+          h('span', null, ['방문완료 ', h('b', { text: String(stat.visited) }), '명']),
+          stat.other ? h('span', { class: 'hint', title: '예약 가능일로 등록되지 않은 날짜의 기록' },
+            ['그 외 기록 ', h('b', { text: String(stat.other) }), '명']) : null
+        ])
+      ]));
+
+      var grid = h('div', { class: 'month-grid' },
+        DOW.map(function (w, i) {
+          return h('div', { class: 'month-dow' + (i === 0 ? ' sun' : i === 6 ? ' sat' : ''), text: w });
+        }).concat(cells));
+      panel.appendChild(h('div', { class: 'panel-body' }, grid));
+      wrap.appendChild(panel);
+    });
+  }
+
+  /** 달력에서 날짜를 눌렀을 때 그 날 예약자 보기 */
+  function openDayDetail(branch, dateStr) {
+    var people = state().reviewers.filter(function (r) {
+      return r.branchId === branch.id && r.wishDate === dateStr;
+    }).sort(function (a, b2) { return (a.wishTime || '').localeCompare(b2.wishTime || ''); });
+
+    var body = h('div');
+    var info = dayInfo(branch, dateStr);
+    body.appendChild(h('p', { class: 'hint', text:
+      info.registered
+        ? '정원 ' + info.capacity + '명 · 예약 ' + info.booked + '명 · 잔여 ' + info.remaining + '명'
+        : '예약 가능일로 등록되지 않은 날짜입니다. 예약 기록 ' + people.length + '건.' }));
+
+    if (!people.length) body.appendChild(h('div', { class: 'empty', text: '이 날짜에 배정된 리뷰어가 없습니다.' }));
+    people.forEach(function (r) {
+      var row = h('div', { class: 'person-row' });
+      row.appendChild(h('span', { class: 'nm', text: r.name || '(이름 없음)' }));
+      if (r.wishTime) row.appendChild(h('span', { class: 'hint', text: r.wishTime }));
+      if (!masked() && r.phone) row.appendChild(h('span', { class: 'hint', text: r.phone }));
+      row.appendChild(h('span', { class: 'badge b-' + r.status, text: r.status }));
+      if (r.reviewRegistered) row.appendChild(h('span', { class: 'badge b-방문완료', text: '리뷰등록' }));
+      body.appendChild(row);
+    });
+
+    openModal({
+      title: branch.name + ' · ' + S.fmtDate(dateStr),
+      body: body,
+      buttons: [{ label: '닫기' }]
+    });
   }
 
   /* ============================================================ 공유용 일정표 */
@@ -1797,6 +1971,10 @@
     $('#share-note').addEventListener('input', function () {
       state().settings.shareNote = this.value; S.commit(true); renderShare();
     });
+    $('#btn-month-prev').addEventListener('click', function () { ui.month = shiftMonth(currentMonth(), -1); renderMonth(); });
+    $('#btn-month-next').addEventListener('click', function () { ui.month = shiftMonth(currentMonth(), 1); renderMonth(); });
+    $('#btn-month-today').addEventListener('click', function () { ui.month = monthOf(S.todayStr()); renderMonth(); });
+
     $('#btn-share-png').addEventListener('click', function () { exportShareImage('png'); });
     $('#btn-share-jpg').addEventListener('click', function () { exportShareImage('jpg'); });
     $('#btn-share-all').addEventListener('click', function () {
@@ -1815,6 +1993,7 @@
     if (ui.page === 'dashboard') renderDashboard();
     else if (ui.page === 'reviewers') renderReviewers();
     else if (ui.page === 'booking') renderBooking();
+    else if (ui.page === 'month') renderMonth();
     else if (ui.page === 'share') renderShare();
     else if (ui.page === 'settings') renderSettings();
   }

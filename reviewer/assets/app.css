@@ -330,6 +330,57 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
 .person-row:last-child { border-bottom: 0; }
 .person-row .nm { font-weight: 700; }
 
+/* --------------------------------------------------------------- 월별 현황 */
+.month-nav { display: flex; align-items: center; gap: 6px; }
+.month-nav strong { font-size: 14px; min-width: 116px; text-align: center; font-variant-numeric: tabular-nums; }
+
+.month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.month-dow {
+  text-align: center; font-size: 10.5px; font-weight: 700; color: var(--ink-3);
+  padding: 4px 0; font-family: var(--font-data);
+}
+.month-dow.sun { color: var(--danger); }
+.month-dow.sat { color: var(--info); }
+
+.month-cell {
+  min-height: 62px; border: 1px solid var(--line-2); border-radius: 8px;
+  padding: 5px 6px; display: flex; flex-direction: column; gap: 3px;
+  background: var(--panel); text-align: left; cursor: default; width: 100%;
+}
+.month-cell.empty { background: transparent; border-color: transparent; }
+.month-cell .d {
+  font-size: 11px; font-weight: 700; color: var(--ink-3);
+  font-family: var(--font-data); font-variant-numeric: tabular-nums;
+}
+.month-cell.sun .d { color: var(--danger); }
+.month-cell.sat .d { color: var(--info); }
+.month-cell.today { outline: 2px solid var(--accent); outline-offset: -2px; }
+.month-cell .v { font-size: 13px; font-weight: 700; line-height: 1.2; }
+.month-cell .c { font-size: 10.5px; color: var(--ink-3); font-family: var(--font-data); }
+
+/* 등록되어 진행 중인 날짜 */
+.month-cell.open { background: var(--ok-soft); border-color: var(--ok-line); }
+.month-cell.open .v { color: var(--ok); }
+.month-cell.closed { background: var(--danger-soft); border-color: var(--danger-line); }
+.month-cell.closed .v { color: var(--danger); }
+/* 등록은 안 됐지만 예약 기록이 있는 날짜 (지난 회차 등) */
+.month-cell.past { background: var(--mute-soft); border-color: var(--mute-line); }
+.month-cell.past .v { color: var(--ink-2); }
+.month-cell.clickable { cursor: pointer; }
+.month-cell.clickable:hover { border-color: var(--accent); }
+
+.month-summary { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); }
+.month-summary b { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.month-legend { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--ink-2); }
+.month-legend .swatch { display: inline-flex; align-items: center; gap: 5px; }
+.month-legend .box { width: 13px; height: 13px; border-radius: 4px; border: 1px solid var(--line); }
+
+@media (max-width: 560px) {
+  .month-cell { min-height: 52px; padding: 4px; }
+  .month-cell .v { font-size: 12px; }
+  .month-nav strong { min-width: 92px; font-size: 13px; }
+}
+
 /* --------------------------------------------------------------- 공유용 */
 .branch-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .branch-tab {

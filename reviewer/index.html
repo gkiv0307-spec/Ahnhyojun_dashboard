@@ -65,6 +65,7 @@
     <button class="navbtn active" data-page="dashboard">대시보드</button>
     <button class="navbtn" data-page="reviewers">리뷰어 명단 <span class="badge-count" id="nav-count-reviewers"></span></button>
     <button class="navbtn" data-page="booking">예약 현황</button>
+    <button class="navbtn" data-page="month">월별 현황</button>
     <button class="navbtn" data-page="share">공유용 일정표</button>
     <button class="navbtn" data-page="settings">설정</button>
   </nav>
@@ -171,6 +172,25 @@
           <div class="table-wrap"><table class="grid" id="booking-list"></table></div>
         </div>
       </div>
+    </section>
+
+    <!-- ══════════════════════════ 월별 현황 ══════════════════════════ -->
+    <section class="page" id="page-month">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>월별 현황</h2>
+          <span class="sub">지점별로 어느 날짜에 체험단이 진행 중인지 한눈에 봅니다</span>
+          <span class="spacer"></span>
+          <div class="month-nav">
+            <button class="btn btn-sm" id="btn-month-prev" title="이전 달">◀</button>
+            <strong id="month-label"></strong>
+            <button class="btn btn-sm" id="btn-month-next" title="다음 달">▶</button>
+            <button class="btn btn-sm btn-ghost" id="btn-month-today">이번 달</button>
+          </div>
+        </div>
+        <div class="panel-body" id="month-legend"></div>
+      </div>
+      <div id="month-boards"></div>
     </section>
 
     <!-- ══════════════════════════ 공유용 일정표 ══════════════════════════ -->
