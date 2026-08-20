@@ -80,6 +80,18 @@ https://claude.ai/code/artifact/55be07f9-1f4b-4449-b910-7efedabe9a9f
 node sync/state-to-csv.mjs --live <발행본.html> --password <비밀번호> --changed-only --out /tmp/changed.csv
 ```
 
+**드라이브 위치**
+
+| 무엇 | 어디 |
+|---|---|
+| 원본 · 브라운도트 리뷰노트 | https://docs.google.com/spreadsheets/d/1yCsg73LKEzCWMrYlFdv58TobBjTlPEBmwB9MvzQN_Xw/edit |
+| 원본 · 스테이레브소유 리뷰노트 | https://docs.google.com/spreadsheets/d/1-isJI0oJNRWVeWn9xX4fCXToQYVDNX22JLu0AwL8L1o/edit |
+| 내보내기 저장 폴더 | https://drive.google.com/drive/folders/1qbb3uSKLZIeIRgfJxr4cTGKwjwj9Fenz |
+
+원본 시트는 읽기만 하고 **절대 수정하지 않습니다.** 내보낸 파일은 위 폴더에 새로 만들어집니다.
+(폴더 지정 없이 만들면 "내 드라이브" 최상위에 생기므로, 내보낼 때 parentId 를
+`1qbb3uSKLZIeIRgfJxr4cTGKwjwj9Fenz` 로 지정하세요)
+
 `--changed-only` 는 대시보드에서 직접 잡은 예약과 직접 추가한 사람만 뽑습니다.
 원본 시트에 옮겨 적을 때 이쪽이 편합니다. 전체가 필요하면 옵션을 빼거나
 대시보드의 `전체 엑셀 다운로드` 를 쓰세요.
