@@ -66,6 +66,7 @@
     <button class="navbtn" data-page="reviewers">리뷰어 명단 <span class="badge-count" id="nav-count-reviewers"></span></button>
     <button class="navbtn" data-page="booking">예약 현황</button>
     <button class="navbtn" data-page="month">월별 현황</button>
+    <button class="navbtn" data-page="batches">회차 관리</button>
     <button class="navbtn" data-page="share">공유용 일정표</button>
     <button class="navbtn" data-page="settings">설정</button>
   </nav>
@@ -192,6 +193,23 @@
         <div class="panel-body" id="month-legend"></div>
       </div>
       <div id="month-boards"></div>
+    </section>
+
+    <!-- ══════════════════════════ 회차 관리 ══════════════════════════ -->
+    <section class="page" id="page-batches">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>회차 관리</h2>
+          <span class="sub">한 달에 한 번 도는 체험단을 회차 단위로 관리합니다</span>
+          <span class="spacer"></span>
+          <label class="switch"><input type="checkbox" id="batch-running-only"> 진행중·예정만</label>
+          <button class="btn btn-sm" id="btn-batch-export">이 회차 명단 CSV</button>
+        </div>
+        <div class="panel-body tight">
+          <div class="table-wrap"><table class="grid" id="batch-table"></table></div>
+        </div>
+      </div>
+      <div id="batch-detail"></div>
     </section>
 
     <!-- ══════════════════════════ 공유용 일정표 ══════════════════════════ -->

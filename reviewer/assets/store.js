@@ -219,10 +219,72 @@
       status: normalizeStatus(o.status),
       reviewRegistered: !!o.reviewRegistered,
       // 'sheet' = 구글시트에서 온 사람, 'manual' = 대시보드에서 직접 추가한 사람
+      // 몇 차 체험단 소속인지. 메모의 "N차" 표기에서 끌어온다.
+      round: o.round != null && o.round !== '' ? String(o.round) : parseRound(o.memo),
       source: o.source === 'manual' ? 'manual' : 'sheet',
       // 대시보드에서 직접 고친 항목. 시트와 합칠 때 이쪽 값이 이긴다.
       localEdit: o.localEdit && typeof o.localEdit === 'object' ? o.localEdit : {}
     };
+  }
+
+  /** 메모 앞의 "N차" 에서 회차를 읽는다 */
+  function parseRound(memo) {
+    var m = /(^|[^0-9])(\d{1,3})\s*차/.exec(String(memo || ''));
+    return m ? m[2] : '';
+  }
+
+  /**
+   * 회차 목록을 만든다. 회차는 지점별로 도는 한 번의 체험단이다.
+   * 기간은 그 회차에서 이미 날짜가 잡힌 사람들의 처음~마지막 날로 잡는다.
+   * (원본 시트에 회차 기간이 값으로 들어 있지 않아 자료에서 되짚는 수밖에 없다.
+   *  담당자가 화면에서 고치면 그 값을 우선한다.)
+   */
+  function deriveBatches(s) {
+    var kept = {};
+    (s.batches || []).forEach(function (b) { kept[b.branchId + '|' + b.round] = b; });
+
+    var found = {};
+    s.reviewers.forEach(function (r) {
+      if (!r.branchId || !r.round) return;
+      var key = r.branchId + '|' + r.round;
+      var f = found[key] || (found[key] = { branchId: r.branchId, round: r.round, dates: [] });
+      if (r.wishDate) f.dates.push(r.wishDate);
+    });
+
+    return Object.keys(found).map(function (key) {
+      var f = found[key];
+      var prev = kept[key];
+      var dates = f.dates.sort();
+      return {
+        id: prev ? prev.id : 'bt_' + key.replace(/\|/g, '_'),
+        branchId: f.branchId,
+        round: f.round,
+        // 담당자가 고친 기간이 있으면 그대로 둔다
+        from: (prev && prev.fromEdited) ? prev.from : (dates[0] || ''),
+        to: (prev && prev.toEdited) ? prev.to : (dates[dates.length - 1] || ''),
+        fromEdited: !!(prev && prev.fromEdited),
+        toEdited: !!(prev && prev.toEdited),
+        memo: prev ? prev.memo || '' : ''
+      };
+    }).sort(function (a, b) {
+      return (a.branchId + '').localeCompare(b.branchId + '') || (Number(a.round) - Number(b.round));
+    });
+  }
+
+  function batchStatus(b, today) {
+    today = today || todayStr();
+    if (!b.from && !b.to) return '일정 미정';
+    if (b.from && today < b.from) return '예정';
+    if (b.to && today > b.to) return '종료';
+    return '진행중';
+  }
+
+  /** 그 달에 걸치는 회차인지 (YYYY-MM) */
+  function batchInMonth(b, ym) {
+    if (!b.from && !b.to) return false;
+    var from = (b.from || b.to).slice(0, 7);
+    var to = (b.to || b.from).slice(0, 7);
+    return ym >= from && ym <= to;
   }
 
   /** 대시보드에서 직접 고칠 수 있는 예약 항목 */
@@ -305,6 +367,7 @@
       r.reviewRegistered = !!r.reviewRegistered;
       if (r.source !== 'manual') r.source = 'sheet';
       if (!r.localEdit || typeof r.localEdit !== 'object') r.localEdit = {};
+      if (r.round == null || r.round === '') r.round = parseRound(r.memo);
     });
     return s;
   }
@@ -361,6 +424,12 @@
   }
 
   /** 리뷰어의 branchName 을 기준으로 branchId 를 다시 연결한다. 못 찾으면 null(미매칭). */
+  function refreshBatches(s) {
+    s = s || get();
+    s.batches = deriveBatches(s);
+    return s;
+  }
+
   function relinkBranches(s) {
     s = s || get();
     var byKey = {};
@@ -369,6 +438,7 @@
       var id = byKey[normKey(r.branchName)];
       r.branchId = id || null;
     });
+    refreshBatches(s);
     return s;
   }
 
@@ -647,6 +717,8 @@
 
     branchByName: branchByName, branchById: branchById,
     relinkBranches: relinkBranches, unmatchedBranchNames: unmatchedBranchNames,
+    parseRound: parseRound, refreshBatches: refreshBatches,
+    batchStatus: batchStatus, batchInMonth: batchInMonth,
 
     slotKey: slotKey, capacityOf: capacityOf, isCounted: isCounted,
     reviewersInSlot: reviewersInSlot, bookedCount: bookedCount,

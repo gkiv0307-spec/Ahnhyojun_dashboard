@@ -389,6 +389,26 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
   .month-nav strong { min-width: 92px; font-size: 13px; }
 }
 
+/* --------------------------------------------------------------- 회차 관리 */
+.b-진행중 { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-line); }
+.b-예정 { background: var(--info-soft); color: var(--info); border-color: var(--info-line); }
+.b-종료 { background: var(--mute-soft); color: var(--mute); border-color: var(--mute-line); }
+.b-일정미정 { background: var(--flag-soft); color: var(--flag); border-color: var(--flag-line); }
+
+tr.batch-row { cursor: pointer; }
+tr.batch-row.selected { background: var(--accent-soft) !important; }
+tr.batch-row.selected td { font-weight: 600; }
+
+.progress {
+  position: relative; height: 16px; min-width: 92px; border-radius: 999px;
+  background: var(--mute-soft); overflow: hidden; border: 1px solid var(--line-2);
+}
+.progress > i { position: absolute; inset: 0 auto 0 0; background: var(--done); opacity: .75; }
+.progress > span {
+  position: relative; display: block; text-align: center; font-size: 10px; line-height: 16px;
+  font-family: var(--font-data); font-weight: 700; color: var(--ink);
+}
+
 /* --------------------------------------------------------------- 공유용 */
 .branch-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .branch-tab {
@@ -614,6 +634,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
     <button class="navbtn" data-page="reviewers">리뷰어 명단 <span class="badge-count" id="nav-count-reviewers"></span></button>
     <button class="navbtn" data-page="booking">예약 현황</button>
     <button class="navbtn" data-page="month">월별 현황</button>
+    <button class="navbtn" data-page="batches">회차 관리</button>
     <button class="navbtn" data-page="share">공유용 일정표</button>
     <button class="navbtn" data-page="settings">설정</button>
   </nav>
@@ -740,6 +761,23 @@ body:not(.unlocked) .toast-wrap { display: none; }
         <div class="panel-body" id="month-legend"></div>
       </div>
       <div id="month-boards"></div>
+    </section>
+
+    <!-- ══════════════════════════ 회차 관리 ══════════════════════════ -->
+    <section class="page" id="page-batches">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>회차 관리</h2>
+          <span class="sub">한 달에 한 번 도는 체험단을 회차 단위로 관리합니다</span>
+          <span class="spacer"></span>
+          <label class="switch"><input type="checkbox" id="batch-running-only"> 진행중·예정만</label>
+          <button class="btn btn-sm" id="btn-batch-export">이 회차 명단 CSV</button>
+        </div>
+        <div class="panel-body tight">
+          <div class="table-wrap"><table class="grid" id="batch-table"></table></div>
+        </div>
+      </div>
+      <div id="batch-detail"></div>
     </section>
 
     <!-- ══════════════════════════ 공유용 일정표 ══════════════════════════ -->
@@ -1848,10 +1886,72 @@ body:not(.unlocked) .toast-wrap { display: none; }
       status: normalizeStatus(o.status),
       reviewRegistered: !!o.reviewRegistered,
       // 'sheet' = 구글시트에서 온 사람, 'manual' = 대시보드에서 직접 추가한 사람
+      // 몇 차 체험단 소속인지. 메모의 "N차" 표기에서 끌어온다.
+      round: o.round != null && o.round !== '' ? String(o.round) : parseRound(o.memo),
       source: o.source === 'manual' ? 'manual' : 'sheet',
       // 대시보드에서 직접 고친 항목. 시트와 합칠 때 이쪽 값이 이긴다.
       localEdit: o.localEdit && typeof o.localEdit === 'object' ? o.localEdit : {}
     };
+  }
+
+  /** 메모 앞의 "N차" 에서 회차를 읽는다 */
+  function parseRound(memo) {
+    var m = /(^|[^0-9])(\d{1,3})\s*차/.exec(String(memo || ''));
+    return m ? m[2] : '';
+  }
+
+  /**
+   * 회차 목록을 만든다. 회차는 지점별로 도는 한 번의 체험단이다.
+   * 기간은 그 회차에서 이미 날짜가 잡힌 사람들의 처음~마지막 날로 잡는다.
+   * (원본 시트에 회차 기간이 값으로 들어 있지 않아 자료에서 되짚는 수밖에 없다.
+   *  담당자가 화면에서 고치면 그 값을 우선한다.)
+   */
+  function deriveBatches(s) {
+    var kept = {};
+    (s.batches || []).forEach(function (b) { kept[b.branchId + '|' + b.round] = b; });
+
+    var found = {};
+    s.reviewers.forEach(function (r) {
+      if (!r.branchId || !r.round) return;
+      var key = r.branchId + '|' + r.round;
+      var f = found[key] || (found[key] = { branchId: r.branchId, round: r.round, dates: [] });
+      if (r.wishDate) f.dates.push(r.wishDate);
+    });
+
+    return Object.keys(found).map(function (key) {
+      var f = found[key];
+      var prev = kept[key];
+      var dates = f.dates.sort();
+      return {
+        id: prev ? prev.id : 'bt_' + key.replace(/\|/g, '_'),
+        branchId: f.branchId,
+        round: f.round,
+        // 담당자가 고친 기간이 있으면 그대로 둔다
+        from: (prev && prev.fromEdited) ? prev.from : (dates[0] || ''),
+        to: (prev && prev.toEdited) ? prev.to : (dates[dates.length - 1] || ''),
+        fromEdited: !!(prev && prev.fromEdited),
+        toEdited: !!(prev && prev.toEdited),
+        memo: prev ? prev.memo || '' : ''
+      };
+    }).sort(function (a, b) {
+      return (a.branchId + '').localeCompare(b.branchId + '') || (Number(a.round) - Number(b.round));
+    });
+  }
+
+  function batchStatus(b, today) {
+    today = today || todayStr();
+    if (!b.from && !b.to) return '일정 미정';
+    if (b.from && today < b.from) return '예정';
+    if (b.to && today > b.to) return '종료';
+    return '진행중';
+  }
+
+  /** 그 달에 걸치는 회차인지 (YYYY-MM) */
+  function batchInMonth(b, ym) {
+    if (!b.from && !b.to) return false;
+    var from = (b.from || b.to).slice(0, 7);
+    var to = (b.to || b.from).slice(0, 7);
+    return ym >= from && ym <= to;
   }
 
   /** 대시보드에서 직접 고칠 수 있는 예약 항목 */
@@ -1934,6 +2034,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
       r.reviewRegistered = !!r.reviewRegistered;
       if (r.source !== 'manual') r.source = 'sheet';
       if (!r.localEdit || typeof r.localEdit !== 'object') r.localEdit = {};
+      if (r.round == null || r.round === '') r.round = parseRound(r.memo);
     });
     return s;
   }
@@ -1990,6 +2091,12 @@ body:not(.unlocked) .toast-wrap { display: none; }
   }
 
   /** 리뷰어의 branchName 을 기준으로 branchId 를 다시 연결한다. 못 찾으면 null(미매칭). */
+  function refreshBatches(s) {
+    s = s || get();
+    s.batches = deriveBatches(s);
+    return s;
+  }
+
   function relinkBranches(s) {
     s = s || get();
     var byKey = {};
@@ -1998,6 +2105,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
       var id = byKey[normKey(r.branchName)];
       r.branchId = id || null;
     });
+    refreshBatches(s);
     return s;
   }
 
@@ -2276,6 +2384,8 @@ body:not(.unlocked) .toast-wrap { display: none; }
 
     branchByName: branchByName, branchById: branchById,
     relinkBranches: relinkBranches, unmatchedBranchNames: unmatchedBranchNames,
+    parseRound: parseRound, refreshBatches: refreshBatches,
+    batchStatus: batchStatus, batchInMonth: batchInMonth,
 
     slotKey: slotKey, capacityOf: capacityOf, isCounted: isCounted,
     reviewersInSlot: reviewersInSlot, bookedCount: bookedCount,
@@ -2477,7 +2587,9 @@ body:not(.unlocked) .toast-wrap { display: none; }
     openSlot: null,         // {branchId, date, time}
     shareHideClosed: false,
     shareShowCount: true,
-    month: null            // 'YYYY-MM' — 월별 현황에서 보고 있는 달
+    month: null,           // 'YYYY-MM' — 월별 현황에서 보고 있는 달
+    batch: null,           // 선택한 회차 id
+    batchRunningOnly: false
   };
 
   function state() { return S.get(); }
@@ -3473,38 +3585,21 @@ body:not(.unlocked) .toast-wrap { display: none; }
   }
 
 
-  /* ---------------------------------------------- 회차(N차)와 진행 월 */
+  /* ---------------------------------------------- 회차와 진행 월 */
+  function roundOf(r) { return r.round || ''; }
+
   /**
-   * 메모 앞에 붙은 "N차" 로 회차를 읽는다.
-   * 회차가 어느 달에 진행됐는지는, 그 회차에서 이미 날짜가 잡힌 사람들의 달로 판단한다.
-   * (회차 자체에는 기간 정보가 없고, 체험기간이 달을 걸치는 경우도 있어 여러 달이 나올 수 있다)
+   * 그 사람이 대상 월에 도는 회차 소속인지.
+   * 회차 기간은 회차 관리 화면에서 고칠 수 있고, 고친 값이 여기에 바로 반영된다.
+   * 회차를 알 수 없는 사람은 막지 않는다(잘못 숨겨 배정 못 하는 일이 없도록).
    */
-  function roundOf(r) {
-    var m = /^(\d+)차/.exec(r.memo || '');
-    return m ? m[1] : null;
-  }
-
-  var _batchCache = null;
-  function batchMonths() {
-    if (_batchCache) return _batchCache;
-    var map = {};
-    state().reviewers.forEach(function (r) {
-      var round = roundOf(r);
-      if (!round || !r.branchId || !r.wishDate) return;
-      var key = r.branchId + '|' + round;
-      (map[key] || (map[key] = {}))[r.wishDate.slice(0, 7)] = true;
-    });
-    _batchCache = map;
-    return map;
-  }
-
-  /** 그 사람이 대상 월의 회차 소속인지. 회차를 알 수 없으면 막지 않는다. */
   function inMonthBatch(r, ym) {
-    var round = roundOf(r);
-    if (!round || !r.branchId) return true;
-    var months = batchMonths()[r.branchId + '|' + round];
-    if (!months) return true;
-    return !!months[ym];
+    if (!r.round || !r.branchId) return true;
+    var b = (state().batches || []).filter(function (x) {
+      return x.branchId === r.branchId && String(x.round) === String(r.round);
+    })[0];
+    if (!b || (!b.from && !b.to)) return true;
+    return S.batchInMonth(b, ym);
   }
 
   /** 달력에서 날짜를 눌렀을 때 그 날 예약자 보기 */
@@ -3536,6 +3631,162 @@ body:not(.unlocked) .toast-wrap { display: none; }
       body: body,
       buttons: [{ label: '닫기' }]
     });
+  }
+
+
+  /* ============================================================ 회차 관리 */
+  function batchesInScope() {
+    var s = state();
+    var list = (s.batches || []).slice();
+    if (ui.branch !== 'all' && ui.branch !== '__unmatched') {
+      list = list.filter(function (b) { return b.branchId === ui.branch; });
+    }
+    if (ui.batchRunningOnly) {
+      list = list.filter(function (b) { return ['진행중', '예정'].indexOf(S.batchStatus(b)) >= 0; });
+    }
+    // 최근 회차가 위로
+    return list.sort(function (a, b) {
+      return String(b.from || '').localeCompare(String(a.from || '')) || Number(b.round) - Number(a.round);
+    });
+  }
+
+  function batchMembers(b) {
+    return state().reviewers.filter(function (r) {
+      return r.branchId === b.branchId && String(r.round) === String(b.round);
+    });
+  }
+
+  function batchStats(members) {
+    var st = { total: members.length, 예약전: 0, 예약요청: 0, 예약확정: 0, 방문완료: 0, 취소: 0, 리뷰등록: 0, 일정잡힘: 0 };
+    members.forEach(function (r) {
+      if (st[r.status] != null) st[r.status] += 1;
+      if (r.reviewRegistered) st.리뷰등록 += 1;
+      if (r.wishDate && r.wishTime) st.일정잡힘 += 1;
+    });
+    return st;
+  }
+
+  function renderBatches() {
+    $('#batch-running-only').checked = ui.batchRunningOnly;
+    var list = batchesInScope();
+    var table = $('#batch-table');
+    clear(table);
+
+    table.appendChild(h('thead', null, h('tr', null,
+      ['지점', '회차', '기간', '상태', '선정', '일정잡힘', '예약전', '예약요청', '예약확정', '방문완료', '취소', '리뷰등록', '진행률']
+        .map(function (t) { return h('th', { class: 'no-sort', text: t }); })
+    )));
+
+    var tb = h('tbody');
+    if (!list.length) {
+      tb.appendChild(h('tr', null, h('td', { colspan: '13', class: 'empty',
+        text: state().reviewers.length ? '표시할 회차가 없습니다. 명단의 메모에 "N차" 표기가 있어야 회차로 묶입니다.' : '명단이 비어 있습니다.' })));
+    }
+
+    list.forEach(function (b) {
+      var br = S.branchById(b.branchId);
+      var members = batchMembers(b);
+      var st = batchStats(members);
+      var status = S.batchStatus(b);
+      var pct = st.total ? Math.round(st.방문완료 / st.total * 100) : 0;
+
+      var tr = h('tr', {
+        class: 'batch-row' + (ui.batch === b.id ? ' selected' : ''),
+        onclick: function () { ui.batch = ui.batch === b.id ? null : b.id; renderBatches(); }
+      }, [
+        h('td', { text: br ? br.name : '-' }),
+        h('td', { class: 'num', text: b.round + '차' }),
+        h('td', null, batchPeriodCell(b)),
+        h('td', null, h('span', { class: 'badge b-' + status.replace(/\s/g, ''), text: status })),
+        h('td', { class: 'num', text: String(st.total) }),
+        h('td', { class: 'num', text: st.일정잡힘 + '/' + st.total }),
+        h('td', { class: 'num', text: String(st.예약전) }),
+        h('td', { class: 'num', text: String(st.예약요청) }),
+        h('td', { class: 'num', text: String(st.예약확정) }),
+        h('td', { class: 'num', text: String(st.방문완료) }),
+        h('td', { class: 'num', text: String(st.취소) }),
+        h('td', { class: 'num', text: st.리뷰등록 + '/' + st.total }),
+        h('td', null, h('span', { class: 'progress', title: '방문완료 ' + st.방문완료 + ' / 선정 ' + st.total }, [
+          h('i', { style: 'width:' + pct + '%' }),
+          h('span', { text: pct + '%' })
+        ]))
+      ]);
+      tb.appendChild(tr);
+    });
+    table.appendChild(tb);
+
+    renderBatchDetail(list);
+  }
+
+  /** 회차 기간은 자료에서 되짚은 값이라, 담당자가 고치면 그 값을 우선한다 */
+  function batchPeriodCell(b) {
+    var wrap = h('div', { class: 'flex', style: 'gap:3px;flex-wrap:nowrap' });
+    ['from', 'to'].forEach(function (key, i) {
+      if (i) wrap.appendChild(h('span', { class: 'hint', text: '~' }));
+      wrap.appendChild(h('input', {
+        type: 'date', class: 'cell-input', style: 'min-width:126px',
+        value: /^\d{4}-\d{2}-\d{2}$/.test(b[key]) ? b[key] : '',
+        title: b[key + 'Edited'] ? '직접 지정한 기간' : '자료에서 되짚은 기간',
+        onclick: function (e) { e.stopPropagation(); },
+        onchange: function (e) {
+          e.stopPropagation();
+          b[key] = this.value;
+          b[key + 'Edited'] = true;
+          S.commit();
+          renderBatches();
+        }
+      }));
+    });
+    return wrap;
+  }
+
+  function renderBatchDetail(list) {
+    var box = $('#batch-detail');
+    clear(box);
+    var b = list.filter(function (x) { return x.id === ui.batch; })[0];
+    if (!b) {
+      box.appendChild(h('div', { class: 'panel' },
+        h('div', { class: 'empty', text: '회차를 누르면 그 회차 인원이 여기에 나옵니다. 여기서 바로 예약을 잡을 수 있습니다.' })));
+      return;
+    }
+
+    var br = S.branchById(b.branchId);
+    var members = batchMembers(b).sort(function (x, y) {
+      return (x.wishDate || 'zzzz').localeCompare(y.wishDate || 'zzzz') || (x.name || '').localeCompare(y.name || '', 'ko');
+    });
+    var st = batchStats(members);
+
+    var panel = h('div', { class: 'panel' });
+    panel.appendChild(h('div', { class: 'panel-head' }, [
+      h('h2', { text: (br ? br.name : '') + ' ' + b.round + '차' }),
+      h('span', { class: 'sub', text: (b.from || '?') + ' ~ ' + (b.to || '?') + ' · ' + members.length + '명' }),
+      h('span', { class: 'spacer' }),
+      h('span', { class: 'hint', text: '일정 ' + st.일정잡힘 + ' · 방문 ' + st.방문완료 + ' · 리뷰 ' + st.리뷰등록 }),
+      h('button', { class: 'btn btn-sm', text: '명단에서 보기', onclick: function () {
+        ui.search = b.round + '차';
+        $('#f-search').value = ui.search;
+        ui.page = 'reviewers'; syncNav(); render();
+      } })
+    ]));
+
+    var cols = COLS.filter(function (c) {
+      return ['name', 'grade', 'phone', 'wishDate', 'wishTime', '_slot', 'status', 'reviewRegistered', 'memo'].indexOf(c.key) >= 0;
+    });
+    var table = h('table', { class: 'grid' });
+    table.appendChild(h('thead', null, h('tr', null,
+      [h('th', { class: 'rownum no-sort', text: '#' })].concat(cols.map(function (c) {
+        return h('th', { class: (c.cls || '') + ' no-sort', text: c.label });
+      })))));
+    var tb = h('tbody');
+    members.forEach(function (r, i) {
+      var tr = h('tr', null, [h('td', { class: 'rownum', text: String(i + 1) })]);
+      cols.forEach(function (c) { tr.appendChild(cellFor(r, c)); });
+      tb.appendChild(tr);
+    });
+    if (!members.length) tb.appendChild(h('tr', null, h('td', { colspan: String(cols.length + 1), class: 'empty', text: '이 회차에 등록된 리뷰어가 없습니다.' })));
+    table.appendChild(tb);
+    panel.appendChild(h('div', { class: 'panel-body tight' }, h('div', { class: 'table-wrap' }, table)));
+    box.appendChild(panel);
   }
 
   /* ============================================================ 공유용 일정표 */
@@ -4342,6 +4593,19 @@ body:not(.unlocked) .toast-wrap { display: none; }
     $('#share-note').addEventListener('input', function () {
       state().settings.shareNote = this.value; S.commit(true); renderShare();
     });
+    $('#batch-running-only').addEventListener('change', function () {
+      ui.batchRunningOnly = this.checked; renderBatches();
+    });
+    $('#btn-batch-export').addEventListener('click', function () {
+      var b = (state().batches || []).filter(function (x) { return x.id === ui.batch; })[0];
+      if (!b) { toast('먼저 회차를 선택하세요.', 'err'); return; }
+      var br = S.branchById(b.branchId);
+      var rows = reviewerSheet(batchMembers(b));
+      var name = safeFileName((br ? br.name : '') + '_' + b.round + '차_' + stamp());
+      var csv = S.toCSV(rows);
+      saveFile(csv, name + '.csv', { filename: name + '.txt', data: csv });
+    });
+
     $('#btn-month-prev').addEventListener('click', function () { ui.month = shiftMonth(currentMonth(), -1); renderMonth(); });
     $('#btn-month-next').addEventListener('click', function () { ui.month = shiftMonth(currentMonth(), 1); renderMonth(); });
     $('#btn-month-today').addEventListener('click', function () { ui.month = monthOf(S.todayStr()); renderMonth(); });
@@ -4365,6 +4629,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
     else if (ui.page === 'reviewers') renderReviewers();
     else if (ui.page === 'booking') renderBooking();
     else if (ui.page === 'month') renderMonth();
+    else if (ui.page === 'batches') renderBatches();
     else if (ui.page === 'share') renderShare();
     else if (ui.page === 'settings') renderSettings();
   }
@@ -4437,7 +4702,6 @@ body:not(.unlocked) .toast-wrap { display: none; }
     var original = S.commit;
     S.commit = function (silent) {
       markDirty();
-      _batchCache = null;          // 자료가 바뀌면 회차별 진행 월을 다시 계산한다
       return original.call(S, silent);
     };
   }

@@ -387,6 +387,26 @@ select.status-select.s-취소 { background: var(--mute-soft); color: var(--mute)
   .month-nav strong { min-width: 92px; font-size: 13px; }
 }
 
+/* --------------------------------------------------------------- 회차 관리 */
+.b-진행중 { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-line); }
+.b-예정 { background: var(--info-soft); color: var(--info); border-color: var(--info-line); }
+.b-종료 { background: var(--mute-soft); color: var(--mute); border-color: var(--mute-line); }
+.b-일정미정 { background: var(--flag-soft); color: var(--flag); border-color: var(--flag-line); }
+
+tr.batch-row { cursor: pointer; }
+tr.batch-row.selected { background: var(--accent-soft) !important; }
+tr.batch-row.selected td { font-weight: 600; }
+
+.progress {
+  position: relative; height: 16px; min-width: 92px; border-radius: 999px;
+  background: var(--mute-soft); overflow: hidden; border: 1px solid var(--line-2);
+}
+.progress > i { position: absolute; inset: 0 auto 0 0; background: var(--done); opacity: .75; }
+.progress > span {
+  position: relative; display: block; text-align: center; font-size: 10px; line-height: 16px;
+  font-family: var(--font-data); font-weight: 700; color: var(--ink);
+}
+
 /* --------------------------------------------------------------- 공유용 */
 .branch-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .branch-tab {
