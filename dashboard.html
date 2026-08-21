@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>유입 분석 대시보드 | 부동산경매.store</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/dashboard.css">
+</head>
+<body class="dv">
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="index.html"><img src="assets/logo-dark.png" alt="옆커폰부동산에듀"></a>
+    <nav class="nav-menu">
+      <a href="index.html">매물정보</a>
+      <a href="about.html">회사소개</a>
+      <a href="courses.html">강의안내</a>
+      <a href="reviews.html">수강생후기</a>
+    </nav>
+    <a class="btn btn-gold" href="index.html">사이트로</a>
+  </div>
+</header>
+
+<main class="wrap dv-main">
+
+  <div class="dv-head">
+    <div>
+      <div class="kicker">Traffic Dashboard</div>
+      <h1>방문자는 <span class="gold">어디서</span>, <span class="gold">어떤 경로로</span> 들어왔나</h1>
+      <p class="sub">부동산경매.store · 집계 기준 한국시간(KST) · <span id="range-label">-</span></p>
+    </div>
+  </div>
+
+  <div id="note-demo" class="dv-note warn">
+    <b>⚠ 지금 화면은 예시(demo) 데이터입니다.</b> 실제 방문 기록이 아니라 화면 구성을 보여주기 위한 가상 숫자입니다.
+    <span id="demo-reason"></span>
+    실제 수집을 켜려면 <code>분석-대시보드-설정.md</code> 대로 Cloudflare D1을 연결하세요.
+  </div>
+  <div id="note-empty" class="dv-note info">
+    <b>수집은 켜져 있는데 아직 기록이 없습니다.</b> 방문자가 사이트를 열면 그때부터 쌓입니다.
+    (분석 코드는 배포된 다음 발생한 방문부터 집계되며, 배포 이전 방문은 알 수 없습니다.)
+  </div>
+  <div id="note-open" class="dv-note info">
+    <b>이 대시보드가 잠겨 있지 않습니다.</b> 주소만 알면 누구나 볼 수 있으니, Pages 환경변수에
+    <code>DASHBOARD_KEY</code> 를 설정해 접근 키를 걸어두세요.
+  </div>
+
+  <div class="dv-controls">
+    <div class="seg" id="range-seg" role="group" aria-label="조회 기간">
+      <button data-days="1" aria-pressed="false">오늘</button>
+      <button data-days="7" aria-pressed="true">최근 7일</button>
+      <button data-days="30" aria-pressed="false">최근 30일</button>
+      <button data-days="90" aria-pressed="false">최근 90일</button>
+    </div>
+    <span class="spacer"></span>
+    <button class="ghost-btn" id="btn-tables" aria-pressed="false">표로 보기</button>
+    <button class="ghost-btn" id="btn-csv">CSV 내보내기</button>
+    <button class="ghost-btn" id="btn-key">접근 키</button>
+    <button class="ghost-btn" id="btn-reload">새로고침</button>
+  </div>
+
+  <div id="dv-body" hidden>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div class="k-label">방문자</div><div class="k-value" id="kpi-visitors">-</div><div class="k-sub" id="kpi-visitors-sub">-</div></div>
+      <div class="kpi"><div class="k-label">방문(세션)</div><div class="k-value" id="kpi-sessions">-</div><div class="k-sub">30분 무활동 시 새 방문</div></div>
+      <div class="kpi"><div class="k-label">페이지뷰</div><div class="k-value" id="kpi-pv">-</div><div class="k-sub">전체 페이지 열람 수</div></div>
+      <div class="kpi"><div class="k-label">방문당 페이지</div><div class="k-value" id="kpi-pps">-</div><div class="k-sub">깊이 있게 볼수록 높음</div></div>
+      <div class="kpi"><div class="k-label">1페이지 이탈률</div><div class="k-value" id="kpi-bounce">-</div><div class="k-sub">한 페이지만 보고 나감</div></div>
+      <div class="kpi"><div class="k-label">전화상담 클릭</div><div class="k-value" id="kpi-call">-</div><div class="k-sub">전화 버튼 클릭 수</div></div>
+    </div>
+
+    <div class="card full">
+      <h2>일자별 방문 추이</h2>
+      <p class="cap">하루 단위 흐름입니다. 블로그에 글을 올린 날, 광고를 돌린 날과 겹쳐 보면 어떤 활동이 유입을 만들었는지 보입니다.</p>
+      <div class="seg" id="metric-seg" role="group" aria-label="지표 선택" style="margin-bottom:14px">
+        <button data-metric="sessions" aria-pressed="true">방문(세션)</button>
+        <button data-metric="visitors" aria-pressed="false">방문자</button>
+        <button data-metric="pv" aria-pressed="false">페이지뷰</button>
+      </div>
+      <div class="line-wrap" id="chart-trend"></div>
+      <div class="data-table table-scroll" id="table-trend"></div>
+    </div>
+
+    <div class="dv-grid">
+      <div class="card">
+        <h2>유입 채널 — 어디서 들어왔나</h2>
+        <p class="cap">방문(세션)이 시작된 출처를 묶은 것입니다. 네이버 검색·블로그·카카오톡처럼 국내 경로를 따로 구분합니다.</p>
+        <div class="bars" id="chart-channels"></div>
+        <div class="data-table table-scroll" id="table-channels"></div>
+      </div>
+
+      <div class="card">
+        <h2>유입 사이트 (리퍼러 도메인)</h2>
+        <p class="cap">직전에 머물던 실제 주소입니다. 채널보다 한 단계 자세히 볼 때 씁니다.</p>
+        <div class="bars" id="chart-referrers"></div>
+        <div class="data-table table-scroll" id="table-referrers"></div>
+      </div>
+
+      <div class="card">
+        <h2>첫 진입 페이지 (랜딩)</h2>
+        <p class="cap">사이트에서 처음 열린 페이지입니다. 블로그 링크가 어느 페이지로 연결돼 있는지 확인할 수 있습니다.</p>
+        <div class="bars" id="chart-landings"></div>
+        <div class="data-table table-scroll" id="table-landings"></div>
+      </div>
+
+      <div class="card">
+        <h2>시간대별 방문 (KST)</h2>
+        <p class="cap">방문이 몰리는 시간대입니다. 블로그 발행·문자 발송 시간을 잡을 때 참고하세요.</p>
+        <div id="chart-hours"></div>
+        <div class="data-table table-scroll" id="table-hours"></div>
+      </div>
+    </div>
+
+    <div class="card full">
+      <h2>방문 경로 — 들어와서 어디로 움직였나</h2>
+      <p class="cap">유입 채널에서 시작해 실제로 이동한 페이지 순서입니다. 같은 경로를 탄 방문을 묶어 많은 순으로 보여줍니다(최대 4단계).</p>
+      <div class="journeys" id="chart-journeys"></div>
+      <div class="data-table table-scroll" id="table-journeys"></div>
+    </div>
+
+    <div class="dv-grid">
+      <div class="card">
+        <h2>채널별 첫 진입 페이지</h2>
+        <p class="cap">어느 경로로 들어온 사람이 어느 페이지에 닿았는지 짝지어 본 표입니다.</p>
+        <div class="table-scroll" id="table-channel-landing"></div>
+      </div>
+
+      <div class="card">
+        <h2>많이 본 페이지</h2>
+        <p class="cap">기간 내 열람 수 기준입니다.</p>
+        <div class="table-scroll" id="table-pages"></div>
+      </div>
+
+      <div class="card">
+        <h2>기기</h2>
+        <p class="cap">모바일 비중이 높으면 모바일 화면 기준으로 다듬는 게 우선입니다.</p>
+        <div class="bars" id="chart-devices"></div>
+        <div class="data-table table-scroll" id="table-devices"></div>
+      </div>
+
+      <div class="card">
+        <h2>브라우저 · 인앱</h2>
+        <p class="cap">카카오톡·네이버 앱 안에서 열린 방문은 따로 표시됩니다(공유 링크로 들어온 경우).</p>
+        <div class="bars" id="chart-browsers"></div>
+        <div class="data-table table-scroll" id="table-browsers"></div>
+      </div>
+
+      <div class="card">
+        <h2>전환 버튼 클릭</h2>
+        <p class="cap">전화상담·강의신청·결제 등 실제 행동으로 이어진 클릭 수입니다.</p>
+        <div class="table-scroll" id="table-clicks"></div>
+      </div>
+
+      <div class="card">
+        <h2>캠페인 (UTM)</h2>
+        <p class="cap">링크 뒤에 <code>?utm_source=...</code> 를 붙여 뿌린 경우에만 집계됩니다.</p>
+        <div class="table-scroll" id="table-campaigns"></div>
+      </div>
+
+      <div class="card">
+        <h2>접속 지역</h2>
+        <p class="cap">Cloudflare가 알려주는 국가·시도 단위입니다. IP 주소는 저장하지 않습니다.</p>
+        <div class="table-scroll" id="table-regions"></div>
+      </div>
+    </div>
+
+    <p class="dv-foot">
+      집계 방식: 방문(세션)은 30분 무활동 기준으로 끊습니다. 유입 채널·리퍼러는 <b>세션의 첫 페이지</b> 기준이며,
+      사이트 안에서의 이동은 유입으로 세지 않습니다. 봇·크롤러로 보이는 접속은 제외합니다.
+      수집 항목에 IP·이름·연락처는 없고, 브라우저에 저장되는 익명 난수 ID만 사용합니다.
+      <br>데이터가 남는 곳: Cloudflare D1 (<code>events</code> 테이블) · 기본 보관 180일.
+    </p>
+  </div>
+
+  <div class="loading" id="dv-loading">불러오는 중...</div>
+</main>
+
+<div class="dv-tip" id="dv-tip"></div>
+
+<script>
+/* ─────────────────────────────────────────────
+   유입 분석 대시보드
+   - /api/stats 에서 집계 JSON을 받아 그린다.
+   - 차트는 외부 라이브러리 없이 SVG/CSS로 직접 그린다(단일 시리즈, 브랜드 골드).
+   ───────────────────────────────────────────── */
+const KEY_STORE = "ykp_dash_key";
+const state = { days: 7, metric: "sessions", data: null, demo: false };
+
+const $ = (id) => document.getElementById(id);
+const nf = (n) => (n == null ? "-" : Number(n).toLocaleString("ko-KR"));
+const pctOf = (v, total) => (total ? Math.round((v / total) * 1000) / 10 : 0);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const shortDay = (d) => d.slice(5).replace("-", "/");
+
+/* ── 툴팁 ── */
+const tip = $("dv-tip");
+function showTip(html, ev) {
+  tip.innerHTML = html;
+  tip.style.display = "block";
+  const pad = 14;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - pad;
+  tip.style.left = x + "px";
+  tip.style.top = y + "px";
+}
+function hideTip() { tip.style.display = "none"; }
+
+/* ── 가로 막대 차트(순위형, 단일 시리즈) ── */
+function renderBars(elId, items, opts) {
+  const el = $(elId);
+  const o = opts || {};
+  const list = (items || []).filter((d) => d.value > 0);
+  if (!list.length) { el.innerHTML = '<div class="empty">기간 내 데이터가 없습니다.</div>'; return; }
+  const max = Math.max.apply(null, list.map((d) => d.value));
+  const total = list.reduce((s, d) => s + d.value, 0);
+  el.innerHTML = list.map((d) => {
+    const share = pctOf(d.value, o.shareTotal || total);
+    return `<div class="bar-row" data-tip="${esc(d.label)}|${nf(d.value)}${esc(o.unit || "회")}|${share}%${d.sub ? "|" + esc(d.sub) : ""}">
+      <div class="b-label">${esc(d.label)}${d.sub ? `<small>${esc(d.sub)}</small>` : ""}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max((d.value / max) * 100, 1.5)}%"></div></div>
+      <div class="b-val">${nf(d.value)}<span>${share}%</span></div>
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".bar-row").forEach((row) => {
+    const parts = row.dataset.tip.split("|");
+    const html = `<div><b>${parts[0]}</b></div><div class="t-k">${o.valueLabel || "방문"} ${parts[1]} · 비중 ${parts[2]}</div>${parts[3] ? `<div class="t-k">${parts[3]}</div>` : ""}`;
+    row.addEventListener("mousemove", (e) => showTip(html, e));
+    row.addEventListener("mouseleave", hideTip);
+  });
+}
+
+/* ── 시간대 세로 막대 ── */
+function renderHours(list) {
+  const el = $("chart-hours");
+  const max = Math.max(1, ...list.map((d) => d.sessions));
+  const total = list.reduce((s, d) => s + d.sessions, 0);
+  el.innerHTML =
+    `<div class="cols">${list.map((d) => `
+      <div class="col${d.sessions ? "" : " zero"}" data-h="${d.hour}" data-v="${d.sessions}">
+        <i style="height:${d.sessions ? Math.max((d.sessions / max) * 100, 3) : 3}%"></i>
+      </div>`).join("")}</div>
+     <div class="col-axis">${list.map((d) => `<span>${d.hour % 6 === 0 ? d.hour + "시" : ""}</span>`).join("")}</div>`;
+  el.querySelectorAll(".col").forEach((c) => {
+    const h = c.dataset.h, v = +c.dataset.v;
+    const html = `<div><b>${h}시 ~ ${(+h + 1) % 24}시</b></div><div class="t-k">방문 ${nf(v)}회 · 비중 ${pctOf(v, total)}%</div>`;
+    c.addEventListener("mousemove", (e) => showTip(html, e));
+    c.addEventListener("mouseleave", hideTip);
+  });
+}
+
+/* ── 일자별 추이 라인 차트(단일 시리즈 + 크로스헤어) ── */
+const METRIC_LABEL = { sessions: "방문(세션)", visitors: "방문자", pv: "페이지뷰" };
+function renderTrend() {
+  const el = $("chart-trend");
+  const data = state.data.trend || [];
+  const key = state.metric;
+  if (!data.length) { el.innerHTML = '<div class="empty">기간 내 데이터가 없습니다.</div>'; return; }
+
+  const W = Math.max(el.clientWidth || 720, 320), H = 230;
+  const pad = { l: 42, r: 18, t: 20, b: 28 };
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const values = data.map((d) => d[key] || 0);
+  const rawMax = Math.max.apply(null, values);
+  const step = Math.max(1, Math.ceil(rawMax / 4));
+  const niceStep = step <= 5 ? step : Math.ceil(step / 5) * 5;
+  const yMax = Math.max(4, niceStep * 4);
+  const x = (i) => pad.l + (data.length === 1 ? iw / 2 : (i / (data.length - 1)) * iw);
+  const y = (v) => pad.t + ih - (v / yMax) * ih;
+
+  const gridY = [0, 1, 2, 3, 4].map((k) => {
+    const v = (yMax / 4) * k;
+    return `<line class="grid-line" x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}"/>
+            <text class="axis-text" x="${pad.l - 8}" y="${y(v) + 4}" text-anchor="end">${nf(v)}</text>`;
+  }).join("");
+
+  const tickEvery = Math.max(1, Math.ceil(data.length / 7));
+  const xLabels = data.map((d, i) =>
+    (i % tickEvery === 0 || i === data.length - 1)
+      ? `<text class="axis-text" x="${x(i)}" y="${H - 6}" text-anchor="middle">${shortDay(d.day)}</text>` : ""
+  ).join("");
+
+  const line = values.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const area = `${line} L${x(values.length - 1).toFixed(1)},${y(0)} L${x(0).toFixed(1)},${y(0)} Z`;
+
+  // 점은 촘촘하면 생략하고, 라벨은 최고점과 마지막 점에만(모든 점에 숫자를 달지 않는다)
+  const showDots = data.length <= 21;
+  const maxIdx = values.indexOf(rawMax);
+  const lastIdx = values.length - 1;
+  const dots = values.map((v, i) =>
+    (showDots || i === maxIdx || i === lastIdx)
+      ? `<circle class="series-dot" cx="${x(i)}" cy="${y(v)}" r="${i === maxIdx || i === lastIdx ? 4.5 : 3.5}"/>` : ""
+  ).join("");
+  const labels = [...new Set([maxIdx, lastIdx])].filter((i) => values[i] > 0).map((i) =>
+    `<text class="point-label" x="${x(i)}" y="${y(values[i]) - 11}" text-anchor="${i === lastIdx && i !== 0 ? "end" : "middle"}">${nf(values[i])}</text>`
+  ).join("");
+
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
+      aria-label="일자별 ${METRIC_LABEL[key]} 추이">
+    <defs><linearGradient id="dvFade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FFC300" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="#FFC300" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${gridY}${xLabels}
+    <path class="series-area" d="${area}"/>
+    <path class="series-line" d="${line}"/>
+    ${dots}${labels}
+    <line class="crosshair" id="dv-cross" x1="0" x2="0" y1="${pad.t}" y2="${pad.t + ih}" style="display:none"/>
+    <rect x="${pad.l}" y="${pad.t}" width="${iw}" height="${ih}" fill="transparent" id="dv-hit"/>
+  </svg>`;
+
+  if (data.length === 1) {
+    el.insertAdjacentHTML("beforeend",
+      '<div class="empty">하루만 조회하면 추이가 점 하나로 표시됩니다. 하루 안의 흐름은 아래 &lsquo;시간대별 방문&rsquo;을 보세요.</div>');
+  }
+
+  const svg = el.querySelector("svg");
+  const cross = el.querySelector("#dv-cross");
+  el.querySelector("#dv-hit").addEventListener("mousemove", (ev) => {
+    const box = svg.getBoundingClientRect();
+    const rel = ((ev.clientX - box.left) / box.width) * W;
+    const i = Math.max(0, Math.min(data.length - 1, Math.round(((rel - pad.l) / iw) * (data.length - 1))));
+    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.style.display = "";
+    const d = data[i];
+    showTip(`<div><b>${d.day}</b></div>
+      <div class="t-k">방문(세션) ${nf(d.sessions)}</div>
+      <div class="t-k">방문자 ${nf(d.visitors)}</div>
+      <div class="t-k">페이지뷰 ${nf(d.pv)}</div>`, ev);
+  });
+  el.querySelector("#dv-hit").addEventListener("mouseleave", () => { cross.style.display = "none"; hideTip(); });
+
+  $("table-trend").innerHTML = tableHtml(
+    ["날짜", "방문(세션)", "방문자", "페이지뷰"],
+    data.map((d) => [d.day, nf(d.sessions), nf(d.visitors), nf(d.pv)]), [1, 2, 3]);
+}
+
+/* ── 표 ── */
+function tableHtml(headers, rows, numCols) {
+  const num = new Set(numCols || []);
+  if (!rows.length) return '<div class="empty">기간 내 데이터가 없습니다.</div>';
+  return `<table class="dv-table"><thead><tr>${headers.map((h, i) =>
+    `<th class="${num.has(i) ? "num" : ""}">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) =>
+    `<tr>${r.map((c, i) => `<td class="${num.has(i) ? "num" : ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+/* ── 방문 경로(여정) ── */
+function renderJourneys(list, totalSessions) {
+  const el = $("chart-journeys");
+  if (!list || !list.length) { el.innerHTML = '<div class="empty">기간 내 데이터가 없습니다.</div>'; return; }
+  el.innerHTML = list.map((j) => {
+    const steps = (j.steps || []).map((p) => `<span class="chip">${esc(p)}</span>`).join('<span class="j-arrow">→</span>');
+    return `<div class="journey">
+      <div class="j-steps"><span class="chip entry">${esc(j.channel || "직접 유입")}</span>
+        <span class="j-arrow">→</span>${steps}${j.more ? '<span class="j-arrow">→ …</span>' : ""}</div>
+      <div class="j-count">${nf(j.sessions)}<span>${pctOf(j.sessions, totalSessions)}%</span></div>
+    </div>`;
+  }).join("");
+  $("table-journeys").innerHTML = tableHtml(
+    ["유입 채널", "이동 경로", "방문 수"],
+    list.map((j) => [esc(j.channel), esc((j.steps || []).join(" → ")) + (j.more ? " → …" : ""), nf(j.sessions)]), [2]);
+}
+
+/* ── 전체 렌더 ── */
+function render() {
+  const d = state.data;
+  const T = d.totals;
+  $("range-label").textContent = `${d.range.from} ~ ${d.range.to}` + (state.demo ? " (예시 데이터)" : "");
+
+  $("kpi-visitors").textContent = nf(T.visitors);
+  $("kpi-visitors-sub").textContent = `신규 ${nf(T.newVisitors)}명 · ${pctOf(T.newVisitors, T.visitors)}%`;
+  $("kpi-sessions").textContent = nf(T.sessions);
+  $("kpi-pv").textContent = nf(T.pageviews);
+  $("kpi-pps").textContent = T.pagesPerSession ? T.pagesPerSession.toFixed(2) : "-";
+  $("kpi-bounce").textContent = T.bounceRate + "%";
+  const call = (d.clicks || []).find((c) => c.name === "전화상담");
+  $("kpi-call").textContent = nf(call ? call.clicks : 0);
+
+  renderTrend();
+
+  renderBars("chart-channels", (d.channels || []).map((c) => ({ label: c.name, value: c.sessions })), { shareTotal: T.sessions });
+  $("table-channels").innerHTML = tableHtml(["유입 채널", "방문 수", "비중"],
+    (d.channels || []).map((c) => [esc(c.name), nf(c.sessions), pctOf(c.sessions, T.sessions) + "%"]), [1, 2]);
+
+  renderBars("chart-referrers", (d.referrers || []).map((r) => ({ label: r.name, sub: r.channel, value: r.sessions })), { shareTotal: T.sessions });
+  $("table-referrers").innerHTML = tableHtml(["리퍼러 도메인", "채널", "방문 수"],
+    (d.referrers || []).map((r) => [esc(r.name), esc(r.channel), nf(r.sessions)]), [2]);
+
+  renderBars("chart-landings", (d.landings || []).map((l) => ({ label: l.name, value: l.sessions })), { shareTotal: T.sessions });
+  $("table-landings").innerHTML = tableHtml(["첫 진입 페이지", "방문 수", "비중"],
+    (d.landings || []).map((l) => [esc(l.name), nf(l.sessions), pctOf(l.sessions, T.sessions) + "%"]), [1, 2]);
+
+  renderHours(d.hours || []);
+  $("table-hours").innerHTML = tableHtml(["시간대(KST)", "방문 수"],
+    (d.hours || []).map((h) => [h.hour + "시", nf(h.sessions)]), [1]);
+
+  renderJourneys(d.journeys, T.sessions);
+
+  const devLabel = { mobile: "모바일", desktop: "PC", tablet: "태블릿" };
+  renderBars("chart-devices", (d.devices || []).map((x) => ({ label: devLabel[x.name] || x.name, value: x.sessions })), { shareTotal: T.sessions });
+  $("table-devices").innerHTML = tableHtml(["기기", "방문 수", "비중"],
+    (d.devices || []).map((x) => [esc(devLabel[x.name] || x.name), nf(x.sessions), pctOf(x.sessions, T.sessions) + "%"]), [1, 2]);
+
+  renderBars("chart-browsers", (d.browsers || []).map((x) => ({ label: x.name, value: x.sessions })), { shareTotal: T.sessions });
+  $("table-browsers").innerHTML = tableHtml(["브라우저 · 앱", "방문 수"],
+    (d.browsers || []).map((x) => [esc(x.name), nf(x.sessions)]), [1]);
+
+  $("table-channel-landing").innerHTML = tableHtml(["유입 채널", "첫 진입 페이지", "방문 수"],
+    (d.channelLanding || []).map((x) => [esc(x.channel), esc(x.landing_path), nf(x.sessions)]), [2]);
+
+  $("table-pages").innerHTML = tableHtml(["페이지", "페이지뷰", "방문 수"],
+    (d.pages || []).map((p) => [esc(p.name), `<b>${nf(p.pv)}</b>`, nf(p.sessions)]), [1, 2]);
+
+  $("table-clicks").innerHTML = tableHtml(["버튼", "클릭 수", "클릭한 방문"],
+    (d.clicks || []).map((c) => [esc(c.name), `<b>${nf(c.clicks)}</b>`, nf(c.sessions)]), [1, 2]);
+
+  $("table-campaigns").innerHTML = tableHtml(["source", "medium", "campaign", "방문 수"],
+    (d.campaigns || []).map((c) => [esc(c.source), esc(c.medium), esc(c.campaign || "-"), nf(c.sessions)]), [3]);
+
+  $("table-regions").innerHTML = tableHtml(["국가", "지역", "방문 수"],
+    (d.regions || []).map((r) => [esc(r.country || "-"), esc(r.region || "-"), nf(r.sessions)]), [2]);
+
+  $("dv-loading").hidden = true;
+  $("dv-body").hidden = false;
+}
+
+/* ── 데이터 로드 ── */
+function note(id, on, text) {
+  const el = $(id);
+  el.classList.toggle("show", !!on);
+  if (text && $("demo-reason")) $("demo-reason").textContent = text;
+}
+
+async function load() {
+  $("dv-loading").hidden = false;
+  $("dv-loading").textContent = "불러오는 중...";
+  hideTip();
+  const key = localStorage.getItem(KEY_STORE) || "";
+  let data = null, reason = "";
+
+  try {
+    const url = `/api/stats?days=${state.days}` + (key ? `&key=${encodeURIComponent(key)}` : "");
+    const res = await fetch(url, { cache: "no-store" });
+    if (res.status === 401) {
+      $("dv-loading").textContent = "접근 키가 필요합니다. 위의 [접근 키] 버튼을 눌러 입력하세요.";
+      $("dv-body").hidden = true;
+      return;
+    }
+    if (res.ok) data = await res.json();
+    else reason = `(/api/stats 응답 ${res.status})`;
+  } catch (e) {
+    reason = "(/api/stats 를 부를 수 없는 환경입니다 — 로컬 파일로 연 경우)";
+  }
+
+  note("note-open", data && data.unprotected);
+
+  if (!data || data.configured === false) {
+    reason = reason || (data && data.message ? `(${data.message})` : "");
+    state.demo = true;
+    state.data = demoData(state.days);
+    note("note-demo", true, reason);
+    note("note-empty", false);
+  } else if (data.empty || !data.totals || !data.totals.pageviews) {
+    state.demo = false;
+    state.data = emptyData(data.range || { from: "-", to: "-" }, state.days);
+    note("note-demo", false);
+    note("note-empty", true);
+  } else {
+    state.demo = false;
+    state.data = data;
+    note("note-demo", false);
+    note("note-empty", false);
+  }
+  render();
+}
+
+function emptyData(range, days) {
+  const trend = [];
+  const end = Date.now();
+  for (let i = days - 1; i >= 0; i--) {
+    trend.push({ day: new Date(end - i * 86400000 + 9 * 3600000).toISOString().slice(0, 10), sessions: 0, visitors: 0, pv: 0 });
+  }
+  return {
+    range, totals: { pageviews: 0, sessions: 0, visitors: 0, newVisitors: 0, pagesPerSession: 0, bounceRate: 0 },
+    trend, channels: [], referrers: [], landings: [], pages: [], devices: [], browsers: [],
+    hours: Array.from({ length: 24 }, (_, h) => ({ hour: h, sessions: 0 })),
+    campaigns: [], channelLanding: [], clicks: [], regions: [], journeys: [],
+  };
+}
+
+/* 예시(demo) 데이터 — 실제 수집이 연결되기 전 화면 확인용. 실제 방문 기록이 아니다. */
+function demoData(days) {
+  let seed = 20260821;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  const trend = [];
+  const now = Date.now();
+  for (let i = days - 1; i >= 0; i--) {
+    const day = new Date(now - i * 86400000 + 9 * 3600000).toISOString().slice(0, 10);
+    const dow = new Date(day + "T00:00:00Z").getUTCDay();
+    const base = 34 + Math.round(rnd() * 26) + (dow === 0 || dow === 6 ? -9 : 5);
+    const sessions = Math.max(6, base);
+    trend.push({ day, sessions, visitors: Math.round(sessions * 0.86), pv: Math.round(sessions * 2.1) });
+  }
+  const S = trend.reduce((s, d) => s + d.sessions, 0);
+  const PV = trend.reduce((s, d) => s + d.pv, 0);
+  const share = (p) => Math.round(S * p);
+  const channels = [
+    { name: "네이버 블로그", sessions: share(0.38) },
+    { name: "네이버 검색", sessions: share(0.21) },
+    { name: "카카오톡", sessions: share(0.14) },
+    { name: "직접 유입", sessions: share(0.11) },
+    { name: "구글 검색", sessions: share(0.07) },
+    { name: "네이버 카페", sessions: share(0.05) },
+    { name: "기타 사이트", sessions: share(0.04) },
+  ];
+  return {
+    range: { from: trend[0].day, to: trend[trend.length - 1].day, days },
+    totals: {
+      pageviews: PV, sessions: S, visitors: Math.round(S * 0.86), newVisitors: Math.round(S * 0.62),
+      pagesPerSession: +(PV / S).toFixed(2), bounceRate: 52.4,
+    },
+    trend, channels,
+    referrers: [
+      { name: "blog.naver.com", channel: "네이버 블로그", sessions: share(0.31) },
+      { name: "m.search.naver.com", channel: "네이버 검색", sessions: share(0.16) },
+      { name: "m.blog.naver.com", channel: "네이버 블로그", sessions: share(0.07) },
+      { name: "search.naver.com", channel: "네이버 검색", sessions: share(0.05) },
+      { name: "google.com", channel: "구글 검색", sessions: share(0.07) },
+      { name: "cafe.naver.com", channel: "네이버 카페", sessions: share(0.05) },
+    ],
+    landings: [
+      { name: "/", sessions: share(0.65) },
+      { name: "/property.html", sessions: share(0.18) },
+      { name: "/courses.html", sessions: share(0.09) },
+      { name: "/reviews.html", sessions: share(0.05) },
+      { name: "/about.html", sessions: share(0.03) },
+    ],
+    pages: [
+      { name: "/", pv: Math.round(PV * 0.34), sessions: share(0.55) },
+      { name: "/property.html", pv: Math.round(PV * 0.28), sessions: share(0.41) },
+      { name: "/courses.html", pv: Math.round(PV * 0.14), sessions: share(0.19) },
+      { name: "/reviews.html", pv: Math.round(PV * 0.11), sessions: share(0.15) },
+      { name: "/about.html", pv: Math.round(PV * 0.08), sessions: share(0.1) },
+      { name: "/checkout.html", pv: Math.round(PV * 0.05), sessions: share(0.05) },
+    ],
+    devices: [
+      { name: "mobile", sessions: share(0.79) },
+      { name: "desktop", sessions: share(0.17) },
+      { name: "tablet", sessions: share(0.04) },
+    ],
+    browsers: [
+      { name: "Chrome", sessions: share(0.33) },
+      { name: "네이버 앱", sessions: share(0.24) },
+      { name: "Safari", sessions: share(0.18) },
+      { name: "카카오톡 인앱", sessions: share(0.13) },
+      { name: "삼성인터넷", sessions: share(0.08) },
+      { name: "웨일", sessions: share(0.04) },
+    ],
+    hours: Array.from({ length: 24 }, (_, h) => {
+      const curve = [2, 1, 1, 1, 1, 2, 4, 7, 9, 10, 11, 10, 9, 10, 11, 12, 12, 13, 15, 17, 18, 14, 9, 5][h];
+      return { hour: h, sessions: Math.round((curve / 218) * S) };
+    }),
+    campaigns: [
+      { source: "naver_blog", medium: "post", campaign: "2026-08-경매특강", sessions: share(0.06) },
+      { source: "kakao", medium: "sms", campaign: "수강생-안내", sessions: share(0.03) },
+    ],
+    channelLanding: [
+      { channel: "네이버 블로그", landing_path: "/property.html", sessions: share(0.17) },
+      { channel: "네이버 블로그", landing_path: "/", sessions: share(0.16) },
+      { channel: "네이버 검색", landing_path: "/", sessions: share(0.13) },
+      { channel: "카카오톡", landing_path: "/", sessions: share(0.09) },
+      { channel: "직접 유입", landing_path: "/", sessions: share(0.08) },
+      { channel: "구글 검색", landing_path: "/courses.html", sessions: share(0.04) },
+    ],
+    clicks: [
+      { name: "전화상담", clicks: share(0.09), sessions: share(0.07) },
+      { name: "블로그 이동", clicks: share(0.06), sessions: share(0.05) },
+      { name: "강의 신청", clicks: share(0.03), sessions: share(0.03) },
+      { name: "결제 페이지", clicks: share(0.02), sessions: share(0.02) },
+    ],
+    regions: [
+      { country: "KR", region: "Daegu", sessions: share(0.48) },
+      { country: "KR", region: "Gyeongsangbuk-do", sessions: share(0.17) },
+      { country: "KR", region: "Seoul", sessions: share(0.14) },
+      { country: "KR", region: "Gyeonggi-do", sessions: share(0.12) },
+      { country: "KR", region: "Busan", sessions: share(0.06) },
+    ],
+    journeys: [
+      { channel: "네이버 블로그", steps: ["/property.html"], more: false, sessions: share(0.14) },
+      { channel: "네이버 블로그", steps: ["/", "/property.html"], more: false, sessions: share(0.11) },
+      { channel: "네이버 검색", steps: ["/"], more: false, sessions: share(0.09) },
+      { channel: "카카오톡", steps: ["/", "/property.html", "/courses.html"], more: false, sessions: share(0.06) },
+      { channel: "네이버 검색", steps: ["/", "/courses.html"], more: false, sessions: share(0.05) },
+      { channel: "직접 유입", steps: ["/", "/reviews.html", "/courses.html", "/checkout.html"], more: false, sessions: share(0.04) },
+      { channel: "구글 검색", steps: ["/courses.html"], more: false, sessions: share(0.03) },
+    ],
+  };
+}
+
+/* ── CSV 내보내기 ── */
+function toCsv() {
+  const d = state.data, out = [];
+  const push = (title, headers, rows) => {
+    out.push("# " + title);
+    out.push(headers.join(","));
+    rows.forEach((r) => out.push(r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")));
+    out.push("");
+  };
+  push("기간", ["from", "to", "예시데이터"], [[d.range.from, d.range.to, state.demo ? "예" : "아니오"]]);
+  push("요약", ["방문자", "방문", "페이지뷰", "방문당페이지", "이탈률"],
+    [[d.totals.visitors, d.totals.sessions, d.totals.pageviews, d.totals.pagesPerSession, d.totals.bounceRate]]);
+  push("일자별", ["날짜", "방문", "방문자", "페이지뷰"], d.trend.map((t) => [t.day, t.sessions, t.visitors, t.pv]));
+  push("유입채널", ["채널", "방문"], (d.channels || []).map((c) => [c.name, c.sessions]));
+  push("리퍼러", ["도메인", "채널", "방문"], (d.referrers || []).map((r) => [r.name, r.channel, r.sessions]));
+  push("첫진입페이지", ["페이지", "방문"], (d.landings || []).map((l) => [l.name, l.sessions]));
+  push("방문경로", ["채널", "경로", "방문"], (d.journeys || []).map((j) => [j.channel, (j.steps || []).join(" > "), j.sessions]));
+  push("페이지", ["페이지", "페이지뷰", "방문"], (d.pages || []).map((p) => [p.name, p.pv, p.sessions]));
+  push("시간대", ["시", "방문"], (d.hours || []).map((h) => [h.hour, h.sessions]));
+  push("기기", ["기기", "방문"], (d.devices || []).map((x) => [x.name, x.sessions]));
+  push("전환클릭", ["버튼", "클릭", "방문"], (d.clicks || []).map((c) => [c.name, c.clicks, c.sessions]));
+
+  const blob = new Blob(["﻿" + out.join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `유입분석_${d.range.from}_${d.range.to}${state.demo ? "_예시" : ""}.csv`;
+  document.body.appendChild(a); // 파일명이 적용되려면 문서에 붙어 있어야 한다
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+
+/* ── 조작 ── */
+$("range-seg").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.days = +b.dataset.days;
+  [...e.currentTarget.children].forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  load();
+});
+$("metric-seg").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.metric = b.dataset.metric;
+  [...e.currentTarget.children].forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  renderTrend();
+});
+$("btn-tables").addEventListener("click", (e) => {
+  const on = document.body.classList.toggle("show-tables");
+  e.currentTarget.setAttribute("aria-pressed", String(on));
+  e.currentTarget.textContent = on ? "표 숨기기" : "표로 보기";
+});
+$("btn-csv").addEventListener("click", toCsv);
+$("btn-reload").addEventListener("click", load);
+$("btn-key").addEventListener("click", () => {
+  const cur = localStorage.getItem(KEY_STORE) || "";
+  const v = prompt("대시보드 접근 키(DASHBOARD_KEY)를 입력하세요. 비우면 저장된 키를 지웁니다.", cur);
+  if (v === null) return;
+  if (v) localStorage.setItem(KEY_STORE, v); else localStorage.removeItem(KEY_STORE);
+  load();
+});
+
+let resizeTimer;
+addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (state.data) renderTrend(); }, 180);
+});
+
+load();
+</script>
+</body>
+</html>
