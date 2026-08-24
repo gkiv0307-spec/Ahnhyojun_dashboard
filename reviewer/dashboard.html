@@ -3496,7 +3496,8 @@ body:not(.unlocked) .toast-wrap { display: none; }
     legend.appendChild(h('div', { class: 'month-legend' }, [
       h('span', { class: 'swatch' }, [h('span', { class: 'box', style: 'background:var(--ok-soft);border-color:var(--ok-line)' }), '등록 · 예약 가능']),
       h('span', { class: 'swatch' }, [h('span', { class: 'box', style: 'background:var(--danger-soft);border-color:var(--danger-line)' }), '등록 · 마감']),
-      h('span', { class: 'swatch' }, [h('span', { class: 'box', style: 'background:var(--mute-soft);border-color:var(--mute-line)' }), '지난 예약 기록']),
+      h('span', { class: 'swatch', title: '예약 가능일로 등록되지 않은 날짜에 잡힌 예약입니다. 설정에서 그 날짜를 등록하면 정원·잔여가 계산됩니다.' },
+        [h('span', { class: 'box', style: 'background:var(--mute-soft);border-color:var(--mute-line)' }), '등록 밖 예약']),
       h('span', { class: 'hint', text: '칸의 숫자는 예약 인원 / 정원입니다. 날짜를 누르면 그 날 예약자가 보입니다.' })
     ]));
 
@@ -3613,7 +3614,7 @@ body:not(.unlocked) .toast-wrap { display: none; }
     body.appendChild(h('p', { class: 'hint', text:
       info.registered
         ? '정원 ' + info.capacity + '명 · 예약 ' + info.booked + '명 · 잔여 ' + info.remaining + '명'
-        : '예약 가능일로 등록되지 않은 날짜입니다. 예약 기록 ' + people.length + '건.' }));
+        : '예약 가능일로 등록되지 않은 날짜입니다. 예약 ' + people.length + '건이 잡혀 있습니다. 설정에서 이 날짜를 등록하면 정원·잔여가 계산됩니다.' }));
 
     if (!people.length) body.appendChild(h('div', { class: 'empty', text: '이 날짜에 배정된 리뷰어가 없습니다.' }));
     people.forEach(function (r) {
