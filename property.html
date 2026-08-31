@@ -4,8 +4,18 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>매물 상세 | 옆커폰부동산에듀</title>
+<meta name="description" content="경매 매물 상세 페이지로 이동합니다." />
+<meta name="robots" content="noindex, follow" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="assets/style.css">
+<script>
+  /* 매물 상세는 검색엔진이 읽을 수 있도록 /property/{글번호} 서버 렌더 주소로 옮겼다.
+     예전에 뿌려진 property.html?id=... 링크가 계속 살아 있도록 여기서 넘겨준다. */
+  (function () {
+    var id = new URLSearchParams(location.search).get("id");
+    location.replace(id ? "/property/" + encodeURIComponent(id) : "/");
+  })();
+</script>
 </head>
 <body>
 
@@ -14,130 +24,32 @@
     <a class="logo" href="index.html"><img src="assets/logo-dark.png" alt="옆커폰부동산에듀"></a>
     <nav class="nav-menu">
       <a href="index.html">매물정보</a>
+      <a href="/area">지역별 경매</a>
       <a href="about.html">회사소개</a>
       <a href="courses.html">강의안내</a>
       <a href="reviews.html">수강생후기</a>
-      <a href="https://blog.naver.com/ykphone_edu" target="_blank" rel="noopener">블로그</a>
     </nav>
     <a class="btn btn-gold" href="tel:010-6419-0759">전화상담</a>
   </div>
 </header>
 
-<section class="hero" style="padding-bottom:0">
-  <div class="wrap" style="padding-bottom:36px">
-    <span class="kick-badge">Property Detail</span>
-    <h1 id="p-title" style="font-size:30px">불러오는 중...</h1>
+<section class="hero">
+  <div class="wrap">
+    <h1>매물 페이지로 이동 중입니다</h1>
+    <p class="lead">자동으로 넘어가지 않으면 아래 버튼을 눌러주세요.</p>
+    <p style="margin-top:20px">
+      <a class="btn btn-gold" href="/" id="fallback">매물 목록으로</a>
+    </p>
   </div>
 </section>
-
-<section class="dark">
-  <div class="wrap">
-    <div id="p-state" class="state-msg"></div>
-    <div id="p-body" class="detail-grid" style="display:none">
-      <div>
-        <div class="detail-gallery"><img id="p-main-photo" alt="" style="display:none"></div>
-        <div id="p-thumbs" class="gallery-thumbs"></div>
-        <p class="desc" id="p-summary" style="margin-top:20px"></p>
-        <a id="p-blog-link" class="btn btn-out" style="margin-top:16px" target="_blank" rel="noopener">블로그 원문 보기 →</a>
-      </div>
-      <div class="detail-info">
-        <div class="row"><span>주소</span><b id="p-address">-</b></div>
-        <div class="row"><span>지역</span><b id="p-region">-</b></div>
-        <div class="row"><span>구분</span><b id="p-category">-</b></div>
-        <div class="row"><span>감정가</span><b id="p-appraisal">-</b></div>
-        <div class="row"><span>최저가</span><b id="p-minbid">-</b></div>
-        <div class="row"><span>게시일</span><b id="p-date">-</b></div>
-        <p class="desc" style="font-size:13px;margin-top:10px">사건번호·매각기일 등 법원 경매 상세 정보는 블로그 원문에서 확인하실 수 있습니다.</p>
-        <div class="cta">
-          <a id="p-checkout-btn" class="btn btn-gold">상세자료·상담 신청금 결제</a>
-          <a class="btn btn-out" href="tel:010-6419-0759">전화로 먼저 상담하기</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap">
-    <div class="frow fmenu">
-      <a href="about.html">회사소개</a>
-      <a href="courses.html">강의안내</a>
-      <a href="reviews.html">수강생후기</a>
-    </div>
-    <div class="biz">
-      <b>회사명</b> (주)옆커폰부동산에듀 &nbsp;|&nbsp; <b>대표자</b> 고호정 &nbsp;|&nbsp; <b>사업자등록번호</b> 882-88-03372<br>
-      <b>주소</b> 대구광역시 수성구 두산동 207-5, 2층 204호 &nbsp;|&nbsp; <b>연락처</b> 010-6419-0759 / 053-281-0759
-    </div>
-    <div style="color:#5a5a63">© 2026 (주)옆커폰부동산에듀.</div>
-  </div>
-</footer>
 
 <script>
-const CONSULT_FEE = 500000;
-
-function qs(name){
-  return new URLSearchParams(location.search).get(name);
-}
-
-async function loadProperty(){
-  const id = qs('id');
-  const state = document.getElementById('p-state');
-  if (!id){ state.textContent = '매물 id가 없습니다.'; return; }
-
-  let items = [];
-  try {
-    const res = await fetch('/api/properties');
-    if (res.ok){ const data = await res.json(); items = data.items || []; }
-  } catch(e) {}
-
-  if (!items.length){
-    try {
-      const mockRes = await fetch('data/mock-properties.json');
-      items = await mockRes.json();
-    } catch(e) {}
+  var id = new URLSearchParams(location.search).get("id");
+  if (id) {
+    var a = document.getElementById("fallback");
+    a.href = "/property/" + encodeURIComponent(id);
+    a.textContent = "매물 상세 보기";
   }
-
-  const p = items.find(x => String(x.id) === String(id));
-  if (!p){ state.textContent = '해당 매물을 찾을 수 없습니다.'; return; }
-
-  document.title = p.title + ' | 옆커폰부동산에듀';
-  document.getElementById('p-title').textContent = p.title;
-  document.getElementById('p-summary').textContent = p.summary || '';
-  document.getElementById('p-address').textContent = p.address || '블로그 원문 확인';
-  document.getElementById('p-region').textContent = p.region || '-';
-  document.getElementById('p-category').textContent = p.category || '경매매물';
-  document.getElementById('p-appraisal').textContent = p.appraisal || '문의';
-  document.getElementById('p-minbid').textContent = p.minBid || '문의';
-  document.getElementById('p-date').textContent = p.pubDate || '-';
-  document.getElementById('p-blog-link').href = p.link;
-
-  const images = (p.images && p.images.length) ? p.images : (p.thumbnail ? [p.thumbnail] : []);
-  const mainPhoto = document.getElementById('p-main-photo');
-  const thumbsBox = document.getElementById('p-thumbs');
-  if (images.length){
-    mainPhoto.src = images[0];
-    mainPhoto.style.display = 'block';
-    thumbsBox.innerHTML = images.map((src, i) =>
-      `<img src="${src}" class="gallery-thumb${i===0 ? ' active' : ''}" data-src="${src}">`
-    ).join('');
-    thumbsBox.querySelectorAll('.gallery-thumb').forEach(el => {
-      el.addEventListener('click', () => {
-        mainPhoto.src = el.dataset.src;
-        thumbsBox.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
-        el.classList.add('active');
-      });
-    });
-  }
-
-  const checkoutBtn = document.getElementById('p-checkout-btn');
-  checkoutBtn.href = `checkout.html?id=${encodeURIComponent(p.id)}&amount=${CONSULT_FEE}&name=${encodeURIComponent(p.title)}`;
-
-  document.getElementById('p-body').style.display = 'grid';
-  state.textContent = '';
-}
-
-loadProperty();
 </script>
-<script defer src="assets/track.js"></script>
 </body>
 </html>

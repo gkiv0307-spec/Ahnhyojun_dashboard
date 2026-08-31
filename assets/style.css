@@ -102,3 +102,32 @@ footer .biz{line-height:1.9}
 footer .biz b{color:#c9c9d0}
 .badge-mock{display:inline-block;background:#fff3d6;color:#8a5a00;border:1px dashed var(--gold-2);
   font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;margin-left:6px;vertical-align:middle}
+
+/* ── 서버 렌더 페이지(지역별 경매, 매물 상세)용 추가 스타일 ── */
+.crumbs{font-size:13px;color:var(--muted-d);margin-bottom:14px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.crumbs a{color:var(--muted-d)}
+.crumbs a:hover{color:var(--gold)}
+.crumbs span{color:#5a5a63}
+.crumbs em{font-style:normal;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46ch}
+
+.area-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px}
+@media(max-width:900px){.area-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.area-grid{grid-template-columns:1fr}}
+.area-card{background:var(--ink-2);border:1px solid #26262c;border-radius:var(--radius);padding:22px 20px;
+  display:flex;flex-direction:column;gap:6px;transition:.18s}
+.area-card:hover{transform:translateY(-3px);border-color:var(--gold)}
+.area-card .ac-name{font-size:19px;font-weight:900;color:#fff;letter-spacing:-.02em}
+.area-card .ac-count{font-size:13.5px;color:var(--muted-d)}
+.area-card .ac-count b{color:var(--gold)}
+.area-card .ac-more{margin-top:8px;color:var(--gold);font-weight:800;font-size:13.5px}
+
+.region-chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}
+.region-chip{border:1px solid #33333b;border-radius:999px;padding:9px 17px;font-weight:700;font-size:14px;
+  color:#e8e8ea;background:var(--ink-2);transition:.18s}
+.region-chip:hover{border-color:var(--gold);color:var(--gold)}
+.region-chip span{color:var(--muted);margin-left:6px;font-size:12.5px}
+
+.check-list{margin:18px 0 0;padding:0;list-style:none;display:grid;gap:12px;max-width:76ch}
+.check-list li{position:relative;padding-left:26px;color:var(--muted-d);font-size:15px;line-height:1.7}
+.check-list li::before{content:"✓";position:absolute;left:0;top:0;color:var(--gold);font-weight:900}
+.check-list li b{color:#fff}
