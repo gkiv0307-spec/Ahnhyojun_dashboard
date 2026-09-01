@@ -1,0 +1,16 @@
+# 부동산경매.store — 검색엔진 크롤러 안내
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /checkout.html
+Disallow: /success.html
+Disallow: /fail.html
+Disallow: /api/
+
+# 네이버
+User-agent: Yeti
+Allow: /
+Disallow: /dashboard.html
+Disallow: /api/
+
+Sitemap: https://xn--289av8kwmfs4dv2e.store/sitemap.xml
