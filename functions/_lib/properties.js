@@ -9,7 +9,10 @@ const BLOG_ID = "ykphone_edu";
 const RSS_URL = `https://rss.blog.naver.com/${BLOG_ID}.xml`;
 const AUCTION_KEYWORDS = ["경매", "낙찰", "감정가", "최저가", "물건", "입찰"];
 const UA = "Mozilla/5.0 (compatible; PropertyListBot/1.0)";
-const CACHE_KEY = "https://cache.internal/properties-v1";
+// 파싱 규칙을 바꾸면 이 번호를 올린다. 그래야 엣지 캐시에 남아 있던 예전 결과가 버려지고
+// 새 코드로 다시 분석한다. (안 올리면 배포해도 최대 15분간 예전 데이터가 그대로 나온다.)
+const PARSER_VERSION = 2;
+const CACHE_KEY = `https://cache.internal/properties-v${PARSER_VERSION}`;
 const CACHE_TTL = 900; // 15분
 
 function decodeEntities(str) {
