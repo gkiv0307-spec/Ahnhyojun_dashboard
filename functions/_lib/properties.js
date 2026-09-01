@@ -64,9 +64,17 @@ function parseRssItems(xml) {
 
 const KOREAN_WON = "[0-9][0-9,]*\\s*억?\\s*[0-9,]*\\s*만?\\s*원";
 
+const SIDO_NAMES = "서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주";
+
 function extractAddress(plain) {
   const m = plain.match(/물건은\s*([^.]{2,40}?위치한[^.]{2,40}?)(?:입니다|이며)/);
   if (m) return m[1].replace(/위치한/, "").replace(/\s{2,}/g, " ").trim();
+
+  // 위 문장이 없는 글이 많아, "시·도 + 구/군/시 + 동/읍/면" 형태를 본문에서 직접 찾아본다.
+  const m2 = plain.match(
+    new RegExp(`(${SIDO_NAMES})(?:광역시|특별시|특별자치시|특별자치도|도)?\\s*([가-힣]{1,8}(?:구|군|시))\\s*([가-힣]{1,8}(?:동|읍|면|리|가))`)
+  );
+  if (m2) return m2[0].replace(/\s{2,}/g, " ").trim();
   return "";
 }
 
@@ -169,7 +177,9 @@ async function toProperty(itemXml) {
   const pubDate = tag(itemXml, "pubDate");
   const descriptionHtml = tag(itemXml, "description");
   const rssPlain = extractPlainText(descriptionHtml);
-  const idMatch = link.match(/(\d+)\/?$/);
+  // RSS 링크는 "…/224397355155?fromRss=true&trackingCode=rss" 형태라 물음표 뒤를 잘라내야
+  // 글번호가 잡힌다. 이 값이 그대로 /property/{글번호} 주소가 된다.
+  const idMatch = link.split(/[?#]/)[0].match(/(\d+)\/?$/);
 
   let plain = rssPlain;
   let images = extractImages(descriptionHtml);
@@ -191,8 +201,9 @@ async function toProperty(itemXml) {
   }
 
   const hashtags = extractHashtags(plain);
-  const regionText = [address, hashtags.join(" "), title].join(" ");
-  const region = detectRegion(regionText);
+  // 주소에 시·도가 적혀 있으면 그게 정답이다. 해시태그에는 홍보용으로 "대구"가 늘 붙어 있어
+  // (예: 경북 경산 물건에 #대구경매) 주소보다 먼저 보면 지역이 틀어진다.
+  const region = detectRegion(address) || detectRegion([hashtags.join(" "), title].join(" "));
   const sub = detectSubRegion([address, title].join(" "), region);
   const category = guessCategory(hashtags, title);
 
@@ -234,9 +245,10 @@ async function fetchProperties() {
 
   const parsed = await Promise.all(candidates.map(toProperty));
 
-  // 경매 키워드만 들어간 일반 글(공부·후기 등)은 매물이 아니다.
-  // 지역이나 주소·가격 중 하나라도 잡힌 글만 매물 목록에 남긴다.
-  return parsed.filter((p) => p.regionCode || p.address || p.appraisal || p.minBid);
+  // 경매 키워드만 들어간 일반 글(공부법·공지 등)은 매물이 아니다.
+  // 해시태그 때문에 지역은 거의 항상 붙으므로, 지역이 아니라 "감정가·최저가·소재지" 중
+  // 하나라도 실제로 잡힌 글만 매물로 본다.
+  return parsed.filter((p) => p.appraisal || p.minBid || p.address);
 }
 
 /**
