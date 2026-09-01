@@ -3,12 +3,10 @@
 import { originOf } from "./_lib/site.js";
 import { getProperties, groupByRegion, MIN_PROPERTIES_PER_REGION } from "./_lib/properties.js";
 
+// 홈은 랜딩 한 장에 강의·대표소개·후기가 모두 들어 있어 별도 페이지를 두지 않는다.
 const STATIC_PAGES = [
   { path: "/", priority: "1.0", freq: "daily" },
   { path: "/area", priority: "0.9", freq: "daily" },
-  { path: "/courses.html", priority: "0.9", freq: "weekly" },
-  { path: "/about.html", priority: "0.7", freq: "monthly" },
-  { path: "/reviews.html", priority: "0.7", freq: "monthly" },
 ];
 
 function iso(d) {

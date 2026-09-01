@@ -1,27 +1,30 @@
 /* 사이트 공통 정보 + 서버 렌더 페이지의 HTML 골격
  *
- * functions/ 안에서 `_` 로 시작하는 폴더는 라우트로 잡히지 않는다(핸들러를 export 하지 않으므로).
- * 정적 HTML 페이지들과 머리말/꼬리말 마크업을 맞춰 둔다.
+ * 홈(index.html)과 같은 디자인을 쓰기 위해 헤더·푸터 마크업과 css/style.css 를 그대로 재사용하고,
+ * 서버 렌더 페이지 전용 스타일만 assets/pages.css 로 얹는다.
+ * (홈의 js/main.js 는 히어로 슬라이드·모바일 메뉴 등 랜딩 전용이라 여기서는 부르지 않는다.)
+ *
+ * functions/ 안에서 `_` 로 시작하는 폴더는 핸들러를 export 하지 않으므로 라우트로 잡히지 않는다.
  */
 
 export const SITE = {
   name: "옆커폰부동산에듀",
-  legalName: "(주)옆커폰부동산에듀",
+  legalName: "주식회사 옆커폰부동산에듀",
   origin: "https://xn--289av8kwmfs4dv2e.store", // 부동산경매.store
   displayDomain: "부동산경매.store",
   ceo: "고호정",
-  bizNo: "882-88-03372",
-  tel: "010-6419-0759",
-  tel2: "053-281-0759",
-  email: "rhghwjd12@naver.com",
-  address: {
-    street: "수성구 두산동 207-5, 2층 204호",
-    city: "대구광역시",
-    country: "KR",
-  },
+  tel: "053-281-0759",
+  telHref: "0532810759",
+  mobile: "010-6419-0759",
+  address: { street: "수성구 두산동 207-5, 2층 204호", city: "대구광역시", country: "KR" },
   blog: "https://blog.naver.com/ykphone_edu",
-  klass: "https://gkinvestment.liveklass.com",
+  cafe: "https://cafe.naver.com/kkkiiimmm",
+  instagram: "https://www.instagram.com/ykphone_edu/",
+  klass: "https://gkinvestment.liveklass.com/classes/253735",
+  logo: "/assets/ykphone-logo-horizontal.png",
   ogImage: "/assets/og-cover.png",
+  naverVerification: "368b5d60cbecc94652dbf0e533bcdf36e3e176ac",
+  ga4: "G-TF6QHZ61PZ",
 };
 
 export function esc(s) {
@@ -47,20 +50,55 @@ function clampDesc(s) {
   return t.length > 155 ? t.slice(0, 154) + "…" : t;
 }
 
-const NAV = [
-  ["/", "매물정보"],
-  ["/area", "지역별 경매"],
-  ["/about.html", "회사소개"],
-  ["/courses.html", "강의안내"],
-  ["/reviews.html", "수강생후기"],
-];
+function header() {
+  return `<header class="site-header">
+  <a class="brand" href="/" aria-label="${esc(SITE.name)} 홈"><img src="${SITE.logo}" alt="${esc(SITE.name)}"></a>
+  <nav aria-label="주요 메뉴">
+    <a href="/#properties">전국 물건</a>
+    <a href="/area">지역별 물건</a>
+    <a href="${SITE.klass}" target="_blank" rel="noreferrer">온라인 강의</a>
+    <a href="${SITE.blog}" target="_blank" rel="noreferrer">블로그</a>
+    <a href="/#about">대표소개</a>
+    <a href="/#reviews">수강·낙찰후기</a>
+  </nav>
+  <div class="header-socials" aria-label="소셜 채널">
+    <a href="${SITE.cafe}" target="_blank" rel="noreferrer" aria-label="네이버 카페"><b>N</b><span>카페</span></a>
+    <a href="${SITE.instagram}" target="_blank" rel="noreferrer" aria-label="인스타그램"><b>◎</b><span>인스타그램</span></a>
+  </div>
+  <a class="header-call" href="tel:${SITE.telHref}"><span>전화상담</span>${SITE.tel}</a>
+</header>`;
+}
+
+function footer() {
+  return `<footer>
+  <div class="footer-brand">
+    <img src="${SITE.logo}" alt="${esc(SITE.name)}">
+    <p>돈 되는 경매, 판단의 순서부터.</p>
+  </div>
+  <div>
+    <p>대표 ${esc(SITE.ceo)} · ${esc(SITE.legalName)}</p>
+    <p>${esc(SITE.address.city)} ${esc(SITE.address.street)}</p>
+    <p>${SITE.tel} · ${SITE.mobile}</p>
+  </div>
+  <div class="footer-links">
+    <a href="${SITE.klass}" target="_blank" rel="noreferrer">온라인 강의</a>
+    <a href="${SITE.blog}" target="_blank" rel="noreferrer">블로그</a>
+    <a href="${SITE.cafe}" target="_blank" rel="noreferrer">네이버 카페</a>
+    <a href="${SITE.instagram}" target="_blank" rel="noreferrer">인스타그램</a>
+    <a href="/#about">대표소개</a>
+    <a href="/#reviews">수강·낙찰후기</a>
+    <a href="/area">지역별 경매 물건</a>
+    <a href="tel:${SITE.telHref}">상담전화</a>
+  </div>
+</footer>`;
+}
 
 /**
  * 서버에서 완성된 HTML을 만들어 준다.
  * 네이버 크롤러는 자바스크립트를 거의 실행하지 않으므로, 검색에 걸려야 하는 내용은
  * 반드시 이 함수를 통해 HTML 안에 글자로 들어가 있어야 한다.
  */
-export function page({ title, description, path, body, jsonLd = [], image, noindex = false, origin = SITE.origin }) {
+export function page({ title, description, path, body, jsonLd = [], image, noindex = false, origin = SITE.origin, keywords }) {
   const url = origin + path;
   const rawImg = image || SITE.ogImage;
   const img = /^https?:\/\//.test(rawImg) ? rawImg : origin + rawImg;
@@ -73,57 +111,36 @@ export function page({ title, description, path, body, jsonLd = [], image, noind
   return `<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
-<meta name="description" content="${esc(desc)}" />
-${noindex ? '<meta name="robots" content="noindex, follow" />' : '<meta name="robots" content="index, follow, max-image-preview:large" />'}
-<link rel="canonical" href="${esc(url)}" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="${esc(SITE.name)}" />
-<meta property="og:title" content="${esc(title)}" />
-<meta property="og:description" content="${esc(desc)}" />
-<meta property="og:url" content="${esc(url)}" />
-<meta property="og:image" content="${esc(img)}" />
-<meta property="og:locale" content="ko_KR" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="theme-color" content="#0c0c0f" />
-<link rel="icon" href="/assets/favicon.png" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
-<link rel="stylesheet" href="/assets/style.css">
+<meta name="description" content="${esc(desc)}">
+${keywords ? `<meta name="keywords" content="${esc(keywords)}">` : ""}
+${noindex ? '<meta name="robots" content="noindex, follow">' : '<meta name="robots" content="index, follow, max-image-preview:large">'}
+<meta name="naver-site-verification" content="${SITE.naverVerification}">
+<link rel="canonical" href="${esc(url)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="${esc(SITE.name)}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:url" content="${esc(url)}">
+<meta property="og:image" content="${esc(img)}">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0a09">
+<link rel="icon" href="/assets/ykphone-logo-mark.png">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/assets/pages.css">
+<script async src="https://www.googletagmanager.com/gtag/js?id=${SITE.ga4}"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","${SITE.ga4}");</script>
 ${ld}
 </head>
 <body>
-
-<header>
-  <div class="wrap nav">
-    <a class="logo" href="/"><img src="/assets/logo-dark.png" alt="${esc(SITE.name)}"></a>
-    <nav class="nav-menu">
-      ${NAV.map(([href, label]) => `<a href="${href}">${label}</a>`).join("\n      ")}
-      <a href="${SITE.blog}" target="_blank" rel="noopener">블로그</a>
-    </nav>
-    <a class="btn btn-gold" href="tel:${SITE.tel}">전화상담</a>
-  </div>
-</header>
-
+${header()}
+<main class="pg-main">
 ${body}
-
-<footer>
-  <div class="wrap">
-    <div class="frow"><img src="/assets/logo-dark.png" alt="${esc(SITE.name)}" style="height:28px"></div>
-    <div class="frow fmenu">
-      ${NAV.map(([href, label]) => `<a href="${href}">${label}</a>`).join("\n      ")}
-      <a href="${SITE.blog}" target="_blank" rel="noopener">블로그</a>
-    </div>
-    <div class="biz">
-      <b>회사명</b> ${esc(SITE.legalName)} &nbsp;|&nbsp; <b>대표자</b> ${esc(SITE.ceo)} &nbsp;|&nbsp; <b>사업자등록번호</b> ${SITE.bizNo}<br>
-      <b>주소</b> ${esc(SITE.address.city)} ${esc(SITE.address.street)} &nbsp;|&nbsp; <b>연락처</b> ${SITE.tel} / ${SITE.tel2}<br>
-      <b>이메일</b> ${esc(SITE.email)}
-    </div>
-    <div style="color:#5a5a63">© 2026 ${esc(SITE.legalName)}. 부동산 경매 매물정보 · 경매 교육.</div>
-  </div>
-</footer>
-
+</main>
+${footer()}
 <script defer src="/assets/track.js"></script>
 </body>
 </html>`;
@@ -140,10 +157,9 @@ export function organizationLd(origin = SITE.origin) {
     name: SITE.name,
     legalName: SITE.legalName,
     url: origin + "/",
-    logo: origin + "/assets/logo-dark.png",
+    logo: origin + SITE.logo,
     image: origin + SITE.ogImage,
     telephone: SITE.tel,
-    email: SITE.email,
     founder: { "@type": "Person", name: SITE.ceo },
     address: {
       "@type": "PostalAddress",
@@ -153,7 +169,7 @@ export function organizationLd(origin = SITE.origin) {
     },
     areaServed: { "@type": "AdministrativeArea", name: "대한민국" },
     knowsAbout: ["부동산 경매", "아파트 경매", "권리분석", "경매 교육"],
-    sameAs: [SITE.blog, SITE.klass],
+    sameAs: [SITE.blog, SITE.cafe, SITE.instagram, SITE.klass],
   };
 }
 

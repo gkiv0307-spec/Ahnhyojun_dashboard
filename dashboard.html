@@ -13,14 +13,13 @@
 
 <header>
   <div class="wrap nav">
-    <a class="logo" href="index.html"><img src="assets/logo-dark.png" alt="옆커폰부동산에듀"></a>
+    <a class="logo" href="/"><img src="assets/logo-dark.png" alt="옆커폰부동산에듀"></a>
     <nav class="nav-menu">
-      <a href="index.html">매물정보</a>
-      <a href="about.html">회사소개</a>
-      <a href="courses.html">강의안내</a>
-      <a href="reviews.html">수강생후기</a>
+      <a href="/">홈</a>
+      <a href="/area">지역별 물건</a>
+      <a href="https://blog.naver.com/ykphone_edu" target="_blank" rel="noopener">블로그</a>
     </nav>
-    <a class="btn btn-gold" href="index.html">사이트로</a>
+    <a class="btn btn-gold" href="/">사이트로</a>
   </div>
 </header>
 
@@ -534,17 +533,17 @@ function demoData(days) {
     ],
     landings: [
       { name: "/", sessions: share(0.65) },
-      { name: "/property.html", sessions: share(0.18) },
-      { name: "/courses.html", sessions: share(0.09) },
-      { name: "/reviews.html", sessions: share(0.05) },
-      { name: "/about.html", sessions: share(0.03) },
+      { name: "/property/224356311370", sessions: share(0.18) },
+      { name: "/area/daegu", sessions: share(0.09) },
+      { name: "/area", sessions: share(0.05) },
+      { name: "/area/gyeongbuk", sessions: share(0.03) },
     ],
     pages: [
       { name: "/", pv: Math.round(PV * 0.34), sessions: share(0.55) },
-      { name: "/property.html", pv: Math.round(PV * 0.28), sessions: share(0.41) },
-      { name: "/courses.html", pv: Math.round(PV * 0.14), sessions: share(0.19) },
-      { name: "/reviews.html", pv: Math.round(PV * 0.11), sessions: share(0.15) },
-      { name: "/about.html", pv: Math.round(PV * 0.08), sessions: share(0.1) },
+      { name: "/property/224356311370", pv: Math.round(PV * 0.28), sessions: share(0.41) },
+      { name: "/area/daegu", pv: Math.round(PV * 0.14), sessions: share(0.19) },
+      { name: "/area", pv: Math.round(PV * 0.11), sessions: share(0.15) },
+      { name: "/area/gyeongbuk", pv: Math.round(PV * 0.08), sessions: share(0.1) },
       { name: "/checkout.html", pv: Math.round(PV * 0.05), sessions: share(0.05) },
     ],
     devices: [
@@ -569,12 +568,12 @@ function demoData(days) {
       { source: "kakao", medium: "sms", campaign: "수강생-안내", sessions: share(0.03) },
     ],
     channelLanding: [
-      { channel: "네이버 블로그", landing_path: "/property.html", sessions: share(0.17) },
+      { channel: "네이버 블로그", landing_path: "/property/224356311370", sessions: share(0.17) },
       { channel: "네이버 블로그", landing_path: "/", sessions: share(0.16) },
       { channel: "네이버 검색", landing_path: "/", sessions: share(0.13) },
       { channel: "카카오톡", landing_path: "/", sessions: share(0.09) },
       { channel: "직접 유입", landing_path: "/", sessions: share(0.08) },
-      { channel: "구글 검색", landing_path: "/courses.html", sessions: share(0.04) },
+      { channel: "구글 검색", landing_path: "/area/daegu", sessions: share(0.04) },
     ],
     clicks: [
       { name: "전화상담", clicks: share(0.09), sessions: share(0.07) },
@@ -590,13 +589,13 @@ function demoData(days) {
       { country: "KR", region: "Busan", sessions: share(0.06) },
     ],
     journeys: [
-      { channel: "네이버 블로그", steps: ["/property.html"], more: false, sessions: share(0.14) },
-      { channel: "네이버 블로그", steps: ["/", "/property.html"], more: false, sessions: share(0.11) },
+      { channel: "네이버 블로그", steps: ["/property/224356311370"], more: false, sessions: share(0.14) },
+      { channel: "네이버 블로그", steps: ["/", "/property/224356311370"], more: false, sessions: share(0.11) },
       { channel: "네이버 검색", steps: ["/"], more: false, sessions: share(0.09) },
-      { channel: "카카오톡", steps: ["/", "/property.html", "/courses.html"], more: false, sessions: share(0.06) },
-      { channel: "네이버 검색", steps: ["/", "/courses.html"], more: false, sessions: share(0.05) },
-      { channel: "직접 유입", steps: ["/", "/reviews.html", "/courses.html", "/checkout.html"], more: false, sessions: share(0.04) },
-      { channel: "구글 검색", steps: ["/courses.html"], more: false, sessions: share(0.03) },
+      { channel: "카카오톡", steps: ["/", "/property/224356311370", "/area/daegu"], more: false, sessions: share(0.06) },
+      { channel: "네이버 검색", steps: ["/", "/area/daegu"], more: false, sessions: share(0.05) },
+      { channel: "직접 유입", steps: ["/", "/area", "/area/daegu", "/checkout.html"], more: false, sessions: share(0.04) },
+      { channel: "구글 검색", steps: ["/area/daegu"], more: false, sessions: share(0.03) },
     ],
   };
 }

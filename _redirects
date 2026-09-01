@@ -1,0 +1,5 @@
+# 옛 페이지 → 홈의 해당 섹션으로 (중복 콘텐츠 정리)
+/about.html      /#about       301
+/courses.html    /#courses     301
+/reviews.html    /#reviews     301
+/properties.html /area         301
