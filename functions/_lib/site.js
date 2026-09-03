@@ -20,6 +20,7 @@ export const SITE = {
   blog: "https://blog.naver.com/ykphone_edu",
   cafe: "https://cafe.naver.com/kkkiiimmm",
   instagram: "https://www.instagram.com/ykphone_edu/",
+  kakaoOpen: "https://open.kakao.com/o/s91CvTFf",
   klass: "https://gkinvestment.liveklass.com/classes/253735",
   logo: "/assets/ykphone-logo-horizontal.png",
   ogImage: "/assets/og-cover.png",
@@ -54,8 +55,9 @@ function header() {
   return `<header class="site-header">
   <a class="brand" href="/" aria-label="${esc(SITE.name)} 홈"><img src="${SITE.logo}" alt="${esc(SITE.name)}"></a>
   <nav aria-label="주요 메뉴">
-    <a href="/#properties">전국 물건</a>
     <a href="/area">지역별 물건</a>
+    <a href="/type">유형별 물건</a>
+    <a href="/guide">경매 가이드</a>
     <a href="${SITE.klass}" target="_blank" rel="noreferrer">온라인 강의</a>
     <a href="${SITE.blog}" target="_blank" rel="noreferrer">블로그</a>
     <a href="/#about">대표소개</a>
@@ -88,9 +90,18 @@ function footer() {
     <a href="/#about">대표소개</a>
     <a href="/#reviews">수강·낙찰후기</a>
     <a href="/area">지역별 경매 물건</a>
+    <a href="/type">유형별 경매 물건</a>
+    <a href="/guide">경매 가이드</a>
     <a href="tel:${SITE.telHref}">상담전화</a>
   </div>
 </footer>`;
+}
+
+function floatingConsult() {
+  return `<aside class="floating-consult" aria-label="빠른 상담">
+  <a class="floating-consult-kakao" href="${SITE.kakaoOpen}" target="_blank" rel="noreferrer" aria-label="카카오톡으로 상담하기"><span class="floating-consult-icon">톡</span><span>카톡상담</span></a>
+  <a class="floating-consult-phone" href="tel:${SITE.telHref}" aria-label="전화로 상담하기"><span class="floating-consult-icon">☎</span><span>전화상담</span></a>
+</aside>`;
 }
 
 /**
@@ -141,6 +152,7 @@ ${header()}
 ${body}
 </main>
 ${footer()}
+${floatingConsult()}
 <script defer src="/assets/track.js"></script>
 </body>
 </html>`;

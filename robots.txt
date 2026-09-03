@@ -15,4 +15,67 @@ Disallow: /dashboard
 Disallow: /dashboard.html
 Disallow: /api/
 
+# ── AI 답변엔진(AEO/GEO) ─────────────────────────────
+# ChatGPT·Claude·Perplexity·구글 AI 개요가 이 사이트를 읽고 답변에 인용할 수 있게 허용한다.
+# (막아두면 "대구 경매 학원 어디?" 같은 질문에 우리 사이트가 인용되지 않는다)
+User-agent: GPTBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: CCBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
 Sitemap: https://xn--289av8kwmfs4dv2e.store/sitemap.xml
