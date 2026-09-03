@@ -1,12 +1,15 @@
 /* GET /sitemap.xml — 검색엔진에 "이 사이트에 어떤 페이지가 있는지" 알려주는 목록.
  * 매물이 늘어나면 자동으로 반영되도록 서버에서 그때그때 만든다. */
 import { originOf } from "./_lib/site.js";
-import { getProperties, groupByRegion, MIN_PROPERTIES_PER_REGION } from "./_lib/properties.js";
+import { getProperties, groupByRegion, groupByType, MIN_PROPERTIES_PER_REGION } from "./_lib/properties.js";
+import { GUIDES, GUIDE_UPDATED } from "./_lib/guides.js";
 
 // 홈은 랜딩 한 장에 강의·대표소개·후기가 모두 들어 있어 별도 페이지를 두지 않는다.
 const STATIC_PAGES = [
   { path: "/", priority: "1.0", freq: "daily" },
   { path: "/area", priority: "0.9", freq: "daily" },
+  { path: "/type", priority: "0.8", freq: "daily" },
+  { path: "/guide", priority: "0.8", freq: "weekly" },
 ];
 
 function iso(d) {
@@ -39,6 +42,17 @@ export async function onRequestGet(context) {
     if (g.items.length < MIN_PROPERTIES_PER_REGION) continue;
     const newest = g.items.map((p) => iso(p.pubDate)).filter(Boolean).sort().pop();
     urls.push(urlEntry(`${origin}/area/${g.region.code}`, { lastmod: newest || today, freq: "daily", priority: "0.9" }));
+  }
+
+  for (const g of groupByType(items)) {
+    if (g.items.length < MIN_PROPERTIES_PER_REGION) continue;
+    const newest = g.items.map((p) => iso(p.pubDate)).filter(Boolean).sort().pop();
+    urls.push(urlEntry(`${origin}/type/${g.type.code}`, { lastmod: newest || today, freq: "daily", priority: "0.8" }));
+  }
+
+  // 가이드 글은 물건과 달리 사라지지 않으므로 항상 넣는다.
+  for (const g of GUIDES) {
+    urls.push(urlEntry(`${origin}/guide/${g.slug}`, { lastmod: GUIDE_UPDATED, freq: "monthly", priority: "0.7" }));
   }
 
   for (const p of items) {

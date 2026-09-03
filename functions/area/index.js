@@ -5,7 +5,8 @@
  */
 import { SITE, esc, page, html, originOf, organizationLd, breadcrumbLd } from "../_lib/site.js";
 import { getProperties, groupByRegion, MIN_PROPERTIES_PER_REGION } from "../_lib/properties.js";
-import { ctaSection } from "../_lib/ui.js";
+import { ctaSection, answerBlock, faqSection } from "../_lib/ui.js";
+import { SITE_FAQ, faqLd } from "../_lib/guides.js";
 
 export async function onRequestGet(context) {
   const origin = originOf(context.request);
@@ -49,6 +50,15 @@ export async function onRequestGet(context) {
   </div>
 </section>
 
+${answerBlock(
+  "지역별 부동산 경매 물건은 어디서 확인하나요?",
+  `대법원 법원경매정보에서 관할 법원별로 전체 물건을 볼 수 있습니다. 이 페이지에는 옆커폰부동산에듀가 직접 임장과 권리분석을 거쳐 정리한 물건만 지역별로 모아 두었습니다. ${
+    open.length
+      ? `현재 <b>${open.map((g) => `${esc(g.region.name)} ${g.items.length}건`).join(", ")}</b>이 공개되어 있습니다.`
+      : "물건이 쌓이는 대로 지역 페이지가 열립니다."
+  } 지역 페이지는 해당 지역 물건이 ${MIN_PROPERTIES_PER_REGION}건 이상 모이면 자동으로 열립니다.`
+)}
+
 <section class="pg-section">
   <div class="pg-wrap">
     <div class="pg-kicker">Regions</div>
@@ -72,6 +82,21 @@ export async function onRequestGet(context) {
   </div>
 </section>
 
+<section class="pg-section">
+  <div class="pg-wrap">
+    <div class="pg-kicker">Other ways</div>
+    <h2 class="pg-title">유형별로 <em>보시겠어요?</em></h2>
+    <p class="pg-desc">아파트·상가·토지는 확인할 항목이 완전히 다릅니다.
+    유형별 페이지에는 그 유형에서 사고가 나는 지점을 따로 정리해 두었습니다.</p>
+    <div class="pg-actions">
+      <a class="button button-dark" href="/type">유형별 물건 보기</a>
+      <a class="button button-outline" href="/guide">경매 가이드 보기</a>
+    </div>
+  </div>
+</section>
+
+${faqSection(SITE_FAQ, "경매에 대해 가장 많이 받는 질문")}
+
 ${ctaSection()}`;
 
   return html(
@@ -85,6 +110,7 @@ ${ctaSection()}`;
       jsonLd: [
         organizationLd(origin),
         breadcrumbLd([{ name: "홈", path: "/" }, { name: "지역별 물건", path: "/area" }], origin),
+        faqLd(SITE_FAQ),
       ],
       body,
     }),

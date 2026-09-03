@@ -11,7 +11,7 @@ const AUCTION_KEYWORDS = ["경매", "낙찰", "감정가", "최저가", "물건"
 const UA = "Mozilla/5.0 (compatible; PropertyListBot/1.0)";
 // 파싱 규칙을 바꾸면 이 번호를 올린다. 그래야 엣지 캐시에 남아 있던 예전 결과가 버려지고
 // 새 코드로 다시 분석한다. (안 올리면 배포해도 최대 15분간 예전 데이터가 그대로 나온다.)
-const PARSER_VERSION = 2;
+const PARSER_VERSION = 3;
 const CACHE_KEY = `https://cache.internal/properties-v${PARSER_VERSION}`;
 const CACHE_TTL = 900; // 15분
 
@@ -147,11 +147,31 @@ function detectSubRegion(text, region) {
   return hit || "";
 }
 
-function guessCategory(hashtags, title) {
+/* ── 물건 유형 ────────────────────────────────────────
+ * "아파트경매", "상가경매" 처럼 유형 단독 검색어와, /type/{유형} 페이지를 위해 필요하다.
+ * 앞에 있는 것부터 먼저 맞춰보므로, 더 구체적인 말(다가구·오피스텔)을 위에 둔다.
+ * (예: "다가구주택" 은 "주택" 보다 먼저 잡혀야 한다) */
+export const TYPES = [
+  { code: "apartment", name: "아파트", words: ["아파트"] },
+  { code: "officetel", name: "오피스텔", words: ["오피스텔"] },
+  { code: "villa", name: "빌라", words: ["빌라", "연립", "다세대"] },
+  { code: "multi", name: "다가구", words: ["다가구"] },
+  { code: "store", name: "상가", words: ["상가", "근린생활", "점포"] },
+  { code: "house", name: "주택", words: ["단독주택", "주택"] },
+  { code: "land", name: "토지", words: ["토지", "임야", "대지", "농지", "전답"] },
+  { code: "factory", name: "공장", words: ["공장", "창고"] },
+  { code: "lodging", name: "숙박시설", words: ["모텔", "호텔", "펜션"] },
+];
+
+const TYPE_BY_CODE = new Map(TYPES.map((t) => [t.code, t]));
+export const typeByCode = (code) => TYPE_BY_CODE.get(String(code || "").toLowerCase()) || null;
+
+function detectType(hashtags, title) {
   const all = hashtags.join(" ") + " " + title;
-  const kinds = ["아파트", "오피스텔", "빌라", "상가", "주택", "토지", "모텔", "공장", "다가구"];
-  const found = kinds.find((k) => all.includes(k));
-  return found ? found + " 경매" : "경매매물";
+  for (const t of TYPES) {
+    if (t.words.some((w) => all.includes(w))) return t;
+  }
+  return null;
 }
 
 async function fetchFullPost(link) {
@@ -208,7 +228,7 @@ async function toProperty(itemXml) {
   // (예: 경북 경산 물건에 #대구경매) 주소보다 먼저 보면 지역이 틀어진다.
   const region = detectRegion(address) || detectRegion([hashtags.join(" "), title].join(" "));
   const sub = detectSubRegion([address, title].join(" "), region);
-  const category = guessCategory(hashtags, title);
+  const type = detectType(hashtags, title);
 
   return {
     id: idMatch ? idMatch[1] : link,
@@ -221,7 +241,9 @@ async function toProperty(itemXml) {
     region: region ? region.name : "",
     regionFull: region ? region.full : "",
     subRegion: sub,
-    category,
+    typeCode: type ? type.code : "",
+    typeName: type ? type.name : "",
+    category: type ? type.name + " 경매" : "경매매물",
     address,
     appraisal,
     minBid,
@@ -292,6 +314,20 @@ export function groupByRegion(items) {
   return [...map.entries()]
     .map(([code, list]) => ({ region: regionByCode(code), items: list }))
     .filter((g) => g.region)
+    .sort((a, b) => b.items.length - a.items.length);
+}
+
+/** 유형별 매물 묶음. 매물이 많은 유형 순. */
+export function groupByType(items) {
+  const map = new Map();
+  for (const p of items) {
+    if (!p.typeCode) continue;
+    if (!map.has(p.typeCode)) map.set(p.typeCode, []);
+    map.get(p.typeCode).push(p);
+  }
+  return [...map.entries()]
+    .map(([code, list]) => ({ type: typeByCode(code), items: list }))
+    .filter((g) => g.type)
     .sort((a, b) => b.items.length - a.items.length);
 }
 
