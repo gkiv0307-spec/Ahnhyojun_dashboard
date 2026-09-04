@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>예약 관리 | 옆커폰 숙박 예약관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/gate.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('requests', '예약 관리', '전체 숙박 예약 신청 목록');
+  var today = STAY.ymd(new Date());
+  var P = new URLSearchParams(location.search);
+
+  /* 대시보드 "내 할일" 진입용 프리셋 */
+  var TODO_FILTERS = {
+    '접수해야 할 신규 신청': function(b){ return b.status==='NEW'; },
+    '검토·승인요청 필요':   function(b){ return ['RECEIVED','REVIEWING'].indexOf(b.status)>=0; },
+    '숙소 예약 진행 필요':  function(b){ return ['APPROVED','BOOKING'].indexOf(b.status)>=0; },
+    '오늘 체크인':          function(b){ return b.checkIn===today && ['BOOKED','UPCOMING'].indexOf(b.status)>=0; },
+    '오늘 체크아웃':        function(b){ return b.checkOut===today; },
+    '이용완료 처리 필요':   function(b){ return b.status==='UPCOMING' && b.checkOut < today; },
+    '신청자 수정·취소 요청':function(b){ return (b.changeRequest && !b.changeRequest.handled) || (b.cancelRequest && !b.cancelRequest.handled); },
+    '승인 대기':            function(b){ return b.status==='APPROVAL_PENDING'; },
+    '접수 대기 신규 신청':  function(b){ return b.status==='NEW'; },
+    '정산 필요':            function(b){ return ['SETTLE_WAIT','SETTLING'].indexOf(b.status)>=0; },
+    '정산대기 (결제확인 필요)': function(b){ return b.status==='SETTLE_WAIT'; },
+    '정산중 (증빙 확인 필요)':  function(b){ return b.status==='SETTLING'; },
+    '반려된 내 신청':       function(b){ return b.status==='REJECTED' && b.applicantId===user.id; },
+    '진행 중인 내 신청':    function(b){ return b.applicantId===user.id && ['NEW','RECEIVED','REVIEWING','APPROVAL_PENDING','APPROVED','BOOKING'].indexOf(b.status)>=0; },
+    '예약 확정 · 이용예정': function(b){ return b.applicantId===user.id && ['BOOKED','UPCOMING'].indexOf(b.status)>=0; },
+    '내가 승인한 진행 건':  function(b){ return b.approval && b.approval.approverId===user.id && ['APPROVED','BOOKING','BOOKED','UPCOMING'].indexOf(b.status)>=0; }
+  };
+
+  var st = {
+    q: P.get('q') || '',
+    from: P.get('from') || '', to: P.get('to') || '',
+    branch: P.get('branch') || '', applicant: P.get('applicant') || '',
+    lodging: P.get('lodging') || '', status: P.get('status') || '',
+    assignee: P.get('assignee') || '', pay: P.get('pay') || '',
+    ci: P.get('ci') || '', co: P.get('co') || '', month: P.get('month') || '',
+    todo: P.get('todo') || '',
+    sort: 'requestedAt', dir: -1, page: 1, size: 20
+  };
+
+  var scopeNote = user.role === 'applicant'
+    ? '<div class="note info" style="margin-bottom:14px">🔒 일반 신청자 권한입니다. <b>본인이 신청한 건과 ' + UI.esc(user.branch) + ' 소속 건</b>만 표시됩니다.</div>' : '';
+
+  root.innerHTML = scopeNote +
+   '<div class="pagehead"><div><h2>예약 관리</h2><p id="cntline"></p></div>' +
+     '<div class="sp"></div><div class="btnrow">' +
+       '<button class="btn" id="csv">CSV 내보내기</button>' +
+       '<a class="btn btn-gold" href="new.html">＋ 신규 예약 신청</a></div></div>' +
+
+   '<div class="card"><div class="card-b">' +
+     '<div class="filterbar">' +
+       '<div class="field"><label>통합검색</label><input class="input" id="f_q" placeholder="예약번호·신청자·숙소·목적" value="' + UI.esc(st.q) + '"></div>' +
+       '<div class="field"><label>신청 기간 (부터)</label><input class="input" type="date" id="f_from" value="' + st.from + '"></div>' +
+       '<div class="field"><label>신청 기간 (까지)</label><input class="input" type="date" id="f_to" value="' + st.to + '"></div>' +
+       '<div class="field"><label>지점</label><select class="select" id="f_branch"><option value="">전체</option>' +
+         branchOptions().map(function(b){ return '<option' + (b===st.branch?' selected':'') + '>' + UI.esc(b) + '</option>'; }).join('') + '</select></div>' +
+       '<div class="field"><label>신청자</label><select class="select" id="f_applicant"><option value="">전체</option>' +
+         Store.users().map(function(u){ return '<option value="' + u.id + '"' + (u.id===st.applicant?' selected':'') + '>' + UI.esc(u.name) + '</option>'; }).join('') + '</select></div>' +
+       '<div class="field"><label>숙소</label><select class="select" id="f_lodging"><option value="">전체</option>' +
+         Store.lodgings().map(function(l){ return '<option value="' + l.id + '"' + (l.id===st.lodging?' selected':'') + '>' + UI.esc(l.name) + '</option>'; }).join('') + '</select></div>' +
+       '<div class="field"><label>예약상태</label><select class="select" id="f_status"><option value="">전체</option>' +
+         STAY.STATUS_ORDER.map(function(k){ return '<option value="' + k + '"' + (k===st.status?' selected':'') + '>' + STAY.STATUS[k].label + '</option>'; }).join('') + '</select></div>' +
+       '<div class="field"><label>담당자</label><select class="select" id="f_assignee"><option value="">전체</option><option value="__none"' + (st.assignee==='__none'?' selected':'') + '>미지정</option>' +
+         Store.users().filter(function(u){ return u.role==='booker'||u.role==='admin'; }).map(function(u){
+           return '<option value="' + u.id + '"' + (u.id===st.assignee?' selected':'') + '>' + UI.esc(u.name) + '</option>'; }).join('') + '</select></div>' +
+       '<div class="field"><label>결제상태</label><select class="select" id="f_pay"><option value="">전체</option>' +
+         Object.keys(STAY.PAY_STATUS).map(function(k){ return '<option value="' + k + '"' + (k===st.pay?' selected':'') + '>' + STAY.PAY_STATUS[k] + '</option>'; }).join('') + '</select></div>' +
+       '<div class="field"><label>체크인 날짜</label><input class="input" type="date" id="f_ci" value="' + st.ci + '"></div>' +
+       '<div class="field"><label>체크아웃 날짜</label><input class="input" type="date" id="f_co" value="' + st.co + '"></div>' +
+       '<div class="field"><label>&nbsp;</label><div class="btnrow"><button class="btn btn-primary" id="apply">검색</button>' +
+         '<button class="btn" id="reset">초기화</button></div></div>' +
+     '</div>' +
+     '<div class="hr"></div>' +
+     '<div class="chips" id="quick"></div>' +
+   '</div></div>' +
+
+   '<div class="card mt"><div class="card-b tight"><div class="tablewrap"><table class="tbl sticky-ends" id="tbl">' +
+     '<thead><tr>' +
+       '<th class="sortable" data-s="code">예약번호</th>' +
+       '<th class="sortable" data-s="requestedAt">신청일</th>' +
+       '<th>신청자</th><th class="sortable" data-s="branch">지점</th>' +
+       '<th>이용 숙소</th>' +
+       '<th class="sortable" data-s="checkIn">체크인</th>' +
+       '<th class="sortable" data-s="checkOut">체크아웃</th>' +
+       '<th class="num">인원/객실</th>' +
+       '<th class="sortable num" data-s="amount">예약금액</th>' +
+       '<th>담당자</th><th class="sortable" data-s="status">현재상태</th><th>결제상태</th>' +
+       '<th>숙소 예약번호</th>' +
+       '<th class="sortable" data-s="updatedAt">최종수정</th>' +
+       '<th></th>' +
+     '</tr></thead><tbody></tbody></table></div>' +
+     '<div class="pager" id="pager"></div>' +
+   '</div></div>';
+
+  /* 지점 목록이 확정되기 전이므로 실제 신청에 쓰인 지점명까지 필터에 넣는다 */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
+  function amount(b){ return (b.reservation && b.reservation.amount) || b.estimatedCost || 0; }
+  /* 7일 이내만 상대시간 표기 (그 이상은 날짜와 중복되므로 생략) */
+  function relSub(at){
+    var rel = UI.ago(at);
+    return (rel && rel !== UI.dateFull(at)) ? '<div class="sub">' + rel + '</div>' : '';
+  }
+
+  function filtered(){
+    var rows = Store.visibleBookings(user);
+    if (st.todo && TODO_FILTERS[st.todo]) rows = rows.filter(TODO_FILTERS[st.todo]);
+    if (st.q) {
+      var q = st.q.toLowerCase();
+      rows = rows.filter(function(b){
+        return [b.code, b.applicantName, b.lodgingName, b.purpose, b.branch, b.guestName,
+                (b.reservation||{}).confirmNo, b.assigneeName]
+          .some(function(v){ return v && String(v).toLowerCase().indexOf(q) >= 0; });
+      });
+    }
+    if (st.from)   rows = rows.filter(function(b){ return STAY.ymd(b.requestedAt) >= st.from; });
+    if (st.to)     rows = rows.filter(function(b){ return STAY.ymd(b.requestedAt) <= st.to; });
+    if (st.month)  rows = rows.filter(function(b){ return STAY.ymd(b.requestedAt).slice(0,7) === st.month; });
+    if (st.branch) rows = rows.filter(function(b){ return b.branch === st.branch; });
+    if (st.applicant) rows = rows.filter(function(b){ return b.applicantId === st.applicant; });
+    if (st.lodging)   rows = rows.filter(function(b){ return b.lodgingId === st.lodging; });
+    if (st.status)    rows = rows.filter(function(b){ return b.status === st.status; });
+    if (st.assignee)  rows = rows.filter(function(b){ return st.assignee==='__none' ? !b.assigneeId : b.assigneeId === st.assignee; });
+    if (st.pay)       rows = rows.filter(function(b){ return (b.payment||{}).status === st.pay; });
+    if (st.ci)        rows = rows.filter(function(b){ return b.checkIn === st.ci; });
+    if (st.co)        rows = rows.filter(function(b){ return b.checkOut === st.co; });
+    rows.sort(function(a,b){
+      var x = st.sort === 'amount' ? amount(a) : a[st.sort];
+      var y = st.sort === 'amount' ? amount(b) : b[st.sort];
+      if (st.sort === 'status') { x = STAY.STATUS[a.status].no; y = STAY.STATUS[b.status].no; }
+      if (x === y) return 0;
+      return (x > y ? 1 : -1) * st.dir;
+    });
+    return rows;
+  }
+
+  /* 빠른 필터 칩 */
+  function renderQuick(){
+    var all = Store.visibleBookings(user);
+    var defs = [
+      { k:'', label:'전체' },
+      { k:'NEW', label:'신규신청' },
+      { k:'APPROVAL_PENDING', label:'승인대기' },
+      { k:'BOOKING', label:'예약진행중' },
+      { k:'BOOKED', label:'예약완료' },
+      { k:'UPCOMING', label:'이용예정' },
+      { k:'SETTLE_WAIT', label:'정산대기' },
+      { k:'SETTLED', label:'정산완료' },
+      { k:'CANCELED', label:'취소' },
+      { k:'REJECTED', label:'반려' }
+    ];
+    UI.qs('#quick').innerHTML = defs.map(function(d){
+      var n = d.k ? all.filter(function(b){ return b.status===d.k; }).length : all.length;
+      return '<button class="chip' + (st.status===d.k && !st.todo ?' on':'') + '" data-st="' + d.k + '">' +
+        d.label + '<span class="n">' + n + '</span></button>';
+    }).join('') +
+    (st.todo ? '<button class="chip on" data-clear-todo="1">🎯 ' + UI.esc(st.todo) + ' ✕</button>' : '');
+  }
+
+  function render(){
+    var rows = filtered();
+    var totalAmt = rows.reduce(function(s,b){ return s + ((b.status==='CANCELED'||b.status==='REJECTED')?0:amount(b)); }, 0);
+    UI.qs('#cntline').innerHTML = '검색결과 <b>' + rows.length + '</b>건 · 금액합계 <b>' + STAY.won(totalAmt) +
+      '</b> <span class="muted">(취소·반려 제외)</span>';
+    var pages = Math.max(1, Math.ceil(rows.length / st.size));
+    if (st.page > pages) st.page = pages;
+    var page = rows.slice((st.page-1)*st.size, st.page*st.size);
+    var tb = UI.qs('#tbl tbody');
+
+    if (!rows.length) {
+      tb.innerHTML = '<tr><td colspan="15">' + UI.empty('조건에 맞는 예약이 없습니다. 필터를 조정해보세요.') + '</td></tr>';
+    } else {
+      tb.innerHTML = page.map(function(b){
+        var closed = ['CANCELED','REJECTED'].indexOf(b.status) >= 0;
+        var next = nextAction(b);
+        var alert = (b.changeRequest && !b.changeRequest.handled) || (b.cancelRequest && !b.cancelRequest.handled);
+        return '<tr data-b="' + b.id + '" class="' + (closed?'dim':'') + '">' +
+          '<td data-l="예약번호" class="code">' + UI.esc(b.code) + (alert?' <span class="tag" style="color:var(--red);border-color:#f3c9c6">요청</span>':'') + '</td>' +
+          '<td data-l="신청일" class="m-hide">' + UI.dateFull(b.requestedAt) + relSub(b.requestedAt) + '</td>' +
+          '<td data-l="신청자">' + UI.esc(b.applicantName) + '<div class="sub">' + UI.esc(b.dept) + '</div></td>' +
+          '<td data-l="지점">' + UI.esc(b.branch) + '</td>' +
+          '<td data-l="숙소" class="wrapcell">' + UI.esc(b.lodgingName) +
+            '<div class="sub">' + UI.esc(STAY.LODGING_TYPE[b.lodgingType]) + ' · ' + UI.esc(b.purpose||'') + '</div></td>' +
+          '<td data-l="일정">' + UI.dateFull(b.checkIn) + '<div class="sub">~' + UI.dateFull(b.checkOut) + ' · ' + b.nights + '박' +
+            (b.checkIn===today?' <b style="color:var(--green)">오늘 체크인</b>':'') + '</div></td>' +
+          '<td data-l="체크아웃" class="m-hide">' + UI.dateFull(b.checkOut) + '<div class="sub">' + b.nights + '박</div></td>' +
+          '<td data-l="인원/객실" class="num">' + b.guests + '명<div class="sub">' + b.rooms + '실</div></td>' +
+          '<td data-l="예약금액" class="num">' + STAY.won(amount(b)) +
+            '<div class="sub">' + UI.esc(STAY.COST_BEARER[b.costBearer]||'') + '</div></td>' +
+          '<td data-l="담당자" class="m-hide">' + (b.assigneeName ? UI.esc(b.assigneeName) : '<span class="muted">미지정</span>') + '</td>' +
+          '<td data-l="상태">' + UI.badge(b.status) + '</td>' +
+          '<td data-l="결제상태">' + UI.payBadge(b.payment) + '</td>' +
+          '<td data-l="숙소 예약번호" class="m-hide">' + ((b.reservation&&b.reservation.confirmNo) ? UI.esc(b.reservation.confirmNo) : '<span class="muted">-</span>') + '</td>' +
+          '<td data-l="최종수정" class="m-hide">' + UI.dtFull(b.updatedAt) + '</td>' +
+          '<td class="no-print">' + (next ? '<button class="btn btn-sm btn-gold" data-go="' + b.id + '" data-to="' + next.to + '">' +
+            UI.esc(next.action) + '</button>' : '') + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    /* 페이저 */
+    var pg = '';
+    pg += '<button ' + (st.page<=1?'disabled':'') + ' data-p="' + (st.page-1) + '">‹</button>';
+    var s = Math.max(1, st.page-2), e = Math.min(pages, s+4); s = Math.max(1, e-4);
+    for (var i=s;i<=e;i++) pg += '<button class="' + (i===st.page?'on':'') + '" data-p="' + i + '">' + i + '</button>';
+    pg += '<button ' + (st.page>=pages?'disabled':'') + ' data-p="' + (st.page+1) + '">›</button>';
+    pg += '<span class="muted" style="margin-left:10px;font-size:12px">' + st.page + ' / ' + pages + ' 페이지</span>';
+    UI.qs('#pager').innerHTML = rows.length > st.size ? pg : '';
+    renderQuick();
+  }
+
+  /* 목록에서 바로 처리 가능한 다음 액션 (클릭 최소화) */
+  function nextAction(b){
+    var opts = STAY.FLOW[b.status] || [];
+    var main = opts.filter(function(o){ return o.to !== 'CANCELED' && o.to !== 'REJECTED'; })[0];
+    if (!main) return null;
+    if (main.roles.indexOf(user.role) < 0) return null;
+    return main;
+  }
+
+  UI.on(root, 'click', 'tr[data-b]', function(e){
+    if (e.target.closest('[data-go]')) return;
+    location.href = 'detail.html?id=' + this.dataset.b;
+  });
+  UI.on(root, 'click', '[data-go]', function(e){
+    e.stopPropagation();
+    var id = this.dataset.go, to = this.dataset.to;
+    var b = Store.booking(id);
+    var chk = Store.canTransition(b, to, user);
+    if (!chk.ok) {
+      UI.confirm('추가 입력이 필요합니다', chk.msg + '\n\n상세 화면에서 정보를 입력하시겠습니까?', '상세로 이동')
+        .then(function(ok){ if (ok) location.href = 'detail.html?id=' + id; });
+      return;
+    }
+    UI.confirm(chk.opt.action, b.code + ' 건을 「' + STAY.STATUS[to].label + '」 상태로 변경합니다.\n계속하시겠습니까?', chk.opt.action)
+      .then(function(ok){
+        if (!ok) return;
+        var r = Store.transition(id, to, user);
+        if (r.ok) { UI.toast(chk.opt.action + ' 처리했습니다.', 'ok'); render(); }
+        else UI.toast(r.msg, 'bad');
+      });
+  });
+  UI.on(root, 'click', '.chip[data-st]', function(){ st.status = this.dataset.st; st.todo=''; st.page=1; render(); });
+  UI.on(root, 'click', '[data-clear-todo]', function(){ st.todo=''; st.page=1; render(); });
+  UI.on(root, 'click', '#pager button[data-p]', function(){ st.page = Number(this.dataset.p); render(); window.scrollTo(0,0); });
+  UI.on(root, 'click', 'th.sortable', function(){
+    var s = this.dataset.s;
+    if (st.sort === s) st.dir *= -1; else { st.sort = s; st.dir = -1; }
+    render();
+  });
+  UI.qs('#apply').onclick = function(){
+    st.q = UI.qs('#f_q').value.trim(); st.from = UI.qs('#f_from').value; st.to = UI.qs('#f_to').value;
+    st.branch = UI.qs('#f_branch').value; st.applicant = UI.qs('#f_applicant').value;
+    st.lodging = UI.qs('#f_lodging').value; st.status = UI.qs('#f_status').value;
+    st.assignee = UI.qs('#f_assignee').value; st.pay = UI.qs('#f_pay').value;
+    st.ci = UI.qs('#f_ci').value; st.co = UI.qs('#f_co').value;
+    st.month = ''; st.page = 1; render();
+  };
+  UI.qs('#f_q').addEventListener('keydown', function(e){ if (e.key==='Enter') UI.qs('#apply').click(); });
+  UI.qs('#reset').onclick = function(){ location.href = 'requests.html'; };
+  UI.qs('#csv').onclick = function(){
+    var rows = filtered();
+    var head = ['예약번호','신청일','신청자','지점','부서','연락처','이용목적','숙박유형','숙소','체크인','체크아웃','숙박일수',
+                '성인','아동','인원','객실수','예약자명','예약자연락처','예상비용','예약금액','비용구분','담당자','상태',
+                '결제상태','결제방법','실결제금액','숙소예약번호','최종수정'];
+    var body = rows.map(function(b){
+      return [b.code, UI.dtFull(b.requestedAt), b.applicantName, b.branch, b.dept, b.phone, b.purpose,
+              STAY.LODGING_TYPE[b.lodgingType], b.lodgingName, b.checkIn, b.checkOut, b.nights,
+              b.adults, b.children, b.guests, b.rooms, b.guestName, b.guestPhone,
+              b.estimatedCost, amount(b), STAY.COST_BEARER[b.costBearer], b.assigneeName||'',
+              STAY.STATUS[b.status].label, STAY.PAY_STATUS[(b.payment||{}).status]||'',
+              (b.payment||{}).method||'', (b.payment||{}).paidAmount||0,
+              (b.reservation||{}).confirmNo||'', UI.dtFull(b.updatedAt)];
+    });
+    UI.download('숙박예약_' + today + '.csv', UI.toCsv([head].concat(body)));
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

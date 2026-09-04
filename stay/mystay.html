@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>내 예약 조회 | 옆커폰 숙박 예약</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/gate.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var root = UI.shell('mystay', '내 예약 조회', '예약번호와 신청자명으로 진행상황을 확인합니다');
+  var ct = Store.settings().contact || { team:'부동산팀', name:'', title:'', phone:'' };
+  var RECENT_KEY = 'ykp_stay_recent';
+  var found = null;
+
+  /* 조회에 성공한 예약번호만 이 브라우저에 기억한다(다음 방문 시 재입력 줄이기) */
+  function recent(){
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch(e){ return []; }
+  }
+  function remember(code, name){
+    try {
+      var list = recent().filter(function(r){ return r.code !== code; });
+      list.unshift({ code:code, name:name });
+      localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 5)));
+    } catch(e){}
+  }
+
+  /* 예약번호는 대소문자·공백·접두어 유무를 가리지 않고 찾는다 */
+  function normalize(code){
+    return String(code || '').toUpperCase().replace(/\s/g, '');
+  }
+  function lookup(code, name){
+    var c = normalize(code);
+    var n = String(name || '').trim();
+    if (!c || !n) return { err:'예약번호와 신청자명을 모두 입력해주세요.' };
+    var hit = Store.bookings().filter(function(b){
+      var bc = normalize(b.code);
+      return bc === c || bc.slice(-4) === c;   /* 뒤 4자리만 입력해도 찾도록 */
+    });
+    if (!hit.length) return { err:'해당 예약번호를 찾을 수 없습니다. 번호를 다시 확인해주세요.' };
+    var mine = hit.filter(function(b){ return b.applicantName === n || b.guestName === n; });
+    if (!mine.length) return { err:'예약번호는 있으나 신청자명이 일치하지 않습니다. 신청하실 때 입력한 이름으로 조회해주세요.' };
+    return { booking: mine[0] };
+  }
+
+  function render(msg){
+    var r = recent();
+    root.innerHTML =
+     '<div class="pagehead"><div><h2>내 예약 진행상황 조회</h2>' +
+       '<p>신청할 때 발급받은 <b>예약번호</b>와 <b>신청자명</b>을 입력하면 지금 어느 단계인지 확인할 수 있습니다.</p></div></div>' +
+
+     '<div class="card"><div class="card-b">' +
+       '<div class="frow f2" style="align-items:end">' +
+         '<div class="field" style="margin:0"><label>예약번호<span class="req">*</span></label>' +
+           '<input class="input" id="q_code" placeholder="STAY-2026-0001 (뒤 4자리만 입력해도 됩니다)" autocomplete="off"></div>' +
+         '<div class="field" style="margin:0"><label>신청자명<span class="req">*</span></label>' +
+           '<div class="btnrow" style="flex-wrap:nowrap">' +
+             '<input class="input" id="q_name" placeholder="예) 김도현" autocomplete="off">' +
+             '<button class="btn btn-gold" id="q_go" style="flex:none">조회</button></div></div>' +
+       '</div>' +
+       (r.length ? '<div class="hr"></div><div class="chips">' +
+          '<span class="muted" style="font-size:12px;font-weight:700;align-self:center">최근 조회</span>' +
+          r.map(function(x){
+            return '<button class="chip" data-recent="' + UI.esc(x.code) + '" data-name="' + UI.esc(x.name) + '">' +
+              UI.esc(x.code) + '</button>';
+          }).join('') + '</div>' : '') +
+     '</div></div>' +
+
+     (msg ? '<div class="note bad mt">' + UI.esc(msg) + '</div>' : '') +
+     '<div id="result" class="mt"></div>' +
+
+     (found ? '' :
+       '<div class="note info mt">예약번호를 잊으셨나요? 신청 직후 화면과 담당자 안내 메시지에 <b>STAY-연도-일련번호</b> 형식으로 안내됩니다. ' +
+       '찾기 어려우시면 ' + UI.esc(ct.team) + ' ' + UI.esc(ct.phone) + ' 로 문의해주세요.</div>');
+
+    if (found) drawResult(found);
+
+    UI.qs('#q_go').onclick = doLookup;
+    ['#q_code','#q_name'].forEach(function(sel){
+      UI.qs(sel).addEventListener('keydown', function(e){ if (e.key === 'Enter') doLookup(); });
+    });
+  }
+
+  function doLookup(){
+    var code = UI.qs('#q_code').value, name = UI.qs('#q_name').value;
+    var res = lookup(code, name);
+    if (res.err) { found = null; render(res.err); UI.qs('#q_code').value = code; UI.qs('#q_name').value = name; return; }
+    found = res.booking;
+    remember(found.code, name.trim());
+    render();
+    UI.qs('#q_code').value = found.code; UI.qs('#q_name').value = name.trim();
+  }
+
+  /* ---------------- 결과 ---------------- */
+  function drawResult(b){
+    var logs = Store.bookingLogs(b.id);
+    var lo = b.lodgingId ? Store.lodging(b.lodgingId) : null;
+    var r = b.reservation || {};
+    var confirmed = ['BOOKED','UPCOMING','USED','SETTLE_WAIT','SETTLING','SETTLED'].indexOf(b.status) >= 0;
+    var closed = ['CANCELED','REJECTED'].indexOf(b.status) >= 0;
+
+    /* 신청자에게는 처리 이력 중 '무슨 일이 있었는지'만 보여준다(내부 메모는 제외) */
+    var visible = logs.filter(function(l){ return l.action !== '메모 작성'; });
+
+    function dr(k, v){ return '<div class="dr"><dt>' + k + '</dt><dd>' + v + '</dd></div>'; }
+
+    UI.qs('#result').innerHTML =
+     '<div class="card"><div class="card-h">' +
+       '<h3>' + UI.esc(b.code) + '</h3>' + UI.badge(b.status) +
+       '<span class="sp"></span><span class="sub">최종 변경 ' + UI.dtFull(b.updatedAt) + '</span></div>' +
+      '<div class="card-b">' + UI.steps(b) + '</div>' +
+
+      '<div class="card-b" style="border-top:1px solid var(--line-2)">' +
+        statusMessage(b) +
+        '<dl class="dl mt">' +
+          dr('이용 숙소', UI.esc(b.lodgingName) + (lo ? ' <span class="tag ' + (lo.ownership==='DIRECT'?'direct':'partner') + '">' +
+              UI.esc(STAY.OWNERSHIP[lo.ownership]) + '</span>' : '')) +
+          dr('이용 목적', UI.esc(b.purpose)) +
+          dr('체크인', UI.dateFull(b.checkIn) + ' ' + UI.dateK(b.checkIn) + (lo ? ' <span class="muted">' + UI.esc(lo.checkInTime) + '~</span>' : '')) +
+          dr('체크아웃', UI.dateFull(b.checkOut) + ' ' + UI.dateK(b.checkOut) + (lo ? ' <span class="muted">~' + UI.esc(lo.checkOutTime) + '</span>' : '')) +
+          dr('숙박일수', '<b>' + b.nights + '박 ' + (b.nights+1) + '일</b>') +
+          dr('인원 / 객실', b.guests + '명 (성인 ' + b.adults + ' / 아동 ' + b.children + ') · ' + b.rooms + '실') +
+          dr('신청자', UI.esc(b.applicantName) + ' <span class="muted">' + UI.esc(b.branch) + '</span>') +
+          dr('예약자', UI.esc(b.guestName) + ' <span class="muted">' + UI.esc(b.guestPhone) + '</span>') +
+          dr('예상 비용', STAY.won(b.estimatedCost) + ' <span class="muted">(' + UI.esc(STAY.COST_BEARER[b.costBearer]) + ')</span>') +
+          dr('신청일', UI.dtFull(b.requestedAt)) +
+        '</dl>' +
+        (b.specialRequest ? '<div class="hr"></div><div class="muted" style="font-size:12.5px;font-weight:800">특별 요청사항</div>' +
+          '<div style="margin-top:4px">' + UI.nl2br(b.specialRequest) + '</div>' : '') +
+      '</div>' +
+
+      (confirmed ? '<div class="card-b" style="border-top:1px solid var(--line-2);background:#fbfef9">' +
+        '<div class="muted" style="font-size:12.5px;font-weight:800;margin-bottom:8px">🏨 예약 확정정보 — 체크인 시 아래 번호를 말씀하세요</div>' +
+        '<dl class="dl">' +
+          dr('숙소 예약번호', '<b style="font-size:15px">' + UI.esc(r.confirmNo || '-') + '</b>') +
+          dr('객실 정보', UI.esc(r.roomInfo || '-')) +
+          (lo && lo.managerPhone ? dr('숙소 연락처', UI.esc(lo.managerPhone)) : '') +
+          (lo && lo.address ? dr('주소', UI.esc(lo.address)) : '') +
+          dr('문의', UI.esc(ct.team) + ' <a href="tel:' + UI.esc(ct.phone) + '" style="text-decoration:underline">' +
+             UI.esc(ct.phone) + '</a>') +
+        '</dl>' +
+        (lo && lo.caution ? '<div class="note warn" style="margin-top:10px">⚠ ' + UI.esc(lo.caution) + '</div>' : '') +
+        (lo && lo.cancelPolicy ? '<div class="note mt" style="margin-top:8px">취소규정: ' + UI.esc(lo.cancelPolicy) + '</div>' : '') +
+      '</div>' : '') +
+
+      (b.status === 'REJECTED' && b.approval && b.approval.opinion
+        ? '<div class="card-b" style="border-top:1px solid var(--line-2)">' +
+          '<div class="note bad" style="margin:0">🚫 <b>반려 사유</b><br>' + UI.nl2br(b.approval.opinion) + '</div></div>' : '') +
+
+      ((b.changeRequest && !b.changeRequest.handled) || (b.cancelRequest && !b.cancelRequest.handled)
+        ? '<div class="card-b" style="border-top:1px solid var(--line-2)">' +
+          '<div class="note warn" style="margin:0">✏️ 요청하신 ' +
+          ((b.cancelRequest && !b.cancelRequest.handled) ? '취소' : '수정') +
+          ' 건을 담당자가 확인하고 있습니다.</div></div>' : '') +
+
+      (closed ? '' :
+        '<div class="card-b no-print" style="border-top:1px solid var(--line-2)">' +
+          '<div class="btnrow"><button class="btn" id="reqChange">수정 요청</button>' +
+          '<button class="btn btn-danger" id="reqCancel">취소 요청</button>' +
+          '<span class="muted" style="font-size:12px;align-self:center">전화하지 마시고 여기로 요청하시면 기록이 남습니다.</span></div>' +
+        '</div>') +
+     '</div>' +
+
+     '<div class="card mt"><div class="card-h"><h3>🕒 진행 이력</h3><span class="sp"></span>' +
+       '<span class="sub">' + visible.length + '건</span></div>' +
+      '<div class="card-b"><div class="timeline">' +
+        visible.map(function(l, i){
+          var isLast = i === visible.length - 1;
+          var bad = l.to === 'CANCELED' || l.to === 'REJECTED';
+          return '<div class="tl ' + (bad ? 'bad' : (isLast && !closed ? 'now' : 'done')) + '">' +
+            '<div class="td">' + UI.dtFull(l.at) + '</div>' +
+            '<div class="tt">' + UI.esc(l.action) +
+              (l.to ? ' <span class="badge b-' + l.to + '" style="font-size:10.5px"><i class="d"></i>' + STAY.STATUS[l.to].label + '</span>' : '') + '</div>' +
+            '<div class="tm">' + UI.esc(l.userName) + ' <span class="muted">' + UI.esc(STAY.ROLES[l.role].short) + '</span>' +
+            (l.memo ? '<br>' + UI.nl2br(l.memo) : '') + '</div></div>';
+        }).join('') +
+      '</div></div></div>';
+
+    var rc = UI.qs('#reqChange');
+    if (rc) rc.onclick = function(){
+      UI.prompt('예약 수정 요청', '어떤 내용을 수정하고 싶으신가요?', { required:true, okLabel:'요청 보내기',
+        placeholder:'예) 체크인을 하루 늦춰주세요 (8/21 → 8/22). 인원도 2명 추가됩니다.' }).then(function(v){
+        if (v == null) return;
+        Store.requestChange(b.id, 'change', v, requester(b));
+        UI.toast('수정 요청을 보냈습니다. 부동산팀이 확인 후 연락드립니다.', 'ok');
+        found = Store.booking(b.id); render();
+      });
+    };
+    var cc = UI.qs('#reqCancel');
+    if (cc) cc.onclick = function(){
+      UI.prompt('예약 취소 요청', '취소 사유를 입력해주세요', { required:true, danger:true, okLabel:'취소 요청',
+        hint:'숙소 취소규정에 따라 위약금이 발생할 수 있습니다.',
+        placeholder:'예) 출장 일정이 취소되었습니다.' }).then(function(v){
+        if (v == null) return;
+        Store.requestChange(b.id, 'cancel', v, requester(b));
+        UI.toast('취소 요청을 보냈습니다.', 'ok');
+        found = Store.booking(b.id); render();
+      });
+    };
+  }
+
+  /* 요청 기록에 남길 사람 — 로그인이 없으므로 예약에 적힌 신청자를 그대로 쓴다 */
+  function requester(b){
+    return Store.user(b.applicantId) ||
+      { id:b.applicantId || 'guest', name:b.applicantName, role:'applicant', branch:b.branch };
+  }
+
+  /* 지금 단계에서 신청자가 무엇을 기다리면 되는지 한 줄로 */
+  function statusMessage(b){
+    var M = {
+      NEW:              ['info', '신청이 접수 대기 중입니다. 부동산팀이 확인하면 접수완료로 바뀝니다.'],
+      RECEIVED:         ['info', '부동산팀이 접수했습니다. 신청 내용을 검토하고 있습니다.'],
+      REVIEWING:        ['info', '신청 내용을 확인하고 있습니다. 추가 정보가 필요하면 연락드립니다.'],
+      APPROVAL_PENDING: ['warn', '부동산팀 승인을 기다리고 있습니다.'],
+      APPROVED:         ['info', '승인되었습니다. 부동산팀이 숙소에 예약을 진행할 예정입니다.'],
+      BOOKING:          ['info', '부동산팀이 숙소에 예약을 진행하고 있습니다.'],
+      BOOKED:           ['',     '예약이 확정되었습니다. 아래 숙소 예약번호로 체크인하시면 됩니다.'],
+      UPCOMING:         ['',     '이용 예정입니다. 체크인 날짜를 확인해주세요.'],
+      USED:             ['info', '숙박 이용이 끝났습니다. 부동산팀 정산이 진행됩니다.'],
+      SETTLE_WAIT:      ['info', '정산 대기 중입니다. 신청자가 따로 하실 일은 없습니다.'],
+      SETTLING:         ['info', '부동산팀이 정산 처리 중입니다.'],
+      SETTLED:          ['',     '정산까지 모두 완료된 건입니다.'],
+      CANCELED:         ['bad',  '취소된 예약입니다.'],
+      REJECTED:         ['bad',  '반려된 예약입니다. 사유를 확인하고 조정 후 다시 신청해주세요.']
+    };
+    var m = M[b.status] || ['', ''];
+    return '<div class="note ' + m[0] + '" style="margin:0">' +
+      STAY.STATUS[b.status].icon + ' <b>' + UI.esc(STAY.STATUS[b.status].label) + '</b> — ' + UI.esc(m[1]) + '</div>';
+  }
+
+  UI.on(root, 'click', '[data-recent]', function(){
+    UI.qs('#q_code').value = this.dataset.recent;
+    UI.qs('#q_name').value = this.dataset.name || '';
+    doLookup();
+  });
+
+  render();
+
+  /* 신청 직후 안내 화면에서 넘어온 경우 예약번호를 미리 채워둔다 */
+  var pre = UI.param('code');
+  if (pre) {
+    UI.qs('#q_code').value = pre;
+    var last = recent().filter(function(x){ return x.code === pre; })[0];
+    if (last) { UI.qs('#q_name').value = last.name; doLookup(); }
+    else UI.qs('#q_name').focus();
+  }
+})();
+</script>
+</body>
+</html>

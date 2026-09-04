@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>정산 관리 | 옆커폰 숙박 예약관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/gate.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('settle', '정산 관리', '회계팀 — 결제 확인 · 증빙 · 비용처리 · 정산완료');
+  var canSettle = Auth.can('settle');
+  var now = new Date();
+  var st = { tab:'wait', month:'', branch:'', bearer:'', q:'' };
+
+  /* 지점 목록이 확정되기 전이므로 실제 신청에 쓰인 지점명까지 필터에 넣는다 */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
+  function amount(b){ return (b.reservation && b.reservation.amount) || b.estimatedCost || 0; }
+  function pool(){
+    return Store.visibleBookings(user).filter(function(b){
+      return ['USED','SETTLE_WAIT','SETTLING','SETTLED'].indexOf(b.status) >= 0;
+    });
+  }
+  function tabRows(t){
+    var rows = pool();
+    if (t==='wait')     rows = rows.filter(function(b){ return b.status==='SETTLE_WAIT'; });
+    if (t==='doing')    rows = rows.filter(function(b){ return b.status==='SETTLING'; });
+    if (t==='done')     rows = rows.filter(function(b){ return b.status==='SETTLED'; });
+    if (t==='used')     rows = rows.filter(function(b){ return b.status==='USED'; });
+    if (st.month)  rows = rows.filter(function(b){ return (b.checkOut||'').slice(0,7) === st.month; });
+    if (st.branch) rows = rows.filter(function(b){ return b.branch === st.branch; });
+    if (st.bearer) rows = rows.filter(function(b){ return b.costBearer === st.bearer; });
+    if (st.q) { var q = st.q.toLowerCase();
+      rows = rows.filter(function(b){ return [b.code,b.lodgingName,b.applicantName,b.guestName,(b.reservation||{}).confirmNo]
+        .some(function(v){ return v && String(v).toLowerCase().indexOf(q)>=0; }); }); }
+    return rows.sort(function(a,b){ return a.checkOut < b.checkOut ? 1 : -1; });
+  }
+
+  var months = [];
+  for (var i=0;i<12;i++){ var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push(d.getFullYear()+'-'+STAY.pad(d.getMonth()+1)); }
+
+  function render(){
+    var p = pool();
+    var wait = p.filter(function(b){ return b.status==='SETTLE_WAIT'; });
+    var doing = p.filter(function(b){ return b.status==='SETTLING'; });
+    var done = p.filter(function(b){ return b.status==='SETTLED'; });
+    var used = p.filter(function(b){ return b.status==='USED'; });
+    var thisM = now.getFullYear()+'-'+STAY.pad(now.getMonth()+1);
+    var doneMonth = done.filter(function(b){ return (b.payment.settledAt||'').slice(0,7) === thisM; });
+
+    root.innerHTML =
+     (canSettle ? '' : '<div class="note info" style="margin-bottom:14px">🔒 읽기 전용입니다. 결제·정산 처리는 회계팀만 가능합니다.</div>') +
+     '<div class="pagehead"><div><h2>정산 관리</h2>' +
+       '<p>회계팀은 <b>예약 접수 부서가 아닙니다.</b> 이용이 완료된 건의 결제 확인 · 증빙 · 비용처리 · 정산완료만 담당합니다.</p></div>' +
+       '<div class="sp"></div><button class="btn" id="csv">정산내역 CSV</button></div>' +
+
+     '<div class="kpis">' +
+       '<div class="kpi k-orange"><div class="lb">정산대기</div><div class="vl">' + wait.length + '<small>건</small></div>' +
+         '<div class="sub">' + STAY.won(wait.reduce(function(s,b){return s+amount(b);},0)) + '</div></div>' +
+       '<div class="kpi k-gold"><div class="lb">정산중</div><div class="vl">' + doing.length + '<small>건</small></div>' +
+         '<div class="sub">증빙 확인 필요</div></div>' +
+       '<div class="kpi k-green"><div class="lb">이번 달 정산완료</div><div class="vl">' + doneMonth.length + '<small>건</small></div>' +
+         '<div class="sub">' + STAY.won(doneMonth.reduce(function(s,b){return s+(b.payment.paidAmount||0);},0)) + '</div></div>' +
+       '<div class="kpi k-ink"><div class="lb">누적 정산금액</div><div class="vl">' +
+         STAY.wonShort(done.reduce(function(s,b){return s+(b.payment.paidAmount||0);},0)) + '<small>원</small></div>' +
+         '<div class="sub">정산완료 ' + done.length + '건</div></div>' +
+     '</div>' +
+
+     '<div class="card mt"><div class="card-b">' +
+       '<div class="filterbar">' +
+         '<div class="field"><label>검색</label><input class="input" id="f_q" value="' + UI.esc(st.q) + '" placeholder="예약번호·숙소·이용자"></div>' +
+         '<div class="field"><label>정산 월 (체크아웃 기준)</label><select class="select" id="f_month"><option value="">전체</option>' +
+           months.map(function(m){ return '<option' + (m===st.month?' selected':'') + '>' + m + '</option>'; }).join('') + '</select></div>' +
+         '<div class="field"><label>지점</label><select class="select" id="f_branch"><option value="">전체</option>' +
+           branchOptions().map(function(b){ return '<option' + (b===st.branch?' selected':'') + '>' + UI.esc(b) + '</option>'; }).join('') + '</select></div>' +
+         '<div class="field"><label>비용 부담주체</label><select class="select" id="f_bearer"><option value="">전체</option>' +
+           UI.optionList(STAY.COST_BEARER, st.bearer) + '</select></div>' +
+       '</div>' +
+     '</div>' +
+     '<div class="card-h" style="padding:0 18px;border-top:1px solid var(--line-2)">' +
+       '<div class="tabs" style="border:none">' +
+         '<button data-t="wait" class="' + (st.tab==='wait'?'on':'') + '">정산대기 ' + wait.length + '</button>' +
+         '<button data-t="doing" class="' + (st.tab==='doing'?'on':'') + '">정산중 ' + doing.length + '</button>' +
+         '<button data-t="done" class="' + (st.tab==='done'?'on':'') + '">정산완료 ' + done.length + '</button>' +
+         '<button data-t="used" class="' + (st.tab==='used'?'on':'') + '">이용완료(정산요청 전) ' + used.length + '</button>' +
+       '</div></div>' +
+     '<div class="card-b tight" id="body"></div></div>';
+
+    var rows = tabRows(st.tab);
+    var body = UI.qs('#body');
+    if (!rows.length) { body.innerHTML = UI.empty('해당하는 정산 건이 없습니다.', '💳'); bind(); return; }
+
+    body.innerHTML = '<div class="tablewrap"><table class="tbl sticky-ends"><thead><tr>' +
+      '<th>예약번호</th><th>숙소</th><th>이용자</th><th>지점</th><th>이용기간</th>' +
+      '<th class="num">예약금액</th><th class="num">실제 결제금액</th><th>결제일</th><th>결제방법</th>' +
+      '<th>비용부담</th><th>세금계산서</th><th>영수증</th><th>증빙</th><th>회계담당</th>' +
+      '<th>정산상태</th><th>정산완료일</th><th class="no-print">처리</th>' +
+      '</tr></thead><tbody>' +
+      rows.map(function(b){
+        var p = b.payment||{};
+        var next = b.status==='USED' ? {to:'SETTLE_WAIT', label:'정산 요청'}
+                 : b.status==='SETTLE_WAIT' ? {to:'SETTLING', label:'정산 시작'}
+                 : b.status==='SETTLING' ? {to:'SETTLED', label:'정산 완료'} : null;
+        var allowed = next && Store.canTransition(b, next.to, user).ok !== undefined &&
+                      (STAY.FLOW[b.status]||[]).some(function(o){ return o.to===next.to && o.roles.indexOf(user.role)>=0; });
+        return '<tr data-b="' + b.id + '">' +
+          '<td data-l="예약번호" class="code">' + UI.esc(b.code) + '</td>' +
+          '<td data-l="숙소" class="wrapcell">' + UI.esc(b.lodgingName) +
+            ((b.reservation||{}).confirmNo ? '<div class="sub">' + UI.esc(b.reservation.confirmNo) + '</div>' : '') + '</td>' +
+          '<td data-l="이용자">' + UI.esc(b.guestName||b.applicantName) + '</td>' +
+          '<td data-l="지점">' + UI.esc(b.branch) + '</td>' +
+          '<td data-l="이용기간">' + UI.dateFull(b.checkIn) + '~' + UI.dateFull(b.checkOut) + '<div class="sub">' + b.nights + '박</div></td>' +
+          '<td data-l="예약금액" class="num">' + STAY.won(amount(b)) + '</td>' +
+          '<td data-l="실결제" class="num">' + (p.paidAmount ? '<b>' + STAY.won(p.paidAmount) + '</b>' : '<span class="muted">-</span>') + '</td>' +
+          '<td data-l="결제일" class="m-hide">' + (p.paidAt ? UI.dateFull(p.paidAt) : '<span class="muted">-</span>') + '</td>' +
+          '<td data-l="결제방법">' + (p.method ? UI.esc(p.method) : '<span class="muted">-</span>') + '</td>' +
+          '<td data-l="비용부담" class="m-hide">' + UI.esc(STAY.COST_BEARER[b.costBearer]) + '</td>' +
+          '<td data-l="세금계산서" class="m-hide">' + (p.taxInvoice ? '✔' : '<span class="muted">-</span>') + '</td>' +
+          '<td data-l="영수증" class="m-hide">' + (p.receipt ? '✔' : '<span class="muted">-</span>') + '</td>' +
+          '<td data-l="증빙" class="m-hide">' + ((p.evidence||[]).length ? (p.evidence.length + '건') : '<span class="muted">-</span>') + '</td>' +
+          '<td data-l="회계담당" class="m-hide">' + (p.financeName ? UI.esc(p.financeName) : '<span class="muted">-</span>') + '</td>' +
+          '<td data-l="정산상태">' + UI.badge(b.status) + '</td>' +
+          '<td data-l="정산완료일" class="m-hide">' + (p.settledAt ? UI.dateFull(p.settledAt) : '<span class="muted">-</span>') + '</td>' +
+          '<td class="no-print">' + (next && allowed
+            ? '<button class="btn btn-sm btn-gold" data-go="' + b.id + '" data-to="' + next.to + '">' + next.label + '</button>'
+            : '') + '</td>' +
+        '</tr>';
+      }).join('') + '</tbody></table></div>';
+    bind();
+  }
+
+  function bind(){
+    ['#f_q','#f_month','#f_branch','#f_bearer'].forEach(function(sel){
+      var e = UI.qs(sel); if (!e) return;
+      e.oninput = e.onchange = function(){
+        st.q = UI.qs('#f_q').value.trim(); st.month = UI.qs('#f_month').value;
+        st.branch = UI.qs('#f_branch').value; st.bearer = UI.qs('#f_bearer').value;
+        render();
+      };
+    });
+  }
+
+  UI.on(root, 'click', '.tabs button[data-t]', function(){ st.tab = this.dataset.t; render(); });
+  UI.on(root, 'click', 'tr[data-b]', function(e){
+    if (e.target.closest('button')) return;
+    location.href = 'detail.html?id=' + this.dataset.b;
+  });
+  UI.on(root, 'click', '[data-go]', function(e){
+    e.stopPropagation();
+    var id = this.dataset.go, to = this.dataset.to;
+    var b = Store.booking(id);
+    var chk = Store.canTransition(b, to, user);
+    if (!chk.ok) {
+      UI.confirm('추가 입력이 필요합니다', chk.msg + '\n\n상세 화면에서 정산정보를 입력하시겠습니까?', '상세로 이동')
+        .then(function(ok){ if (ok) location.href = 'detail.html?id=' + id; });
+      return;
+    }
+    UI.confirm(chk.opt.action, b.code + ' → ' + STAY.STATUS[to].label, chk.opt.action).then(function(ok){
+      if (!ok) return;
+      var r = Store.transition(id, to, user);
+      if (r.ok) { UI.toast(chk.opt.action + ' 처리했습니다.', 'ok'); render(); } else UI.toast(r.msg, 'bad');
+    });
+  });
+  UI.on(root, 'click', '#csv', function(){
+    var rows = tabRows(st.tab);
+    var head = ['예약번호','숙소','이용자','지점','체크인','체크아웃','예약금액','실제결제금액','결제일','결제방법',
+                '비용부담주체','세금계산서','영수증','증빙파일수','회계담당자','정산상태','정산완료일'];
+    var body = rows.map(function(b){ var p=b.payment||{};
+      return [b.code, b.lodgingName, b.guestName||b.applicantName, b.branch, b.checkIn, b.checkOut,
+              amount(b), p.paidAmount||0, p.paidAt||'', p.method||'', STAY.COST_BEARER[b.costBearer],
+              p.taxInvoice?'Y':'N', p.receipt?'Y':'N', (p.evidence||[]).length, p.financeName||'',
+              STAY.STATUS[b.status].label, p.settledAt ? UI.dateFull(p.settledAt) : ''];
+    });
+    UI.download('정산내역_' + STAY.ymd(new Date()) + '.csv', UI.toCsv([head].concat(body)));
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

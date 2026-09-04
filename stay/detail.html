@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>예약 상세 | 옆커폰 숙박 예약관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/gate.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var user = Auth.current();
+  var id = UI.param('id');
+  var root = UI.shell('requests', '예약 상세', '예약 진행 과정 전체 보기');
+  var b = Store.booking(id);
+
+  if (!b) { root.innerHTML = UI.empty('예약을 찾을 수 없습니다. 목록에서 다시 선택해주세요.', '🔍') +
+    '<div class="center"><a class="btn btn-primary" href="requests.html">예약 목록으로</a></div>'; return; }
+  if (!Auth.canSee(b, user)) { root.innerHTML = UI.empty('이 예약을 볼 권한이 없습니다. 본인 또는 소속 지점 예약만 조회할 수 있습니다.', '🔒') +
+    '<div class="center"><a class="btn btn-primary" href="requests.html">예약 목록으로</a></div>'; return; }
+
+  var today = STAY.ymd(new Date());
+  function amount(){ return (b.reservation && b.reservation.amount) || b.estimatedCost || 0; }
+  function reload(){ b = Store.booking(id); render(); }
+
+  function render(){
+    var closed = ['SETTLED','CANCELED','REJECTED'].indexOf(b.status) >= 0;
+    var logs = Store.bookingLogs(b.id);
+    var lo = b.lodgingId ? Store.lodging(b.lodgingId) : null;
+
+    /* ---------- 헤더 ---------- */
+    var head =
+     '<div class="pagehead">' +
+       '<div><div class="btnrow" style="margin-bottom:4px">' +
+         '<a class="btn btn-sm btn-ghost no-print" href="requests.html">‹ 목록</a>' +
+         UI.badge(b.status) + UI.payBadge(b.payment) +
+         (b.proxyBy ? '<span class="tag">☎ ' + UI.esc(b.proxyBy) + ' 대리접수</span>' : '') +
+       '</div>' +
+       '<h2>' + UI.esc(b.code) + ' · ' + UI.esc(b.lodgingName) + '</h2>' +
+       '<p>' + UI.esc(b.branch) + ' ' + UI.esc(b.applicantName) + ' · ' + UI.esc(b.purpose) +
+         ' · 신청 ' + UI.dtFull(b.requestedAt) + '</p></div>' +
+       '<div class="sp"></div><div class="btnrow no-print">' +
+         '<button class="btn" onclick="window.print()">인쇄</button>' +
+         (Auth.canRequestChange(b, user) ?
+           '<button class="btn" id="reqChange">수정 요청</button>' +
+           '<button class="btn btn-danger" id="reqCancel">취소 요청</button>' : '') +
+       '</div>' +
+     '</div>' +
+     '<div class="card" style="margin-bottom:14px"><div class="card-b">' + UI.steps(b) + '</div></div>';
+
+    /* ---------- 요청 알림 ---------- */
+    var alerts = '';
+    if (b.changeRequest && !b.changeRequest.handled)
+      alerts += '<div class="note warn" style="margin-bottom:12px">✏️ <b>신청자 수정 요청</b> (' + UI.dtFull(b.changeRequest.at) + ' · ' +
+        UI.esc(b.changeRequest.by) + ')<br>' + UI.nl2br(b.changeRequest.reason) +
+        (Auth.can('editReservation') ? ' <button class="btn btn-sm no-print" id="handleChange" style="margin-left:8px">처리완료</button>' : '') + '</div>';
+    if (b.cancelRequest && !b.cancelRequest.handled)
+      alerts += '<div class="note bad" style="margin-bottom:12px">⛔ <b>신청자 취소 요청</b> (' + UI.dtFull(b.cancelRequest.at) + ' · ' +
+        UI.esc(b.cancelRequest.by) + ')<br>' + UI.nl2br(b.cancelRequest.reason) +
+        (Auth.can('cancelBooking') ? ' <button class="btn btn-sm btn-danger no-print" id="doCancel" style="margin-left:8px">취소 처리</button>' : '') + '</div>';
+    if (b.status === 'REJECTED' && b.approval.opinion)
+      alerts += '<div class="note bad" style="margin-bottom:12px">🚫 <b>반려됨</b> — ' + UI.esc(b.approval.approverName||'') +
+        ' (' + UI.dtFull(b.approval.decidedAt) + ')<br>' + UI.nl2br(b.approval.opinion) + '</div>';
+
+    /* ---------- 기본 정보 ---------- */
+    function dr(k, v, cls){ return '<div class="dr"><dt>' + k + '</dt><dd class="' + (cls||'') + '">' + v + '</dd></div>'; }
+    var info =
+     '<div class="card"><div class="card-h"><h3>📄 기본 예약정보</h3><span class="sp"></span>' +
+       (Auth.can('editReservation') && !closed ? '<button class="btn btn-sm no-print" id="editBasic">정보 수정</button>' : '') + '</div>' +
+      '<div class="card-b"><dl class="dl">' +
+        dr('예약번호', '<b>' + UI.esc(b.code) + '</b>') +
+        dr('신청일', UI.dtFull(b.requestedAt)) +
+        dr('신청자', UI.esc(b.applicantName) + ' <span class="muted">(' + UI.esc(b.dept) + ')</span>') +
+        dr('소속 지점', UI.esc(b.branch)) +
+        dr('연락처', UI.esc(b.phone)) +
+        dr('이용 목적', UI.esc(b.purpose)) +
+        dr('숙박 유형', UI.esc(STAY.LODGING_TYPE[b.lodgingType])) +
+        dr('이용 숙소', UI.esc(b.lodgingName) + (lo ? ' <span class="tag ' + (lo.ownership==='DIRECT'?'direct':'partner') + '">' +
+            UI.esc(STAY.OWNERSHIP[lo.ownership]) + '</span>' : '')) +
+        dr('체크인', UI.dateFull(b.checkIn) + ' ' + UI.dateK(b.checkIn) + (lo ? ' <span class="muted">' + UI.esc(lo.checkInTime) + '~</span>' : '')) +
+        dr('체크아웃', UI.dateFull(b.checkOut) + ' ' + UI.dateK(b.checkOut) + (lo ? ' <span class="muted">~' + UI.esc(lo.checkOutTime) + '</span>' : '')) +
+        dr('숙박일수', '<b>' + b.nights + '박 ' + (b.nights+1) + '일</b>') +
+        dr('이용 인원', b.guests + '명 <span class="muted">(성인 ' + b.adults + ' / 아동 ' + b.children + ')</span>') +
+        dr('객실 수', b.rooms + '실') +
+        dr('예약자명', UI.esc(b.guestName)) +
+        dr('예약자 연락처', UI.esc(b.guestPhone)) +
+        dr('예상 비용', STAY.won(b.estimatedCost)) +
+        dr('비용 구분', UI.esc(STAY.COST_BEARER[b.costBearer])) +
+        dr('예약 담당자', b.assigneeName ? UI.esc(b.assigneeName) : '<span class="muted">미지정</span>') +
+        dr('최종 수정', UI.dtFull(b.updatedAt)) +
+      '</dl>' +
+      (b.specialRequest ? '<div class="hr"></div><div><div class="muted" style="font-size:12.5px;font-weight:800">특별 요청사항</div>' +
+        '<div style="margin-top:5px">' + UI.nl2br(b.specialRequest) + '</div></div>' : '') +
+      (b.attachments && b.attachments.length ? '<div class="hr"></div>' +
+        '<div class="muted" style="font-size:12.5px;font-weight:800;margin-bottom:6px">첨부파일 ' + b.attachments.length + '건</div>' +
+        '<div class="filelist">' + b.attachments.map(function(f){
+          return '<div class="fileitem">📄 <a href="' + f.dataUrl + '" download="' + UI.esc(f.name) + '">' + UI.esc(f.name) + '</a>' +
+            ' <span class="muted">(' + Math.round(f.size/1024) + 'KB)</span></div>'; }).join('') + '</div>' : '') +
+      '</div></div>';
+
+    /* ---------- 예약 진행 정보 ---------- */
+    var r = b.reservation || {};
+    var canBook = Auth.can('doReservation') && !closed;
+    var resv =
+     '<div class="card mt"><div class="card-h"><h3>🏨 숙소 예약 진행</h3><span class="sp"></span>' +
+       (canBook ? '<button class="btn btn-sm no-print" id="editResv">예약정보 입력·수정</button>' : '') + '</div>' +
+      '<div class="card-b">' +
+        (r.confirmNo || r.roomInfo || r.amount ?
+          '<dl class="dl">' +
+            dr('숙소 예약번호', '<b>' + UI.esc(r.confirmNo||'-') + '</b>') +
+            dr('객실 정보', UI.esc(r.roomInfo||'-')) +
+            dr('확정 예약금액', '<b>' + STAY.won(r.amount) + '</b>') +
+            dr('예약 완료일시', UI.dtFull(r.reservedAt)) +
+            (r.note ? dr('비고', UI.esc(r.note)) : '') +
+          '</dl>'
+          : '<div class="note info" style="margin:0">아직 숙소 예약이 진행되지 않았습니다.' +
+            (canBook ? ' 예약을 완료한 뒤 <b>예약번호·객실정보·금액</b>을 입력해주세요.' : '') + '</div>') +
+        (lo ? '<div class="hr"></div><div class="muted" style="font-size:12.5px;font-weight:800;margin-bottom:6px">숙소 연락처 · 규정</div>' +
+          '<dl class="dl">' +
+            dr('담당자', UI.esc(lo.managerName) + ' / ' + UI.esc(lo.managerPhone)) +
+            dr('지역·주소', UI.esc(lo.region) + ' · ' + UI.esc(lo.address)) +
+            dr('취소규정', UI.esc(lo.cancelPolicy)) +
+            dr('이용방법', UI.esc(lo.usage)) +
+          '</dl>' +
+          (lo.caution ? '<div class="note warn" style="margin-top:8px">⚠ ' + UI.esc(lo.caution) + '</div>' : '') : '') +
+      '</div></div>';
+
+    /* ---------- 승인 정보 ---------- */
+    var ap = b.approval || {};
+    var approvalCard =
+     '<div class="card mt"><div class="card-h"><h3>✅ 승인</h3><span class="sp"></span>' +
+       (ap.result ? '<span class="tag ' + (ap.result==='APPROVED'?'gold':'') + '">' +
+          (ap.result==='APPROVED'?'승인완료':'반려') + '</span>' : '<span class="tag">미처리</span>') + '</div>' +
+      '<div class="card-b">' +
+        (ap.requestedAt || ap.result ? '<dl class="dl one">' +
+          dr('승인 요청일시', UI.dtFull(ap.requestedAt)) +
+          dr('승인 담당자', ap.approverName ? UI.esc(ap.approverName) : '<span class="muted">-</span>') +
+          dr('처리일시', UI.dtFull(ap.decidedAt)) +
+          dr('승인 의견', ap.opinion ? UI.nl2br(ap.opinion) : '<span class="muted">-</span>') +
+        '</dl>' : '<div class="muted">아직 승인 요청 전입니다.</div>') +
+      '</div></div>';
+
+    /* ---------- 정산 정보 ---------- */
+    var p = b.payment || {};
+    var canSettle = Auth.can('settle') && ['SETTLE_WAIT','SETTLING','USED','SETTLED'].indexOf(b.status) >= 0;
+    var settleCard =
+     '<div class="card mt"><div class="card-h"><h3>💳 결제 · 정산 <span class="sub">(회계팀)</span></h3><span class="sp"></span>' +
+       (canSettle && b.status !== 'SETTLED' ? '<button class="btn btn-sm no-print" id="editPay">정산정보 입력</button>' : '') + '</div>' +
+      '<div class="card-b">' +
+        '<dl class="dl">' +
+          dr('결제상태', UI.payBadge(p)) +
+          dr('결제방법', p.method ? UI.esc(p.method) : '<span class="muted">-</span>') +
+          dr('예약금액', STAY.won(amount())) +
+          dr('실제 결제금액', p.paidAmount ? '<b>' + STAY.won(p.paidAmount) + '</b>' : '<span class="muted">-</span>') +
+          dr('결제일', p.paidAt ? UI.dateFull(p.paidAt) : '<span class="muted">-</span>') +
+          dr('비용 부담주체', UI.esc(STAY.COST_BEARER[b.costBearer])) +
+          dr('세금계산서', p.taxInvoice ? '✔ 확인' : '<span class="muted">미확인</span>') +
+          dr('영수증/카드전표', p.receipt ? '✔ 확인' : '<span class="muted">미확인</span>') +
+          dr('회계 담당자', p.financeName ? UI.esc(p.financeName) : '<span class="muted">-</span>') +
+          dr('정산완료일', p.settledAt ? UI.dtFull(p.settledAt) : '<span class="muted">-</span>') +
+        '</dl>' +
+        (p.evidence && p.evidence.length ? '<div class="hr"></div>' +
+          '<div class="muted" style="font-size:12.5px;font-weight:800;margin-bottom:6px">증빙파일 ' + p.evidence.length + '건</div>' +
+          '<div class="filelist">' + p.evidence.map(function(f){
+            return '<div class="fileitem">🧾 <a href="' + f.dataUrl + '" download="' + UI.esc(f.name) + '">' + UI.esc(f.name) + '</a></div>';
+          }).join('') + '</div>' : '') +
+        (p.note ? '<div class="hr"></div>' + UI.nl2br(p.note) : '') +
+      '</div></div>';
+
+    /* ---------- 타임라인 ---------- */
+    var future = [];
+    if (!closed) {
+      var curNo = STAY.STATUS[b.status].no;
+      STAY.MAIN_PATH.forEach(function(k){
+        if (STAY.STATUS[k].no > curNo) future.push(k);
+      });
+    }
+    var tlHtml = logs.map(function(l, i){
+      var isLast = i === logs.length-1;
+      var bad = l.to === 'CANCELED' || l.to === 'REJECTED';
+      return '<div class="tl ' + (bad ? 'bad' : (isLast && !closed ? 'now' : 'done')) + '">' +
+        '<div class="td">' + UI.dtFull(l.at) + '</div>' +
+        '<div class="tt">' + UI.esc(l.action) +
+          (l.to ? ' <span class="badge b-' + l.to + '" style="font-size:10.5px"><i class="d"></i>' + STAY.STATUS[l.to].label + '</span>' : '') + '</div>' +
+        '<div class="tm"><b>' + UI.esc(l.userName) + '</b> <span class="muted">' + UI.esc(STAY.ROLES[l.role].short) +
+          ' · ' + UI.esc(l.branch) + '</span>' + (l.memo ? '<br>' + UI.nl2br(l.memo) : '') + '</div></div>';
+    }).join('');
+    var futureHtml = future.map(function(k){
+      var s = STAY.STATUS[k];
+      return '<div class="tl future"><div class="td">예정</div>' +
+        '<div class="tt">' + s.icon + ' ' + UI.esc(s.label) +
+        ' <span class="muted" style="font-weight:600">— ' + (s.owner==='-'?'':UI.esc(STAY.ROLES[s.owner].label)) + '</span></div></div>';
+    }).join('');
+    var timeline =
+     '<div class="card"><div class="card-h"><h3>🕒 진행 타임라인</h3><span class="sp"></span>' +
+       '<span class="sub">' + logs.length + '건 기록</span></div>' +
+      '<div class="card-b"><div class="timeline">' + tlHtml + futureHtml + '</div></div></div>';
+
+    /* ---------- 처리 패널 ---------- */
+    var opts = (STAY.FLOW[b.status] || []).filter(function(o){ return o.roles.indexOf(user.role) >= 0; });
+    var actionCard =
+     '<div class="card no-print"><div class="card-h"><h3>⚡ 처리하기</h3><span class="sp"></span>' +
+       '<span class="sub">' + UI.esc(STAY.ROLES[user.role].label) + ' 권한</span></div>' +
+      '<div class="card-b">' +
+        '<div class="note info" style="margin-bottom:12px">현재 <b>' + UI.esc(STAY.STATUS[b.status].label) + '</b> · 담당 ' +
+          (STAY.STATUS[b.status].owner === '-' ? '종료' : UI.esc(STAY.ROLES[STAY.STATUS[b.status].owner].label)) + '</div>' +
+        (opts.length ? '<div class="btnrow">' + opts.map(function(o){
+            var cls = (o.to==='CANCELED'||o.to==='REJECTED') ? 'btn-danger' : 'btn-gold';
+            return '<button class="btn ' + cls + '" data-to="' + o.to + '">' + UI.esc(o.action) + '</button>';
+          }).join('') + '</div>'
+          : '<div class="muted">현재 단계에서 ' + UI.esc(STAY.ROLES[user.role].label) + '가 처리할 항목이 없습니다.</div>') +
+        (Auth.can('assign') && !closed ?
+          '<div class="hr"></div><div class="field" style="margin:0"><label>예약 담당자 지정</label>' +
+          '<div class="btnrow"><select class="select" id="assignSel" style="max-width:220px"><option value="">미지정</option>' +
+            Store.users().filter(function(u){ return u.role==='booker'||u.role==='admin'; }).map(function(u){
+              return '<option value="' + u.id + '"' + (u.id===b.assigneeId?' selected':'') + '>' + UI.esc(u.name) + ' (' + UI.esc(u.dept) + ')</option>';
+            }).join('') + '</select><button class="btn" id="doAssign">지정</button></div></div>' : '') +
+        (Auth.can('requestInfo') && !closed ?
+          '<div class="hr"></div><button class="btn" id="askInfo">신청자에게 추가정보 요청</button>' : '') +
+      '</div></div>';
+
+    /* ---------- 메모 ---------- */
+    var memoCard =
+     '<div class="card mt"><div class="card-h"><h3>💬 메모</h3><span class="sp"></span>' +
+       '<span class="sub">' + (b.memos||[]).length + '건</span></div>' +
+      '<div class="card-b tight"><div class="list">' +
+        ((b.memos||[]).length ? b.memos.slice().reverse().map(function(m){
+          return '<div class="li" style="cursor:default;align-items:flex-start">' +
+            '<span class="avatar">' + UI.esc(UI.initials(m.userName)) + '</span>' +
+            '<span class="tx"><span class="t1">' + UI.esc(m.userName) + ' <span class="muted" style="font-weight:600">' +
+              UI.esc(STAY.ROLES[m.role].short) + ' · ' + UI.dtFull(m.at) + '</span></span>' +
+            '<span class="t2" style="white-space:pre-wrap;color:var(--text)">' + UI.esc(m.text) + '</span></span></div>';
+        }).join('') : UI.empty('작성된 메모가 없습니다.', '💬')) +
+      '</div>' +
+      '<div class="card-b no-print" style="border-top:1px solid var(--line-2)">' +
+        '<div class="field" style="margin:0"><textarea class="textarea" id="memoTx" placeholder="내부 메모를 남기세요. 처리 로그에도 함께 기록됩니다."></textarea>' +
+        '<div class="btnrow" style="margin-top:8px;justify-content:flex-end"><button class="btn btn-primary" id="memoAdd">메모 등록</button></div></div>' +
+      '</div></div>';
+
+    /* ---------- 처리 로그 (표) ---------- */
+    var logCard =
+     '<div class="card mt"><div class="card-h"><h3>📜 처리 로그 (Activity Log)</h3><span class="sp"></span>' +
+       '<span class="sub">누가 · 언제 · 무엇을</span></div>' +
+      '<div class="card-b tight"><div class="tablewrap"><table class="tbl"><thead><tr>' +
+        '<th>일시</th><th>처리자</th><th>권한</th><th>처리내용</th><th>상태변경</th><th>메모</th>' +
+      '</tr></thead><tbody>' +
+        logs.slice().reverse().map(function(l){
+          return '<tr style="cursor:default">' +
+            '<td data-l="일시">' + UI.dtFull(l.at) + '</td>' +
+            '<td data-l="처리자">' + UI.esc(l.userName) + '<div class="sub">' + UI.esc(l.branch) + '</div></td>' +
+            '<td data-l="권한">' + UI.esc(STAY.ROLES[l.role].label) + '</td>' +
+            '<td data-l="처리내용"><b>' + UI.esc(l.action) + '</b></td>' +
+            '<td data-l="상태변경">' + (l.from ? UI.badge(l.from) + ' → ' : '') + (l.to ? UI.badge(l.to) : '<span class="muted">-</span>') + '</td>' +
+            '<td data-l="메모" class="wrapcell">' + (l.memo ? UI.esc(l.memo) : '<span class="muted">-</span>') + '</td></tr>';
+        }).join('') +
+      '</tbody></table></div></div></div>';
+
+    root.innerHTML = head + alerts +
+      '<div class="grid g-2-1">' +
+        '<div>' + info + resv + approvalCard + settleCard + '</div>' +
+        '<div>' + actionCard + timeline + memoCard + '</div>' +
+      '</div>' + logCard;
+
+    bind();
+  }
+
+  /* ================= 이벤트 =================
+   * 위임(delegated) 리스너는 최초 1회만 등록한다. render() 안에서 등록하면
+   * 다시 그릴 때마다 누적되어 한 번의 클릭이 여러 번 처리된다. */
+  function bindOnce(){
+    UI.on(root, 'click', '[data-to]', function(){
+      doTransition(this.dataset.to);
+    });
+  }
+
+  /* 매 렌더마다 새로 만들어지는 개별 버튼은 onclick 으로 연결 (덮어쓰기라 누적되지 않음) */
+  function bind(){
+    var assign = UI.qs('#doAssign');
+    if (assign) assign.onclick = function(){
+      var uid2 = UI.qs('#assignSel').value;
+      var u2 = uid2 ? Store.user(uid2) : null;
+      Store.updateBooking(b.id, { assigneeId: uid2||null, assigneeName: u2?u2.name:null }, user,
+        '담당자 지정', u2 ? ('예약 담당자: ' + u2.name) : '담당자 해제');
+      UI.toast('담당자를 저장했습니다.', 'ok'); reload();
+    };
+
+    var ask = UI.qs('#askInfo');
+    if (ask) ask.onclick = function(){
+      UI.prompt('추가정보 요청', '신청자에게 요청할 내용', { required:true, okLabel:'요청 보내기',
+        placeholder:'예) 동반 인원 명단과 정확한 체크인 시각을 알려주세요.' }).then(function(v){
+        if (v == null) return;
+        Store.addMemo(b.id, '[추가정보 요청] ' + v, user);
+        Notify.send('INFO_REQUESTED', b, user, v);
+        UI.toast('추가정보를 요청했습니다.', 'ok'); reload();
+      });
+    };
+
+    var memoAdd = UI.qs('#memoAdd');
+    if (memoAdd) memoAdd.onclick = function(){
+      var t = UI.qs('#memoTx').value.trim();
+      if (!t) { UI.toast('메모 내용을 입력해주세요.', 'bad'); return; }
+      Store.addMemo(b.id, t, user); UI.toast('메모를 등록했습니다.', 'ok'); reload();
+    };
+
+    var rc = UI.qs('#reqChange');
+    if (rc) rc.onclick = function(){
+      UI.prompt('예약 수정 요청', '어떤 내용을 수정하고 싶으신가요?', { required:true, okLabel:'요청 보내기',
+        placeholder:'예) 체크인을 하루 늦춰주세요 (8/21 → 8/22). 인원도 2명 추가됩니다.' }).then(function(v){
+        if (v == null) return;
+        Store.requestChange(b.id, 'change', v, user);
+        UI.toast('수정 요청을 보냈습니다. 예약 담당자가 확인합니다.', 'ok'); reload();
+      });
+    };
+    var cc = UI.qs('#reqCancel');
+    if (cc) cc.onclick = function(){
+      UI.prompt('예약 취소 요청', '취소 사유를 입력해주세요', { required:true, danger:true, okLabel:'취소 요청',
+        hint:'숙소별 취소 규정에 따라 위약금이 발생할 수 있습니다.',
+        placeholder:'예) 출장 일정이 취소되었습니다.' }).then(function(v){
+        if (v == null) return;
+        Store.requestChange(b.id, 'cancel', v, user);
+        UI.toast('취소 요청을 보냈습니다.', 'ok'); reload();
+      });
+    };
+    var hc = UI.qs('#handleChange');
+    if (hc) hc.onclick = function(){
+      Store.updateBooking(b.id, { changeRequest: Object.assign({}, b.changeRequest, {handled:true}) }, user,
+        '수정 요청 처리완료', b.changeRequest.reason);
+      UI.toast('수정 요청을 처리완료로 표시했습니다.', 'ok'); reload();
+    };
+    var dc = UI.qs('#doCancel');
+    if (dc) dc.onclick = function(){ doTransition('CANCELED'); };
+
+    var eb = UI.qs('#editBasic'); if (eb) eb.onclick = editBasic;
+    var er = UI.qs('#editResv');  if (er) er.onclick = editResv;
+    var ep = UI.qs('#editPay');   if (ep) ep.onclick = editPay;
+  }
+
+  function doTransition(to){
+    var chk = Store.canTransition(b, to, user);
+    if (!chk.ok) {
+      var need = { BOOKED: editResv, SETTLING: editPay, SETTLED: editPay,
+                   APPROVAL_PENDING: editBasic }[to];
+      UI.confirm('처리할 수 없습니다', chk.msg + (need ? '\n\n지금 입력하시겠습니까?' : ''), need?'입력하기':'확인')
+        .then(function(ok){ if (ok && need) need(); });
+      return;
+    }
+    var needOpinion = (to === 'APPROVED' || to === 'REJECTED');
+    var needReason  = (to === 'CANCELED');
+    if (needOpinion || needReason) {
+      UI.prompt(chk.opt.action, needOpinion ? '승인 의견' : '취소 사유',
+        { required: to !== 'APPROVED', okLabel: chk.opt.action, danger: to !== 'APPROVED',
+          placeholder: to==='APPROVED' ? '예) 이용 목적 확인. 승인합니다.' :
+                       to==='REJECTED' ? '예) 인원 대비 객실 수가 과다합니다. 조정 후 재신청 바랍니다.' :
+                                         '예) 신청자 요청으로 취소 (위약금 없음)' })
+        .then(function(v){
+          if (v == null) return;
+          apply(to, v);
+        });
+      return;
+    }
+    UI.confirm(chk.opt.action, b.code + ' 건을 「' + STAY.STATUS[to].label + '」 상태로 변경합니다.', chk.opt.action)
+      .then(function(ok){ if (ok) apply(to, ''); });
+  }
+  function apply(to, memo){
+    var r = Store.transition(b.id, to, user, memo);
+    if (!r.ok) { UI.toast(r.msg, 'bad'); return; }
+    UI.toast(STAY.STATUS[to].label + ' 처리했습니다.', 'ok');
+    reload();
+  }
+
+  /* ---------- 편집 모달 ---------- */
+  function editBasic(){
+    var m = UI.modal({
+      title:'예약 기본정보 수정', wide:true,
+      body:'<div class="frow f2">' +
+        fld('이용 목적','purpose', b.purpose) +
+        fld('이용 숙소','lodgingName', b.lodgingName) +
+        fld('체크인','checkIn', b.checkIn, 'date') +
+        fld('체크아웃','checkOut', b.checkOut, 'date') +
+        fld('객실 수','rooms', b.rooms, 'number') +
+        fld('성인 인원','adults', b.adults, 'number') +
+        fld('아동 인원','children', b.children, 'number') +
+        fld('예상 비용','estimatedCost', b.estimatedCost, 'number') +
+        fld('예약자명','guestName', b.guestName) +
+        fld('예약자 연락처','guestPhone', b.guestPhone) +
+        '<div class="field"><label>비용 구분</label><select class="select" name="costBearer">' +
+          UI.optionList(STAY.COST_BEARER, b.costBearer) + '</select></div>' +
+      '</div>' +
+      '<div class="field"><label>특별 요청사항</label><textarea class="textarea" name="specialRequest">' +
+        UI.esc(b.specialRequest||'') + '</textarea></div>',
+      buttons:[{label:'취소'},{label:'저장', cls:'btn-primary', keepOpen:true, onClick:function(mm, close){
+        var patch = collect(mm);
+        if (STAY.nights(patch.checkIn, patch.checkOut) <= 0) { UI.toast('체크아웃은 체크인 이후여야 합니다.', 'bad'); return false; }
+        ['rooms','adults','children','estimatedCost'].forEach(function(k){ patch[k] = Number(patch[k])||0; });
+        Store.updateBooking(b.id, patch, user, '예약정보 수정');
+        close(); UI.toast('저장했습니다.', 'ok'); reload();
+      }}]
+    });
+  }
+  function editResv(){
+    var r = b.reservation || {};
+    UI.modal({
+      title:'숙소 예약정보 입력', wide:true,
+      body:'<div class="note info" style="margin-bottom:14px">숙소에 실제로 예약을 완료한 뒤 발급받은 정보를 입력해주세요. ' +
+           '세 항목이 모두 입력되어야 <b>예약완료</b> 처리가 가능합니다.</div>' +
+        '<div class="frow f2">' +
+          fld('숙소 예약번호 *','confirmNo', r.confirmNo) +
+          fld('확정 예약금액 *','amount', r.amount, 'number') +
+        '</div>' +
+        fld('객실 정보 *','roomInfo', r.roomInfo, 'text', '예) 디럭스 트윈 2실 / 2박, 조식 포함') +
+        '<div class="field"><label>비고</label><textarea class="textarea" name="note">' + UI.esc(r.note||'') + '</textarea></div>',
+      buttons:[{label:'취소'},{label:'저장', cls:'btn-primary', keepOpen:true, onClick:function(mm, close){
+        var v = collect(mm);
+        v.amount = Number(v.amount)||0;
+        Store.updateBooking(b.id, { reservation: v }, user, '예약정보 등록',
+          '예약번호 ' + (v.confirmNo||'-') + ' / ' + (v.roomInfo||'-') + ' / ' + STAY.won(v.amount));
+        close(); UI.toast('예약정보를 저장했습니다.', 'ok'); reload();
+      }}]
+    });
+  }
+  function editPay(){
+    var p = b.payment || {};
+    var ev = (p.evidence||[]).slice();
+    var m = UI.modal({
+      title:'결제 · 정산정보 입력', wide:true,
+      body:'<div class="frow f2">' +
+          '<div class="field"><label>결제방법</label><select class="select" name="method"><option value="">선택</option>' +
+            STAY.PAY_METHOD.map(function(x){ return '<option' + (x===p.method?' selected':'') + '>' + x + '</option>'; }).join('') + '</select></div>' +
+          fld('실제 결제금액','paidAmount', p.paidAmount || amount(), 'number') +
+          fld('결제일','paidAt', p.paidAt || '', 'date') +
+          fld('회계 담당자','financeName', p.financeName || user.name) +
+        '</div>' +
+        '<div class="field"><label>증빙 확인</label><div class="radios">' +
+          '<label class="check" style="margin-right:16px"><input type="checkbox" name="taxInvoice"' + (p.taxInvoice?' checked':'') + '> 세금계산서 확인</label>' +
+          '<label class="check"><input type="checkbox" name="receipt"' + (p.receipt?' checked':'') + '> 영수증 / 카드전표 확인</label>' +
+        '</div></div>' +
+        '<div class="field"><label>증빙파일</label>' +
+          '<div class="drop" id="evDrop">📎 클릭해서 증빙 파일 첨부 (세금계산서·카드전표·영수증)</div>' +
+          '<input type="file" id="evInput" multiple class="sr"><div class="filelist" id="evList"></div></div>' +
+        '<div class="field"><label>정산 메모</label><textarea class="textarea" name="note">' + UI.esc(p.note||'') + '</textarea></div>',
+      buttons:[{label:'취소'},{label:'저장', cls:'btn-primary', keepOpen:true, onClick:function(mm, close){
+        var v = collect(mm);
+        v.paidAmount = Number(v.paidAmount)||0;
+        v.taxInvoice = !!UI.qs('[name=taxInvoice]', mm).checked;
+        v.receipt = !!UI.qs('[name=receipt]', mm).checked;
+        v.evidence = ev;
+        v.financeId = user.id;
+        v.status = v.paidAmount ? (v.paidAmount >= amount() ? 'PAY_DONE' : 'PAY_PARTIAL')
+                                : (b.status==='SETTLE_WAIT' ? 'PAY_WAIT' : (p.status||'PAY_NONE'));
+        Store.updateBooking(b.id, { payment: v }, user, '정산정보 입력',
+          '결제방법 ' + (v.method||'-') + ' / ' + STAY.won(v.paidAmount) +
+          ' / 세금계산서 ' + (v.taxInvoice?'확인':'미확인') + ' / 영수증 ' + (v.receipt?'확인':'미확인'));
+        close(); UI.toast('정산정보를 저장했습니다.', 'ok'); reload();
+      }}],
+      onOpen:function(mm){
+        function draw(){
+          UI.qs('#evList', mm).innerHTML = ev.map(function(f,i){
+            return '<div class="fileitem">🧾 ' + UI.esc(f.name) + '<span class="sp"></span>' +
+              '<button type="button" class="btn btn-sm btn-ghost" data-ev="' + i + '">삭제</button></div>'; }).join('');
+        }
+        UI.qs('#evDrop', mm).onclick = function(){ UI.qs('#evInput', mm).click(); };
+        UI.qs('#evInput', mm).onchange = function(){
+          Array.prototype.forEach.call(this.files, function(file){
+            if (file.size > 2*1024*1024) { UI.toast(file.name + ' : 2MB 초과', 'bad'); return; }
+            var fr = new FileReader();
+            fr.onload = function(){ ev.push({name:file.name, size:file.size, type:file.type, dataUrl:fr.result}); draw(); };
+            fr.readAsDataURL(file);
+          });
+          this.value='';
+        };
+        UI.on(mm, 'click', '[data-ev]', function(){ ev.splice(Number(this.dataset.ev),1); draw(); });
+        draw();
+      }
+    });
+  }
+  function fld(label, name, val, type, ph){
+    return '<div class="field"><label>' + UI.esc(label) + '</label>' +
+      '<input class="input" type="' + (type||'text') + '" name="' + name + '" value="' + UI.esc(val===0?0:(val||'')) + '"' +
+      (ph ? ' placeholder="' + UI.esc(ph) + '"' : '') + '></div>';
+  }
+  function collect(mm){
+    var out = {};
+    UI.qsa('[name]', mm).forEach(function(i){
+      if (i.type === 'checkbox') return;
+      out[i.name] = i.value;
+    });
+    return out;
+  }
+
+  bindOnce();
+  render();
+})();
+</script>
+</body>
+</html>

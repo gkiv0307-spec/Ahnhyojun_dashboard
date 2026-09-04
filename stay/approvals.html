@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>승인 관리 | 옆커폰 숙박 예약관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/gate.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('approve', '승인 관리', '회사 비용이 발생하는 예약을 승인/반려합니다');
+  var canDecide = Auth.can('decideApproval');
+  var tab = 'pending';
+
+  function amount(b){ return (b.reservation && b.reservation.amount) || b.estimatedCost || 0; }
+  function data(){
+    var all = Store.visibleBookings(user);
+    return {
+      pending: all.filter(function(b){ return b.status==='APPROVAL_PENDING'; })
+                  .sort(function(a,b){ return a.approval.requestedAt < b.approval.requestedAt ? -1 : 1; }),
+      approved: all.filter(function(b){ return b.approval && b.approval.result==='APPROVED'; })
+                   .sort(function(a,b){ return a.approval.decidedAt < b.approval.decidedAt ? 1 : -1; }),
+      rejected: all.filter(function(b){ return b.approval && b.approval.result==='REJECTED'; })
+                   .sort(function(a,b){ return a.approval.decidedAt < b.approval.decidedAt ? 1 : -1; })
+    };
+  }
+
+  function render(){
+    var d = data();
+    var pendingSum = d.pending.reduce(function(s,b){ return s + amount(b); }, 0);
+    root.innerHTML =
+     '<div class="pagehead"><div><h2>승인 관리</h2>' +
+       '<p>' + (canDecide ? '부동산팀원 누구나 승인할 수 있습니다. 처리하면 신청자와 예약 담당자에게 자동으로 알림이 전달됩니다.'
+                          : '읽기 전용입니다. 승인/반려는 승인 권한이 있는 부동산팀원만 처리할 수 있습니다.') + '</p></div></div>' +
+
+     '<div class="kpis" style="grid-template-columns:repeat(3,1fr)">' +
+       '<div class="kpi k-orange"><div class="lb">승인 대기</div><div class="vl">' + d.pending.length + '<small>건</small></div>' +
+         '<div class="sub">대기 금액 ' + STAY.won(pendingSum) + '</div></div>' +
+       '<div class="kpi k-green"><div class="lb">승인 완료 (누적)</div><div class="vl">' + d.approved.length + '<small>건</small></div>' +
+         '<div class="sub">' + STAY.won(d.approved.reduce(function(s,b){return s+amount(b);},0)) + '</div></div>' +
+       '<div class="kpi k-red"><div class="lb">반려 (누적)</div><div class="vl">' + d.rejected.length + '<small>건</small></div>' +
+         '<div class="sub">반려 사유는 상세에서 확인</div></div>' +
+     '</div>' +
+
+     '<div class="card mt"><div class="card-h" style="padding:0 18px">' +
+       '<div class="tabs" style="border:none">' +
+         '<button data-t="pending" class="' + (tab==='pending'?'on':'') + '">승인대기 ' + d.pending.length + '</button>' +
+         '<button data-t="approved" class="' + (tab==='approved'?'on':'') + '">승인완료 ' + d.approved.length + '</button>' +
+         '<button data-t="rejected" class="' + (tab==='rejected'?'on':'') + '">반려 ' + d.rejected.length + '</button>' +
+       '</div></div>' +
+       '<div class="card-b tight" id="body"></div></div>';
+
+    var rows = d[tab];
+    var body = UI.qs('#body');
+    if (!rows.length) { body.innerHTML = UI.empty(
+      tab==='pending' ? '승인 대기 중인 예약이 없습니다. 👍' : '해당하는 내역이 없습니다.',
+      tab==='pending' ? '✨' : '🗂'); return; }
+
+    body.innerHTML = '<div class="tablewrap"><table class="tbl"><thead><tr>' +
+      '<th>예약번호</th><th>신청자 / 지점</th><th>이용 숙소</th><th>일정</th><th class="num">인원/객실</th>' +
+      '<th class="num">예상비용</th><th>비용구분</th><th>담당자</th>' +
+      (tab==='pending' ? '<th>승인요청</th><th class="no-print">처리</th>'
+                       : '<th>처리자</th><th>처리일시</th><th class="wrapcell">의견</th>') +
+      '</tr></thead><tbody>' +
+      rows.map(function(b){
+        var over = amount(b) >= (Store.settings().approvalThreshold||100000)*5;
+        return '<tr data-b="' + b.id + '">' +
+          '<td data-l="예약번호" class="code">' + UI.esc(b.code) + '</td>' +
+          '<td data-l="신청자">' + UI.esc(b.applicantName) + '<div class="sub">' + UI.esc(b.branch) + ' · ' + UI.esc(b.dept) + '</div></td>' +
+          '<td data-l="숙소" class="wrapcell">' + UI.esc(b.lodgingName) + '<div class="sub">' + UI.esc(b.purpose) + '</div></td>' +
+          '<td data-l="일정">' + UI.dateFull(b.checkIn) + ' ~ ' + UI.dateFull(b.checkOut) + '<div class="sub">' + b.nights + '박</div></td>' +
+          '<td data-l="인원/객실" class="num">' + b.guests + '명<div class="sub">' + b.rooms + '실</div></td>' +
+          '<td data-l="예상비용" class="num"><b>' + STAY.won(amount(b)) + '</b>' + (over?'<div class="sub" style="color:var(--red)">고액</div>':'') + '</td>' +
+          '<td data-l="비용구분">' + UI.esc(STAY.COST_BEARER[b.costBearer]) + '</td>' +
+          '<td data-l="담당자">' + UI.esc(b.assigneeName||'-') + '</td>' +
+          (tab==='pending'
+            ? '<td data-l="승인요청">' + UI.dtFull(b.approval.requestedAt) + '<div class="sub">' + UI.ago(b.approval.requestedAt) + '</div></td>' +
+              '<td class="no-print">' + (canDecide
+                ? '<div class="btnrow"><button class="btn btn-sm btn-gold" data-ok="' + b.id + '">승인</button>' +
+                  '<button class="btn btn-sm btn-danger" data-no="' + b.id + '">반려</button></div>'
+                : '<span class="muted">권한 없음</span>') + '</td>'
+            : '<td data-l="처리자">' + UI.esc(b.approval.approverName||'-') + '</td>' +
+              '<td data-l="처리일시">' + UI.dtFull(b.approval.decidedAt) + '</td>' +
+              '<td data-l="의견" class="wrapcell">' + UI.esc(b.approval.opinion||'-') + '</td>') +
+        '</tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  UI.on(root, 'click', '.tabs button[data-t]', function(){ tab = this.dataset.t; render(); });
+  UI.on(root, 'click', 'tr[data-b]', function(e){
+    if (e.target.closest('button')) return;
+    location.href = 'detail.html?id=' + this.dataset.b;
+  });
+  UI.on(root, 'click', '[data-ok]', function(e){
+    e.stopPropagation(); decide(this.dataset.ok, 'APPROVED');
+  });
+  UI.on(root, 'click', '[data-no]', function(e){
+    e.stopPropagation(); decide(this.dataset.no, 'REJECTED');
+  });
+  function decide(id, to){
+    var b = Store.booking(id);
+    var isOk = to === 'APPROVED';
+    UI.prompt(isOk ? '예약 승인' : '예약 반려',
+      (isOk ? '승인 의견 (선택)' : '반려 사유 (필수)'),
+      { required:!isOk, danger:!isOk, okLabel: isOk?'승인':'반려',
+        hint: b.code + ' · ' + b.lodgingName + ' · ' + STAY.won(amount(b)) + ' · ' + b.branch + ' ' + b.applicantName,
+        placeholder: isOk ? '예) 이용 목적 확인. 승인합니다.' : '예) 인원 대비 객실 수 과다. 조정 후 재신청 바랍니다.' })
+      .then(function(v){
+        if (v == null) return;
+        var r = Store.transition(id, to, user, v);
+        if (r.ok) { UI.toast(isOk?'승인했습니다.':'반려했습니다.', isOk?'ok':'bad'); render(); }
+        else UI.toast(r.msg, 'bad');
+      });
+  }
+  render();
+})();
+</script>
+</body>
+</html>

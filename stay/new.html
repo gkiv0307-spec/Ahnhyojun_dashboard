@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>신규 숙박 예약 신청 | 옆커폰</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/stay.css">
+</head>
+<body>
+<script src="assets/gate.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('new', '신규 숙박 예약 신청', '예약 신청 → 접수 → 승인 → 예약 진행 → 예약 완료 → 숙박 이용 → 정산 → 완료');
+  var lodgings = Store.lodgings().filter(function(l){ return l.active !== false; });
+  /* 지점 명단이 아직 확정되지 않았다. 등록된 지점 + 이미 신청에 쓰인 지점명을 모아
+   * 자동완성으로 제안하고, 없으면 직접 입력하게 한다. 전 지점 누구나 신청할 수 있어야 하므로
+   * 목록에 없다고 막지 않는다. */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
+  var todayStr = STAY.ymd(new Date());
+  var files = [];
+  var isProxy = (user.role === 'booker' || user.role === 'admin');
+  var isStaff = Deploy.isStaff();   /* 직원용 배포 — 로그인 없음 */
+
+  root.innerHTML =
+   '<div class="pagehead"><div><h2>신규 숙박 예약 신청</h2>' +
+     '<p>필수 항목(<span style="color:var(--red)">*</span>)을 모두 입력해주세요. 제출 즉시 예약번호가 발급되고 예약관리팀에 알림이 전달됩니다.</p></div></div>' +
+   (isProxy && !isStaff ? '<div class="note info" style="margin-bottom:14px">☎️ 전화·카카오톡으로 받은 요청을 대신 등록하는 경우 아래 <b>“대리 접수”</b>를 체크하고 실제 신청자를 선택해주세요. 모든 요청은 시스템에 남아야 처리·정산됩니다.</div>' : '') +
+   '<form id="f" class="card"><div class="card-b">' +
+
+   '<fieldset class="fs"><legend>신청자 정보</legend>' +
+     (isProxy && !isStaff ? '<div class="field"><label class="check"><input type="checkbox" id="proxy"> 전화/카카오톡 등으로 받은 요청을 대신 등록합니다 (대리 접수)</label></div>' : '') +
+     '<div class="frow">' +
+       '<div class="field"><label>신청일<span class="req">*</span></label>' +
+         '<input class="input" type="date" name="requestedDate" value="' + todayStr + '" required></div>' +
+       '<div class="field"><label>신청자명<span class="req">*</span></label>' +
+         (isStaff
+           ? '<input class="input" name="applicantName" id="applicantName" placeholder="예) 김도현" required>'
+           : '<select class="select" name="applicantId" id="applicantId" ' + (isProxy?'':'disabled') + '>' +
+               Store.users().filter(function(u){ return u.active!==false; }).map(function(u){
+                 return '<option value="' + u.id + '"' + (u.id===user.id?' selected':'') + '>' + UI.esc(u.name) + ' (' + UI.esc(u.branch) + ')</option>';
+               }).join('') + '</select>') +
+         '<div class="hint" id="applicantHint">' +
+           (isStaff ? '이 이름으로 예약 진행상황을 조회하게 됩니다.'
+                    : (isProxy ? '대리 접수 시 실제 신청자를 선택하세요.' : '로그인 계정으로 자동 지정됩니다.')) +
+         '</div></div>' +
+       '<div class="field"><label>연락처<span class="req">*</span></label>' +
+         '<input class="input" name="phone" id="phone" value="' + UI.esc(user.phone) + '" placeholder="010-0000-0000" required></div>' +
+     '</div>' +
+     '<div class="frow f2">' +
+       '<div class="field"><label>소속 지점<span class="req">*</span></label>' +
+         '<input class="input" name="branch" id="branch" list="branchList" required autocomplete="off"' +
+           (isStaff ? '' : ' value="' + UI.esc(user.branch) + '"') + ' placeholder="예) 대구점">' +
+         '<datalist id="branchList">' +
+           branchOptions().map(function(b){ return '<option value="' + UI.esc(b) + '">'; }).join('') +
+         '</datalist>' +
+         '<div class="hint">목록에 없으면 직접 입력하세요. 입력한 지점명은 다음 신청자에게 자동완성으로 제안됩니다.</div></div>' +
+       '<div class="field"><label>소속 부서<span class="req">*</span></label>' +
+         '<input class="input" name="dept" id="dept" value="' + UI.esc(user.dept) + '" required></div>' +
+     '</div>' +
+     '<div class="field"><label>이용 목적<span class="req">*</span></label>' +
+       '<input class="input" name="purpose" placeholder="예) 가족과 여름 휴가 · 2박 3일" required>' +
+       '<div class="hint">누구와 어떤 일정으로 이용하는지 적어주시면 승인이 빨라집니다.</div></div>' +
+   '</fieldset>' +
+
+   '<fieldset class="fs"><legend>숙박 정보</legend>' +
+     '<div class="field"><label>숙박 유형<span class="req">*</span></label>' +
+       '<div class="radios" id="typeRadios">' +
+         Object.keys(STAY.LODGING_TYPE).map(function(k,i){
+           return '<label class="radio' + (i===0?' on':'') + '"><input type="radio" name="lodgingType" value="' + k + '"' + (i===0?' checked':'') + '>' + STAY.LODGING_TYPE[k] + '</label>';
+         }).join('') + '</div></div>' +
+     '<div class="frow f2">' +
+       '<div class="field"><label>이용 숙소<span class="req">*</span></label>' +
+         '<select class="select" name="lodgingId" id="lodgingId" required><option value="">숙소를 선택하세요</option></select>' +
+         '<div class="hint" id="lodgingHint">등록된 숙소가 없으면 “기타”를 선택하고 직접 입력하세요.</div></div>' +
+       '<div class="field" id="etcWrap" style="display:none"><label>숙소명 직접 입력<span class="req">*</span></label>' +
+         '<input class="input" name="lodgingNameEtc" placeholder="예) 경주 OO리조트"></div>' +
+     '</div>' +
+     '<div id="loInfo"></div>' +
+     '<div class="frow f4">' +
+       '<div class="field"><label>체크인 날짜<span class="req">*</span></label>' +
+         '<input class="input" type="date" name="checkIn" id="checkIn" min="' + todayStr + '" required></div>' +
+       '<div class="field"><label>체크아웃 날짜<span class="req">*</span></label>' +
+         '<input class="input" type="date" name="checkOut" id="checkOut" min="' + todayStr + '" required></div>' +
+       '<div class="field"><label>숙박일수 (자동계산)</label>' +
+         '<input class="input" id="nights" value="-" disabled></div>' +
+       '<div class="field"><label>객실 수<span class="req">*</span></label>' +
+         '<input class="input" type="number" name="rooms" id="rooms" min="1" value="1" required></div>' +
+     '</div>' +
+     '<div class="frow">' +
+       '<div class="field"><label>성인 인원<span class="req">*</span></label>' +
+         '<input class="input" type="number" name="adults" id="adults" min="1" value="1" required></div>' +
+       '<div class="field"><label>아동 인원</label>' +
+         '<input class="input" type="number" name="children" id="children" min="0" value="0"></div>' +
+       '<div class="field"><label>이용 인원 (자동합계)</label>' +
+         '<input class="input" id="guests" value="1" disabled></div>' +
+     '</div>' +
+   '</fieldset>' +
+
+   '<fieldset class="fs"><legend>예약자 · 비용</legend>' +
+     '<div class="frow f2">' +
+       '<div class="field"><label>예약자명<span class="req">*</span></label>' +
+         '<input class="input" name="guestName" id="guestName" value="' + UI.esc(user.name) + '" required>' +
+         '<div class="hint">실제 숙소에 체크인하는 분의 성함</div></div>' +
+       '<div class="field"><label>예약자 연락처<span class="req">*</span></label>' +
+         '<input class="input" name="guestPhone" id="guestPhone" value="' + UI.esc(user.phone) + '" required></div>' +
+     '</div>' +
+     '<div class="frow f2">' +
+       '<div class="field"><label>예상 비용<span class="req">*</span></label>' +
+         '<input class="input" type="number" name="estimatedCost" id="estimatedCost" min="0" step="1000" value="0" required>' +
+         '<div class="hint" id="costHint">숙소·객실수·박수를 선택하면 제휴가 기준으로 자동 계산됩니다. 수정 가능합니다.</div></div>' +
+       '<div class="field"><label>비용 구분<span class="req">*</span></label>' +
+         '<div class="radios">' +
+           Object.keys(STAY.COST_BEARER).map(function(k,i){
+             return '<label class="radio' + (i===0?' on':'') + '"><input type="radio" name="costBearer" value="' + k + '"' + (i===0?' checked':'') + '>' + STAY.COST_BEARER[k] + '</label>';
+           }).join('') + '</div></div>' +
+     '</div>' +
+     '<div class="field"><label>특별 요청사항</label>' +
+       '<textarea class="textarea" name="specialRequest" placeholder="예) 고층 금연 객실 희망, 늦은 체크인(22시 이후) 예정, 조식 필요 등"></textarea></div>' +
+     '<div class="field"><label>첨부파일</label>' +
+       '<div class="drop" id="drop">📎 클릭해서 파일 선택 (견적서·출장품의서·회의일정 등 · 파일당 2MB 이하)</div>' +
+       '<input type="file" id="fileInput" multiple class="sr">' +
+       '<div class="filelist" id="filelist"></div></div>' +
+   '</fieldset>' +
+
+   '<div class="note warn">제출하면 상태가 <b>신규신청</b>이 되고 예약관리팀에 알림이 전달됩니다. ' +
+     '접수·승인·예약 진행 상황은 [예약 관리]에서 실시간으로 확인할 수 있습니다.</div>' +
+
+   '</div><div class="card-h" style="border-top:1px solid var(--line-2);border-bottom:none;justify-content:flex-end">' +
+     '<button type="button" class="btn" id="cancel">취소</button>' +
+     '<button type="submit" class="btn btn-gold btn-lg">예약 신청 제출</button>' +
+   '</div></form>';
+
+  var f = UI.qs('#f');
+  /* --- 라디오 UI --- */
+  UI.on(root, 'change', 'input[type=radio]', function(){
+    UI.qsa('input[name="' + this.name + '"]').forEach(function(r){ r.closest('.radio').classList.toggle('on', r.checked); });
+    if (this.name === 'lodgingType') fillLodgings();
+  });
+
+  /* --- 숙소 목록 --- */
+  function curType(){ return (UI.qs('input[name=lodgingType]:checked')||{}).value || 'HOTEL'; }
+  function fillLodgings(){
+    var t = curType();
+    var sel = UI.qs('#lodgingId');
+    var opts = lodgings.filter(function(l){ return l.type === t; });
+    sel.innerHTML = '<option value="">숙소를 선택하세요</option>' +
+      opts.map(function(l){
+        return '<option value="' + l.id + '">' + UI.esc(l.name) + ' (' + UI.esc(l.region) + ' · ' +
+               (l.ownership==='DIRECT'?'직영':'제휴') + ')</option>'; }).join('') +
+      '<option value="__etc">＋ 목록에 없음 (직접 입력)</option>';
+    UI.qs('#etcWrap').style.display = 'none';
+    UI.qs('#loInfo').innerHTML = '';
+    calcCost();
+  }
+  UI.qs('#lodgingId').onchange = function(){
+    var etc = this.value === '__etc';
+    UI.qs('#etcWrap').style.display = etc ? '' : 'none';
+    UI.qs('[name=lodgingNameEtc]').required = etc;
+    var lo = Store.lodging(this.value);
+    UI.qs('#loInfo').innerHTML = lo ? lodgingCard(lo) : '';
+    calcCost();
+  };
+  /* 아직 등록되지 않은 항목은 아예 표시하지 않는다 (빈칸·0원이 잘못된 정보로 읽히지 않도록) */
+  function lodgingCard(l){
+    var bits = [];
+    if (l.address) bits.push(UI.esc(l.address));
+    if (l.checkInTime || l.checkOutTime)
+      bits.push('입실 ' + UI.esc(l.checkInTime || '-') + ' / 퇴실 ' + UI.esc(l.checkOutTime || '-'));
+    if (l.roomInfo) bits.push('객실 ' + UI.esc(l.roomInfo));
+    if (l.rackRate) bits.push('정상가 ' + STAY.won(l.rackRate) +
+      (l.partnerRate ? ' → 적용가 <b>' + STAY.won(l.partnerRate) + '</b>' : ''));
+    if (l.cancelPolicy) bits.push('취소규정: ' + UI.esc(l.cancelPolicy));
+    if (l.managerPhone) bits.push('숙소 연락처 ' + UI.esc(l.managerPhone));
+    var missing = !l.rackRate && !l.cancelPolicy && !l.checkInTime;
+    return '<div class="note info" style="margin-bottom:14px">' +
+      '<b>' + UI.esc(l.name) + '</b> <span class="tag ' + (l.ownership==='DIRECT'?'direct':'partner') + '">' +
+        UI.esc(STAY.OWNERSHIP[l.ownership]) + '</span>' +
+      (bits.length ? '<br>' + bits.join('<br>') : '') +
+      (l.caution ? '<br>⚠ ' + UI.esc(l.caution) : '') +
+      (missing ? '<br><span style="color:#9a4b06">요금·입퇴실·취소규정이 아직 등록되지 않았습니다. 예약 담당자가 확인 후 안내드립니다.</span>' : '') +
+      '</div>';
+  }
+
+  /* --- 자동계산 --- */
+  function calcNights(){
+    var ci = UI.qs('#checkIn').value, co = UI.qs('#checkOut').value;
+    var n = STAY.nights(ci, co);
+    UI.qs('#nights').value = (ci && co) ? (n > 0 ? n + '박 ' + (n+1) + '일' : '체크아웃이 체크인보다 빠릅니다') : '-';
+    if (ci) UI.qs('#checkOut').min = ci;
+    return n;
+  }
+  function calcGuests(){
+    var a = Number(UI.qs('#adults').value)||0, c = Number(UI.qs('#children').value)||0;
+    UI.qs('#guests').value = (a+c) + '명 (성인 ' + a + ' / 아동 ' + c + ')';
+  }
+  var costTouched = false;
+  function calcCost(){
+    if (costTouched) return;
+    var lo = Store.lodging(UI.qs('#lodgingId').value);
+    var n = STAY.nights(UI.qs('#checkIn').value, UI.qs('#checkOut').value);
+    var rooms = Number(UI.qs('#rooms').value)||1;
+    if (!lo || !n) return;
+    var unit = lo.partnerRate || lo.rackRate;
+    if (!unit) {   /* 요금이 아직 등록되지 않은 숙소 — 0원으로 채우면 오해를 부른다 */
+      UI.qs('#costHint').textContent = lo.name + ' 요금이 아직 등록되지 않았습니다. 예상 비용을 직접 입력해주세요.';
+      return;
+    }
+    UI.qs('#estimatedCost').value = unit * n * rooms;
+    UI.qs('#costHint').textContent = lo.name + ' ' + STAY.won(unit) + ' × ' + n + '박 × ' + rooms + '실 = ' +
+      STAY.won(unit*n*rooms) + ' (자동계산 · 수정 가능)';
+  }
+  ['#checkIn','#checkOut'].forEach(function(s){ UI.qs(s).addEventListener('change', function(){ calcNights(); calcCost(); }); });
+  ['#adults','#children'].forEach(function(s){ UI.qs(s).addEventListener('input', calcGuests); });
+  UI.qs('#rooms').addEventListener('input', calcCost);
+  UI.qs('#estimatedCost').addEventListener('input', function(){ costTouched = true; });
+
+  /* --- 대리 접수 --- */
+  var proxy = UI.qs('#proxy');
+  if (proxy) proxy.onchange = function(){
+    applicantSel.disabled = !this.checked;
+    if (!this.checked) { applicantSel.value = user.id; syncApplicant(); }
+  };
+  var applicantSel = UI.qs('#applicantId');
+  if (applicantSel) applicantSel.onchange = syncApplicant;
+  function syncApplicant(){
+    if (!applicantSel) return;
+    var u = Store.user(applicantSel.value);
+    if (!u) return;
+    UI.qs('#branch').value = u.branch; UI.qs('#dept').value = u.dept; UI.qs('#phone').value = u.phone;
+    UI.qs('#guestName').value = u.name; UI.qs('#guestPhone').value = u.phone;
+  }
+
+  /* --- 첨부파일 --- */
+  UI.qs('#drop').onclick = function(){ UI.qs('#fileInput').click(); };
+  UI.qs('#fileInput').onchange = function(){
+    Array.prototype.forEach.call(this.files, function(file){
+      if (file.size > 2*1024*1024) { UI.toast(file.name + ' : 2MB를 초과해 제외했습니다.', 'bad'); return; }
+      var fr = new FileReader();
+      fr.onload = function(){
+        files.push({ name:file.name, size:file.size, type:file.type, dataUrl:fr.result });
+        renderFiles();
+      };
+      fr.readAsDataURL(file);
+    });
+    this.value = '';
+  };
+  function renderFiles(){
+    UI.qs('#filelist').innerHTML = files.map(function(f, i){
+      return '<div class="fileitem">📄 ' + UI.esc(f.name) + ' <span class="muted">(' + Math.round(f.size/1024) + 'KB)</span>' +
+        '<span class="sp"></span><button type="button" class="btn btn-sm btn-ghost" data-rm="' + i + '">삭제</button></div>';
+    }).join('');
+  }
+  UI.on(root, 'click', '[data-rm]', function(){ files.splice(Number(this.dataset.rm),1); renderFiles(); });
+
+  UI.qs('#cancel').onclick = function(){ history.length > 1 ? history.back() : location.href='index.html'; };
+
+  /* --- 제출 --- */
+  f.onsubmit = function(e){
+    e.preventDefault();
+    var fd = new FormData(f);
+    var loId = fd.get('lodgingId');
+    var n = calcNights();
+    if (!n) { UI.toast('체크아웃 날짜는 체크인 이후여야 합니다.', 'bad'); UI.qs('#checkOut').focus(); return; }
+    if (loId === '__etc' && !String(fd.get('lodgingNameEtc')||'').trim()) {
+      UI.toast('숙소명을 직접 입력해주세요.', 'bad'); return; }
+    var applicant = isStaff
+      ? { id:null, name:String(fd.get('applicantName') || '').trim() }
+      : (Store.user(fd.get('applicantId')) || user);
+    if (isStaff && !applicant.name) { UI.toast('신청자명을 입력해주세요.', 'bad'); return; }
+    if (isStaff && !fd.get('branch')) { UI.toast('소속 지점을 선택해주세요.', 'bad'); return; }
+    /* 처리 로그에 남길 사람. 직원용은 로그인이 없으므로 입력한 신청자 정보를 그대로 쓴다. */
+    var actor = isStaff
+      ? { id:'guest', name:applicant.name, role:'applicant', branch:fd.get('branch') }
+      : user;
+    var isProxyOn = proxy && proxy.checked;
+
+    var reqDate = fd.get('requestedDate');
+    var reqAt = (reqDate === STAY.ymd(new Date()))
+      ? new Date().toISOString()
+      : new Date(reqDate + 'T09:00:00').toISOString();
+
+    var b = Store.createBooking({
+      requestedAt: reqAt,
+      applicantId: applicant.id, applicantName: applicant.name,
+      branch: fd.get('branch'), dept: fd.get('dept'), phone: fd.get('phone'),
+      purpose: fd.get('purpose'),
+      lodgingType: fd.get('lodgingType'),
+      lodgingId: loId === '__etc' ? null : loId,
+      lodgingName: loId === '__etc' ? fd.get('lodgingNameEtc') : (Store.lodging(loId)||{}).name,
+      checkIn: fd.get('checkIn'), checkOut: fd.get('checkOut'),
+      adults: fd.get('adults'), children: fd.get('children'), rooms: fd.get('rooms'),
+      guestName: fd.get('guestName'), guestPhone: fd.get('guestPhone'),
+      estimatedCost: fd.get('estimatedCost'), costBearer: fd.get('costBearer'),
+      specialRequest: fd.get('specialRequest'),
+      attachments: files,
+      proxyBy: isProxyOn ? user.name : null
+    }, actor);
+
+    UI.modal({
+      title:'예약 신청이 접수되었습니다',
+      body:'<div class="note" style="margin-bottom:14px">예약번호 <b style="font-size:17px">' + UI.esc(b.code) + '</b></div>' +
+           '<dl class="dl one">' +
+           '<div class="dr"><dt>숙소</dt><dd>' + UI.esc(b.lodgingName) + '</dd></div>' +
+           '<div class="dr"><dt>일정</dt><dd>' + UI.esc(b.checkIn) + ' ~ ' + UI.esc(b.checkOut) + ' (' + b.nights + '박)</dd></div>' +
+           '<div class="dr"><dt>인원/객실</dt><dd>' + b.guests + '명 / ' + b.rooms + '실</dd></div>' +
+           '<div class="dr"><dt>예상비용</dt><dd>' + STAY.won(b.estimatedCost) + '</dd></div>' +
+           '<div class="dr"><dt>현재상태</dt><dd>' + UI.badge('NEW') + '</dd></div></dl>' +
+           '<p class="muted" style="font-size:12.5px;margin:12px 0 0">예약관리팀에 알림이 전달되었습니다.' +
+           (isStaff ? ' <b>예약번호를 꼭 메모해두세요.</b> [내 예약 조회]에서 이 번호와 신청자명으로 진행상황을 확인할 수 있습니다.'
+                    : ' 진행 상황은 예약 상세 화면에서 확인할 수 있습니다.') + '</p>',
+      buttons: isStaff
+        ? [ { label:'닫기' },
+            { label:'진행상황 보기', cls:'btn-gold',
+              onClick:function(){ location.href='mystay.html?code=' + encodeURIComponent(b.code); } } ]
+        : [ { label:'목록으로', onClick:function(){ location.href='requests.html'; } },
+            { label:'예약 상세 보기', cls:'btn-gold', onClick:function(){ location.href='detail.html?id=' + b.id; } } ]
+    });
+  };
+
+  fillLodgings();
+  calcGuests();
+})();
+</script>
+</body>
+</html>

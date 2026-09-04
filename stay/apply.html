@@ -1,0 +1,2897 @@
+<meta charset="utf-8">
+<title>옆커폰 숙박 예약 신청</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap">
+<style>
+/* 옆커폰 숙박 예약관리 시스템 — 관리자 셸 스타일
+   기존 브랜드 토큰(골드/잉크/Pretendard) 재사용 + 업무화면용 밝은 본문 */
+:root{
+  --gold:#FFC300; --gold-2:#e0a800; --gold-soft:#fff6da;
+  --ink:#0c0c0f; --ink-2:#17171c; --ink-3:#232329; --ink-4:#2e2e36;
+  --paper:#ffffff; --bg:#f4f5f7; --line:#e4e6ea; --line-2:#eef0f3;
+  --text:#1b1c1f; --text-2:#5b606a; --muted:#8a8f99;
+  --blue:#2563eb; --green:#0f9d58; --red:#d93b3b; --orange:#e8770a; --violet:#7c3aed;
+  --radius:12px; --radius-lg:16px;
+  --sb:250px;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 14px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+img{max-width:100%;display:block}
+h1,h2,h3,h4{margin:0;letter-spacing:-.02em;font-weight:800}
+
+/* ---------- 레이아웃 ---------- */
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:var(--sb);flex:none;background:var(--ink);color:#d7d8dd;
+  position:fixed;inset:0 auto 0 0;z-index:70;display:flex;flex-direction:column;
+  border-right:1px solid #000;
+}
+.sb-brand{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);position:relative}
+.sb-close{display:none;position:absolute;top:12px;right:12px;background:rgba(255,255,255,.1);
+  border:none;color:#d7d8dd;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px}
+.sb-close:hover{background:rgba(255,255,255,.2);color:#fff}
+.sb-brand .wm{display:inline-block;font-size:17px;font-weight:900;color:#fff;letter-spacing:-.03em;text-decoration:none;line-height:1}
+.sb-brand .wm em{font-style:normal;color:var(--gold)}
+.sb-brand .sys{margin-top:9px;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.02em}
+.sb-brand .sys em{font-style:normal;color:var(--gold)}
+.sb-nav{flex:1;overflow-y:auto;padding:12px 10px 20px}
+.sb-group{margin:14px 0 6px;padding:0 10px;font-size:11px;font-weight:800;color:#6d707a;letter-spacing:.1em}
+.sb-nav a{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;
+  font-size:14px;font-weight:600;color:#c6c8ce;margin-bottom:2px;transition:.14s;
+}
+.sb-nav a:hover{background:rgba(255,255,255,.07);color:#fff}
+.sb-nav a.on{background:rgba(255,195,0,.14);color:var(--gold)}
+.sb-nav a .ic{width:18px;text-align:center;font-size:15px;flex:none}
+.sb-nav a .cnt{margin-left:auto;background:var(--red);color:#fff;font-size:11px;font-weight:800;
+  min-width:19px;height:19px;padding:0 5px;border-radius:999px;display:grid;place-items:center}
+.sb-nav a.on .cnt{background:var(--gold);color:#241c00}
+.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.08);font-size:11.5px;color:#6d707a}
+.sb-foot a{color:#9a9da6;text-decoration:underline}
+
+.main{flex:1;min-width:0;margin-left:var(--sb);display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:60;background:rgba(255,255,255,.93);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);padding:0 22px;height:60px;display:flex;align-items:center;gap:14px;
+}
+.topbar .burger{display:none;background:none;border:none;font-size:20px;cursor:pointer;padding:4px}
+.topbar h1{font-size:17px}
+.topbar .crumb{color:var(--muted);font-size:12.5px;font-weight:600}
+.topbar .sp{margin-left:auto}
+.tb-search{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);
+  border-radius:999px;padding:6px 14px;width:250px}
+.tb-search input{border:none;background:none;outline:none;width:100%;font-size:13.5px}
+.tb-icon{position:relative;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);
+  background:var(--paper);display:grid;place-items:center;cursor:pointer;font-size:16px}
+.tb-icon:hover{border-color:var(--gold-2)}
+.tb-icon .dot{position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;font-size:10px;
+  font-weight:800;min-width:17px;height:17px;padding:0 4px;border-radius:999px;display:grid;place-items:center}
+.userchip{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--paper);
+  border-radius:999px;padding:4px 12px 4px 4px;cursor:pointer}
+.userchip:hover{border-color:var(--gold-2)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--gold);
+  display:grid;place-items:center;font-weight:800;font-size:12px;flex:none}
+.userchip .nm{font-weight:700;font-size:13px;line-height:1.2}
+.userchip .rl{font-size:11px;color:var(--muted);line-height:1.2}
+.content{padding:22px;max-width:1560px;width:100%}
+
+/* ---------- 카드 ---------- */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;gap:10px;padding:15px 18px;border-bottom:1px solid var(--line-2);flex-wrap:wrap}
+.card-h h3{white-space:nowrap}
+.card-h .tag{white-space:nowrap}
+.card-h h3{font-size:14.5px}
+.card-h .sub{font-size:12px;color:var(--muted);font-weight:600}
+.card-h .sp{margin-left:auto}
+.card-b{padding:16px 18px}
+.card-b.tight{padding:0}
+.grid{display:grid;gap:14px;align-items:start}
+/* 그리드 자식의 기본 min-width:auto 때문에 긴 텍스트가 트랙을 밀어내는 것을 방지 */
+.grid>*,.kpis>*{min-width:0}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g-2-1{grid-template-columns:2fr 1fr}
+.g-1-2{grid-template-columns:1fr 2fr}
+.mt{margin-top:14px} .mt-lg{margin-top:20px}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:block}
+.kpi:hover{border-color:var(--gold-2)}
+.kpi .lb{font-size:12.5px;color:var(--text-2);font-weight:700;display:flex;align-items:center;gap:6px}
+.kpi .vl{font-size:26px;font-weight:900;letter-spacing:-.04em;margin-top:6px;line-height:1.15}
+.kpi .vl small{font-size:13px;font-weight:700;color:var(--text-2);margin-left:3px}
+.kpi .sub{font-size:11.5px;color:var(--muted);margin-top:3px;font-weight:600}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--line)}
+.kpi.k-gold::before{background:var(--gold)}
+.kpi.k-blue::before{background:var(--blue)}
+.kpi.k-green::before{background:var(--green)}
+.kpi.k-red::before{background:var(--red)}
+.kpi.k-orange::before{background:var(--orange)}
+.kpi.k-violet::before{background:var(--violet)}
+.kpi.k-ink::before{background:var(--ink)}
+
+/* ---------- 배지 (상태) ---------- */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;
+  padding:3px 9px;border-radius:999px;border:1px solid transparent;white-space:nowrap;line-height:1.5}
+.badge .d{width:5px;height:5px;border-radius:50%;background:currentColor;flex:none}
+.b-NEW{background:#eaf1ff;color:#1d4ed8;border-color:#c9dbff}
+.b-RECEIVED{background:#e6f4fb;color:#0369a1;border-color:#c2e4f4}
+.b-REVIEWING{background:#eef0ff;color:#4338ca;border-color:#d5d9fb}
+.b-APPROVAL_PENDING{background:#fff4d9;color:#a16207;border-color:#ffe3a3}
+.b-APPROVED{background:#e3f7f2;color:#0d7f68;border-color:#bfeade}
+.b-BOOKING{background:#f4ecfe;color:#6d28d9;border-color:#e2d3fb}
+.b-BOOKED{background:#e6f7ea;color:#137a37;border-color:#c3ecce}
+.b-UPCOMING{background:#e3f6fb;color:#0e7490;border-color:#bde8f2}
+.b-USED{background:#eef0f3;color:#475467;border-color:#dfe3e8}
+.b-SETTLE_WAIT{background:#fff0e2;color:#c2570a;border-color:#ffdcbd}
+.b-SETTLING{background:#fdf3d3;color:#8a6300;border-color:#f5e3a8}
+.b-SETTLED{background:#e8efe9;color:#3f6b4c;border-color:#cfe0d4}
+.b-CANCELED{background:#f2f3f5;color:#6b7280;border-color:#e2e4e8}
+.b-REJECTED{background:#fdeaea;color:#b42318;border-color:#f8cfcc}
+/* 결제상태 */
+.b-PAY_NONE{background:#f2f3f5;color:#6b7280;border-color:#e2e4e8}
+.b-PAY_WAIT{background:#fff0e2;color:#c2570a;border-color:#ffdcbd}
+.b-PAY_PARTIAL{background:#fdf3d3;color:#8a6300;border-color:#f5e3a8}
+.b-PAY_DONE{background:#e6f7ea;color:#137a37;border-color:#c3ecce}
+/* 일반 태그 */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:2px 8px;
+  border-radius:6px;background:var(--bg);border:1px solid var(--line);color:var(--text-2)}
+.tag.gold{background:var(--gold-soft);border-color:#f3dc9a;color:#8a6300}
+.tag.direct{background:#e8f2ff;border-color:#c9dcf7;color:#1d4ed8}
+.tag.partner{background:#f4f1ff;border-color:#ddd6fb;color:#6d28d9}
+
+/* ---------- 버튼 ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:13.5px;
+  padding:8px 15px;border-radius:9px;border:1px solid var(--line);background:var(--paper);cursor:pointer;
+  transition:.14s;white-space:nowrap;color:var(--text)}
+.btn:hover{border-color:var(--muted);background:#fbfbfc}
+.btn-primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn-primary:hover{background:#000;border-color:#000}
+.btn-gold{background:var(--gold);border-color:var(--gold);color:#241c00}
+.btn-gold:hover{background:var(--gold-2);border-color:var(--gold-2)}
+.btn-danger{background:#fff;border-color:#f3c9c6;color:var(--red)}
+.btn-danger:hover{background:#fdf2f2}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn-ghost:hover{background:var(--bg)}
+.btn-sm{padding:5px 10px;font-size:12.5px;border-radius:7px}
+.btn-lg{padding:11px 22px;font-size:15px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- 폼 ---------- */
+.field{display:block;margin-bottom:14px}
+.field>label{display:block;font-size:12.5px;font-weight:800;color:var(--text-2);margin-bottom:6px}
+.field .req{color:var(--red);margin-left:2px}
+.field .hint{font-size:11.5px;color:var(--muted);margin-top:5px;font-weight:600}
+.input,.select,.textarea{
+  width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--paper);
+  outline:none;transition:.14s;font-size:14px}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--gold-2);box-shadow:0 0 0 3px rgba(255,195,0,.16)}
+.input:disabled,.select:disabled{background:var(--bg);color:var(--text-2)}
+.textarea{min-height:88px;resize:vertical;line-height:1.6}
+.input.err,.select.err{border-color:var(--red);box-shadow:0 0 0 3px rgba(217,59,59,.12)}
+.errmsg{color:var(--red);font-size:11.5px;font-weight:700;margin-top:5px}
+.radios{display:flex;gap:8px;flex-wrap:wrap}
+.radio{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:9px;
+  padding:8px 13px;cursor:pointer;font-weight:700;font-size:13.5px;background:var(--paper)}
+.radio:hover{border-color:var(--muted)}
+.radio input{accent-color:var(--gold-2);margin:0}
+.radio.on{border-color:var(--gold-2);background:var(--gold-soft);color:#7a5800}
+.check{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13.5px;cursor:pointer}
+.check input{accent-color:var(--gold-2);width:16px;height:16px}
+.fs{border:1px solid var(--line-2);border-radius:var(--radius);padding:16px 18px 4px;margin-bottom:16px}
+.fs>legend{font-size:13px;font-weight:900;padding:0 8px;color:var(--ink);letter-spacing:-.02em}
+.frow{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
+.frow.f2{grid-template-columns:1fr 1fr}
+.frow.f4{grid-template-columns:repeat(4,1fr)}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);
+  font-weight:700;font-size:13px;cursor:pointer;background:var(--bg)}
+.drop:hover{border-color:var(--gold-2);color:var(--text-2)}
+.filelist{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.fileitem{display:flex;align-items:center;gap:8px;font-size:12.5px;background:var(--bg);
+  border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.fileitem .sp{margin-left:auto}
+
+/* ---------- 필터바 ---------- */
+.filterbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.filterbar .field{margin:0}
+.filterbar .field>label{font-size:11.5px;margin-bottom:4px}
+.filterbar .input,.filterbar .select{padding:7px 10px;font-size:13px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 12px;
+  font-size:12.5px;font-weight:700;cursor:pointer;color:var(--text-2)}
+.chip:hover{border-color:var(--muted)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip .n{opacity:.6;margin-left:4px;font-weight:800}
+
+/* ---------- 표 ---------- */
+.tablewrap{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.tbl th{
+  background:#fafbfc;text-align:left;font-weight:800;font-size:11.5px;color:var(--text-2);
+  padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;z-index:1}
+table.tbl th.sortable{cursor:pointer;user-select:none}
+table.tbl th.sortable:hover{color:var(--ink)}
+table.tbl td{padding:10px 12px;border-bottom:1px solid var(--line-2);vertical-align:middle;white-space:nowrap}
+table.tbl tbody tr{cursor:pointer}
+table.tbl tbody tr:hover{background:#fffdf5}
+table.tbl tbody tr.dim{opacity:.62}
+table.tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+table.tbl .code{font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+table.tbl .sub{font-size:11.5px;color:var(--muted);font-weight:600}
+table.tbl .wrapcell{white-space:normal;min-width:150px}
+/* 열이 많은 표: 예약번호(좌) · 처리버튼(우) 고정 */
+table.tbl.sticky-ends th:first-child,table.tbl.sticky-ends td:first-child{
+  position:sticky;left:0;z-index:2;background:var(--paper);box-shadow:1px 0 0 var(--line-2)}
+table.tbl.sticky-ends th:first-child{background:#fafbfc;z-index:3}
+table.tbl.sticky-ends tbody tr:hover td:first-child{background:#fffdf5}
+table.tbl.sticky-ends th:last-child,table.tbl.sticky-ends td:last-child{
+  position:sticky;right:0;z-index:2;background:var(--paper);box-shadow:-1px 0 0 var(--line-2)}
+table.tbl.sticky-ends th:last-child{background:#fafbfc;z-index:3}
+table.tbl.sticky-ends tbody tr:hover td:last-child{background:#fffdf5}
+.empty{padding:44px 20px;text-align:center;color:var(--muted);font-weight:700;font-size:13.5px}
+.empty .em{font-size:30px;display:block;margin-bottom:8px;opacity:.5}
+.pager{display:flex;align-items:center;gap:6px;justify-content:center;padding:14px}
+.pager button{min-width:32px;height:32px;border:1px solid var(--line);background:var(--paper);
+  border-radius:8px;cursor:pointer;font-weight:700;font-size:12.5px}
+.pager button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.pager button[disabled]{opacity:.4;cursor:not-allowed}
+
+/* ---------- 리스트 (할일/최근) ---------- */
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:11px;padding:11px 18px;border-bottom:1px solid var(--line-2);cursor:pointer}
+.li:last-child{border-bottom:none}
+.li:hover{background:#fffdf5}
+.li .ic{width:32px;height:32px;border-radius:9px;background:var(--bg);display:grid;place-items:center;
+  font-size:15px;flex:none}
+.li .tx{min-width:0;flex:1}
+.li .t1{display:block;font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .t2{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px}
+.li .tx{display:flex;flex-direction:column}
+.li .rt{margin-left:auto;text-align:right;flex:none;display:flex;align-items:center;gap:8px}
+.li.unread{background:#fffaf0}
+.li.unread .t1::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--red);margin-right:6px;vertical-align:middle}
+
+/* ---------- 타임라인 ---------- */
+.timeline{position:relative;padding:4px 0 4px 4px}
+.tl{position:relative;padding:0 0 20px 30px;border-left:2px solid var(--line)}
+.tl:last-child{border-left-color:transparent;padding-bottom:0}
+.tl::before{content:"";position:absolute;left:-8px;top:2px;width:14px;height:14px;border-radius:50%;
+  background:var(--paper);border:3px solid var(--line)}
+.tl.done::before{border-color:var(--green);background:var(--green)}
+.tl.now::before{border-color:var(--gold);background:var(--gold);box-shadow:0 0 0 4px rgba(255,195,0,.22)}
+.tl.bad::before{border-color:var(--red);background:var(--red)}
+.tl .tt{font-weight:800;font-size:13.5px;line-height:1.4}
+.tl .td{font-size:12px;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.tl .tm{font-size:12.5px;color:var(--text-2);margin-top:3px;white-space:pre-wrap}
+.tl.future .tt{color:var(--muted)}
+
+/* 진행 스텝바 */
+.steps{display:flex;gap:4px;overflow-x:auto;padding:2px 0}
+.step{flex:1;min-width:74px;text-align:center;font-size:11px;font-weight:800;color:var(--muted)}
+.step .bar{height:5px;border-radius:99px;background:var(--line);margin-bottom:6px}
+.step.done .bar{background:var(--green)} .step.done{color:var(--green)}
+.step.now .bar{background:var(--gold)} .step.now{color:#8a6300}
+.step.bad .bar{background:var(--red)} .step.bad{color:var(--red)}
+
+/* ---------- 정의 목록 ---------- */
+.dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}
+.dl.one{grid-template-columns:1fr}
+.dl .dr{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-2);font-size:13.5px;min-width:0}
+.dl .dr dt{flex:none;width:96px;color:var(--text-2);font-weight:700;font-size:12.5px}
+.dl .dr dd{margin:0;font-weight:700;min-width:0;word-break:break-all}
+.dl .dr dd.muted{color:var(--muted);font-weight:600}
+
+/* ---------- 차트 ---------- */
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar-row{display:flex;align-items:center;gap:10px;font-size:12.5px}
+.bar-row .nm{width:96px;flex:none;font-weight:700;color:var(--text-2);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.bar-row .tr{flex:1;height:20px;background:var(--bg);border-radius:6px;overflow:hidden}
+.bar-row .fi{display:block;height:100%;background:var(--ink);border-radius:6px;transition:width .4s}
+.bar-row .fi.gold{background:linear-gradient(90deg,var(--gold-2),var(--gold))}
+.bar-row .vv{width:96px;flex:none;text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.cols{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:8px}
+.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%}
+.col .cb{width:100%;max-width:38px;background:linear-gradient(180deg,var(--gold),var(--gold-2));
+  border-radius:6px 6px 0 0;min-height:3px;transition:height .4s;position:relative}
+.col .cv{font-size:10.5px;font-weight:800;color:var(--text-2);font-variant-numeric:tabular-nums}
+.col .cl{font-size:11px;font-weight:700;color:var(--muted)}
+.col.hi .cb{background:linear-gradient(180deg,#3a3a44,var(--ink))}
+
+/* ---------- 모달 / 드로어 / 토스트 ---------- */
+.mask{position:fixed;inset:0;background:rgba(12,12,15,.5);z-index:90;display:grid;place-items:center;padding:20px}
+.modal{background:var(--paper);border-radius:var(--radius-lg);width:100%;max-width:560px;max-height:88vh;
+  overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal.wide{max-width:820px}
+.modal-h{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);
+  position:sticky;top:0;background:var(--paper);z-index:2}
+.modal-h h3{font-size:15.5px}
+.modal-h .x{margin-left:auto;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
+.modal-b{padding:18px 20px}
+.modal-f{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;
+  position:sticky;bottom:0;background:var(--paper)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);background:var(--paper);z-index:95;
+  box-shadow:-8px 0 30px rgba(0,0,0,.18);display:flex;flex-direction:column;transform:translateX(100%);
+  transition:transform .22s}
+.drawer.open{transform:translateX(0)}
+.toasts{position:fixed;right:18px;bottom:18px;z-index:120;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--ink);color:#fff;padding:11px 16px;border-radius:10px;font-weight:700;font-size:13.5px;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:9px;animation:tin .2s}
+.toast.ok{background:#0d7a45} .toast.bad{background:#b42318}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}}
+
+/* ---------- 알림 패널 ---------- */
+.pop{position:absolute;top:52px;right:22px;width:min(400px,92vw);background:var(--paper);
+  border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:0 16px 40px rgba(16,24,40,.16);
+  z-index:80;overflow:hidden;max-height:70vh;display:flex;flex-direction:column}
+.pop .ph{padding:12px 16px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;gap:8px}
+.pop .ph h4{font-size:13.5px;font-weight:800}
+.pop .pb{overflow-y:auto}
+.pop .pf{border-top:1px solid var(--line-2);padding:9px;text-align:center}
+
+/* ---------- 알림 배너 / 공지 ---------- */
+.note{border:1px solid var(--line);border-left:3px solid var(--gold);background:var(--gold-soft);
+  border-radius:10px;padding:12px 15px;font-size:13px;font-weight:600;color:#7a5800}
+.note.info{background:#eef4ff;border-color:#d4e2ff;border-left-color:var(--blue);color:#1e40af}
+.note.warn{background:#fff4e8;border-color:#ffdcbd;border-left-color:var(--orange);color:#9a4b06}
+.note.bad{background:#fdeaea;border-color:#f8cfcc;border-left-color:var(--red);color:#96261d}
+.acc{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden;background:var(--paper)}
+.acc>summary{padding:12px 15px;font-weight:800;font-size:13.5px;cursor:pointer;list-style:none;
+  display:flex;align-items:center;gap:9px}
+.acc>summary::-webkit-details-marker{display:none}
+.acc>summary::after{content:"▾";margin-left:auto;color:var(--muted);transition:.18s}
+.acc[open]>summary::after{transform:rotate(180deg)}
+.acc .accb{padding:0 15px 14px;font-size:13.5px;color:var(--text-2);white-space:pre-wrap;line-height:1.75}
+
+/* ---------- 탭 ---------- */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{background:none;border:none;padding:10px 16px;font-weight:800;font-size:13.5px;color:var(--muted);
+  cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--gold)}
+.tabs button:hover{color:var(--text)}
+
+.hr{height:1px;background:var(--line-2);margin:14px 0}
+.muted{color:var(--muted)} .t2{color:var(--text-2)}
+.right{text-align:right} .center{text-align:center}
+.nowrap{white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.pagehead{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.pagehead h2{font-size:20px}
+.pagehead p{margin:4px 0 0;font-size:13px;color:var(--text-2)}
+.pagehead .sp{margin-left:auto}
+.printonly{display:none}
+
+/* ---------- 반응형 ---------- */
+@media(max-width:1240px){
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  .g4{grid-template-columns:1fr 1fr}
+  .filterbar{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:960px){
+  .sidebar{transform:translateX(-100%);transition:transform .2s;width:min(var(--sb),78vw)}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.35)}
+  .sb-close{display:block}
+  .main{margin-left:0}
+  .topbar .burger{display:block}
+  .tb-search{display:none}
+  .kpis{grid-template-columns:1fr 1fr}
+  .g2,.g3,.g4,.g-2-1,.g-1-2{grid-template-columns:1fr}
+  .frow,.frow.f2,.frow.f4{grid-template-columns:1fr 1fr}
+  .dl{grid-template-columns:1fr}
+  .content{padding:16px}
+  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:69}
+}
+@media(max-width:640px){
+  .filterbar{grid-template-columns:1fr 1fr}
+  .frow,.frow.f2,.frow.f4{grid-template-columns:1fr}
+  .topbar{padding:0 14px;gap:8px}
+  .topbar h1{font-size:15px}
+  .topbar .crumb{display:none}
+  .userchip .nm,.userchip .rl{display:none}
+  .userchip{padding:4px}
+  .kpi .vl{font-size:21px}
+  /* 표 → 카드 */
+  table.tbl thead{display:none}
+  table.tbl,table.tbl tbody,table.tbl tr,table.tbl td{display:block;width:100%}
+  table.tbl tr{border:1px solid var(--line);border-radius:10px;margin:10px;padding:6px 4px;background:var(--paper)}
+  table.tbl td{border:none;padding:5px 12px;white-space:normal;display:flex;gap:10px;align-items:center}
+  table.tbl td::before{content:attr(data-l);flex:none;width:74px;font-size:11.5px;color:var(--muted);font-weight:800}
+  table.tbl td.num{text-align:left}
+  table.tbl td:empty{display:none}
+  /* 카드형에서 부차 항목은 숨겨 카드 높이를 줄인다 (상세에서 전부 확인 가능) */
+  table.tbl td.m-hide{display:none}
+  table.tbl tr td:first-child{font-size:14px;padding-top:8px}
+  table.tbl.sticky-ends th:first-child,table.tbl.sticky-ends td:first-child,
+  table.tbl.sticky-ends th:last-child,table.tbl.sticky-ends td:last-child{
+    position:static;box-shadow:none;background:transparent}
+}
+@media print{
+  .sidebar,.topbar,.no-print{display:none!important}
+  .main{margin-left:0}
+  .printonly{display:block}
+  body{background:#fff}
+  .card{box-shadow:none;break-inside:avoid}
+}
+
+/* ---------- 공유 링크 잠금 화면 ---------- */
+.gate{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(900px 500px at 70% -10%,#2a2410 0%,transparent 60%),var(--ink)}
+.gate-card{width:100%;max-width:360px;background:var(--paper);border-radius:var(--radius-lg);
+  padding:32px 28px;box-shadow:0 24px 60px rgba(0,0,0,.4);text-align:center}
+.gate-brand{font-size:12px;font-weight:900;letter-spacing:.16em;color:var(--gold-2)}
+.gate-card h1{font-size:19px;margin:8px 0 6px}
+.gate-card p{margin:0 0 20px;font-size:13px;color:var(--text-2);line-height:1.6}
+.gate-input{width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;outline:none;
+  font-size:22px;text-align:center;letter-spacing:.5em;text-indent:.5em;font-weight:800}
+.gate-input:focus{border-color:var(--gold-2);box-shadow:0 0 0 3px rgba(255,195,0,.18)}
+.gate-err{min-height:18px;margin-top:8px;font-size:12.5px;font-weight:700;color:var(--red)}
+.gate-btn{width:100%;margin-top:6px;padding:13px;border:none;border-radius:10px;cursor:pointer;
+  background:var(--gold);color:#241c00;font-size:15px;font-weight:800}
+.gate-btn:hover{background:var(--gold-2)}
+.gate-foot{margin-top:16px;font-size:11.5px;color:var(--muted);line-height:1.6}
+.shake{animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+@media(prefers-reduced-motion:reduce){.shake{animation:none}}
+
+</style>
+
+<div id="stay-root"></div>
+
+<script>
+window.STAY_MODE = "staff";
+window.STAY_PASSCODE = "0000";
+</script>
+<script>
+/* 옆커폰 숙박 예약관리 — 공유 링크 접근 잠금
+ *
+ * 링크를 사내에 뿌렸을 때 무관한 사람이 실수로 들어오는 것을 막는 문턱이다.
+ * 코드가 브라우저에서 실행되므로 개발자도구를 아는 사람은 우회할 수 있다.
+ * 진짜 보안이 필요하면 서버 인증(사내 SSO)을 붙여야 한다.
+ *
+ * 비밀번호는 배포 시점 상수다. 바꾸려면 window.STAY_PASSCODE 를 지정하거나
+ * 아래 기본값을 고친 뒤 다시 배포한다.
+ */
+(function (global) {
+  'use strict';
+
+  var KEY = 'ykp_stay_gate';
+
+  function passcode(){ return String(global.STAY_PASSCODE || '0000'); }
+  function label(){ return global.STAY_MODE === 'staff' ? '숙박 예약 신청' : '숙박 예약관리 시스템'; }
+
+  /* 한 번 풀면 이 기기에서는 다시 묻지 않는다(직원들이 매번 입력하지 않도록).
+   * 비밀번호가 바뀌면 저장값이 달라 자동으로 다시 묻는다. */
+  function unlocked(){
+    try { return global.localStorage.getItem(KEY) === passcode(); }
+    catch (e) { return unlockedMemory; }
+  }
+  var unlockedMemory = false;
+
+  function remember(){
+    unlockedMemory = true;
+    try { global.localStorage.setItem(KEY, passcode()); } catch (e) {}
+  }
+
+  var Gate = {
+    locked: function(){ return !unlocked(); },
+
+    /** 잠금 화면을 그린다. 풀리면 onUnlock() 을 호출한다. */
+    render: function (onUnlock) {
+      if (document.getElementById('stay-gate')) return;
+
+      var wrap = document.createElement('div');
+      wrap.id = 'stay-gate';
+      wrap.className = 'gate';
+      wrap.innerHTML =
+        '<form class="gate-card" autocomplete="off">' +
+          '<div class="gate-brand">옆커폰</div>' +
+          '<h1>' + label() + '</h1>' +
+          '<p>사내 공용 링크입니다. 안내받은 비밀번호를 입력해주세요.</p>' +
+          '<input class="gate-input" id="gate-pw" type="password" inputmode="numeric" ' +
+                 'autocomplete="off" placeholder="••••" aria-label="비밀번호">' +
+          '<div class="gate-err" id="gate-err" role="alert"></div>' +
+          '<button class="gate-btn" type="submit">들어가기</button>' +
+          '<div class="gate-foot">비밀번호를 모르시면 부동산팀 010-8347-2699 로 문의해주세요.</div>' +
+        '</form>';
+      document.body.appendChild(wrap);
+
+      var input = wrap.querySelector('#gate-pw');
+      var err = wrap.querySelector('#gate-err');
+      setTimeout(function(){ input.focus(); }, 50);
+
+      wrap.querySelector('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (input.value.trim() === passcode()) {
+          remember();
+          wrap.remove();
+          if (onUnlock) onUnlock();
+          return;
+        }
+        err.textContent = '비밀번호가 맞지 않습니다.';
+        wrap.querySelector('.gate-card').classList.remove('shake');
+        void wrap.offsetWidth;                     /* 애니메이션 재시작 */
+        wrap.querySelector('.gate-card').classList.add('shake');
+        input.value = '';
+        input.focus();
+      });
+    }
+  };
+
+  global.Gate = Gate;
+})(window);
+
+</script>
+<script>
+/* 옆커폰 숙박 예약관리 — 데이터 계층
+ * localStorage 기반. 서버 연동 시 Store._read/_write 만 fetch 로 교체하면 된다.
+ * 전역: STAY (상수), Store (데이터), Notify (알림)
+ */
+(function (global) {
+  'use strict';
+
+  /* =====================================================================
+   * 1. 도메인 상수
+   * ===================================================================== */
+  var ROLES = {
+    applicant: { key: 'applicant', label: '일반 신청자', short: '신청자', desc: '지점 점장·관계자. 신청/조회/수정·취소 요청' },
+    booker:    { key: 'booker',    label: '예약 담당자', short: '예약담당', desc: '접수·검토·예약진행·예약완료 처리' },
+    approver:  { key: 'approver',  label: '승인 담당자', short: '승인담당', desc: '비용 발생 건 승인/반려' },
+    finance:   { key: 'finance',   label: '회계팀',      short: '회계',    desc: '결제확인·증빙·비용처리·정산완료' },
+    admin:     { key: 'admin',     label: '관리자',      short: '관리자',  desc: '전체 시스템 관리' }
+  };
+  var ROLE_ORDER = ['applicant', 'booker', 'approver', 'finance', 'admin'];
+
+  /* 14개 예약 상태 */
+  var STATUS = {
+    NEW:              { key:'NEW',              no:1,  label:'신규신청',   owner:'applicant', phase:'신청', icon:'📝' },
+    RECEIVED:         { key:'RECEIVED',         no:2,  label:'접수완료',   owner:'booker',    phase:'접수', icon:'📥' },
+    REVIEWING:        { key:'REVIEWING',        no:3,  label:'확인중',     owner:'booker',    phase:'접수', icon:'🔍' },
+    APPROVAL_PENDING: { key:'APPROVAL_PENDING', no:4,  label:'승인대기',   owner:'approver',  phase:'승인', icon:'⏳' },
+    APPROVED:         { key:'APPROVED',         no:5,  label:'승인완료',   owner:'booker',    phase:'승인', icon:'✅' },
+    BOOKING:          { key:'BOOKING',          no:6,  label:'예약진행중', owner:'booker',    phase:'예약', icon:'📞' },
+    BOOKED:           { key:'BOOKED',           no:7,  label:'예약완료',   owner:'booker',    phase:'예약', icon:'🏨' },
+    UPCOMING:         { key:'UPCOMING',         no:8,  label:'이용예정',   owner:'booker',    phase:'이용', icon:'🧳' },
+    USED:             { key:'USED',             no:9,  label:'이용완료',   owner:'booker',    phase:'이용', icon:'🛏' },
+    SETTLE_WAIT:      { key:'SETTLE_WAIT',      no:10, label:'정산대기',   owner:'finance',   phase:'정산', icon:'💳' },
+    SETTLING:         { key:'SETTLING',         no:11, label:'정산중',     owner:'finance',   phase:'정산', icon:'🧾' },
+    SETTLED:          { key:'SETTLED',          no:12, label:'정산완료',   owner:'finance',   phase:'완료', icon:'🎉' },
+    CANCELED:         { key:'CANCELED',         no:13, label:'취소',       owner:'-',         phase:'종료', icon:'⛔' },
+    REJECTED:         { key:'REJECTED',         no:14, label:'반려',       owner:'-',         phase:'종료', icon:'🚫' }
+  };
+  var STATUS_ORDER = ['NEW','RECEIVED','REVIEWING','APPROVAL_PENDING','APPROVED','BOOKING','BOOKED',
+                      'UPCOMING','USED','SETTLE_WAIT','SETTLING','SETTLED','CANCELED','REJECTED'];
+  /* 진행 스텝바에 쓰는 정상 경로 */
+  var MAIN_PATH = ['NEW','RECEIVED','REVIEWING','APPROVAL_PENDING','APPROVED','BOOKING','BOOKED',
+                   'UPCOMING','USED','SETTLE_WAIT','SETTLING','SETTLED'];
+  var CLOSED = ['SETTLED','CANCELED','REJECTED'];
+
+  /* 상태 전이 정의: to -> {roles, action, need(booking)=>errorMsg|null} */
+  var FLOW = {
+    NEW: [
+      { to:'RECEIVED',  roles:['booker','admin'],   action:'예약 접수' },
+      { to:'CANCELED',  roles:['booker','admin'],   action:'예약 취소' }
+    ],
+    RECEIVED: [
+      { to:'REVIEWING', roles:['booker','admin'],   action:'내용 확인 시작' },
+      { to:'CANCELED',  roles:['booker','admin'],   action:'예약 취소' }
+    ],
+    REVIEWING: [
+      { to:'APPROVAL_PENDING', roles:['booker','admin'], action:'승인 요청', need:function(b){
+          if (!b.estimatedCost && !(b.reservation && b.reservation.amount)) return '예상 비용을 먼저 입력해주세요.';
+          if (!b.assigneeId) return '예약 담당자를 먼저 지정해주세요.';
+          return null; } },
+      { to:'REJECTED',  roles:['booker','admin'],   action:'반려' },
+      { to:'CANCELED',  roles:['booker','admin'],   action:'예약 취소' }
+    ],
+    APPROVAL_PENDING: [
+      /* grant: 역할과 별개로 이 플래그를 가진 사용자에게도 허용한다.
+       * 부동산팀은 팀원 전체가 승인할 수 있어 각 계정에 canApprove 를 준다. */
+      { to:'APPROVED',  roles:['approver','admin'], grant:'canApprove', action:'승인' },
+      { to:'REJECTED',  roles:['approver','admin'], grant:'canApprove', action:'반려' }
+    ],
+    APPROVED: [
+      { to:'BOOKING',   roles:['booker','admin'],   action:'숙소 예약 진행' },
+      { to:'CANCELED',  roles:['booker','admin'],   action:'예약 취소' }
+    ],
+    BOOKING: [
+      { to:'BOOKED',    roles:['booker','admin'],   action:'예약 완료', need:function(b){
+          var r = b.reservation || {};
+          if (!r.confirmNo) return '숙소 예약번호를 입력해주세요.';
+          if (!r.roomInfo)  return '객실정보를 입력해주세요.';
+          if (!r.amount)    return '확정 예약금액을 입력해주세요.';
+          return null; } },
+      { to:'CANCELED',  roles:['booker','admin'],   action:'예약 취소' }
+    ],
+    BOOKED: [
+      { to:'UPCOMING',  roles:['booker','admin'],   action:'이용예정 전환' },
+      { to:'CANCELED',  roles:['booker','admin'],   action:'예약 취소' }
+    ],
+    UPCOMING: [
+      { to:'USED',      roles:['booker','admin'],   action:'이용완료 처리' },
+      { to:'CANCELED',  roles:['booker','admin'],   action:'예약 취소' }
+    ],
+    USED: [
+      { to:'SETTLE_WAIT', roles:['booker','finance','admin'], action:'정산 요청' }
+    ],
+    SETTLE_WAIT: [
+      { to:'SETTLING',  roles:['finance','admin'],  action:'정산 시작', need:function(b){
+          var p = b.payment || {};
+          if (!p.method)     return '결제방법을 입력해주세요.';
+          if (!p.paidAmount) return '실제 결제금액을 입력해주세요.';
+          if (!p.paidAt)     return '결제일을 입력해주세요.';
+          return null; } }
+    ],
+    SETTLING: [
+      { to:'SETTLED',   roles:['finance','admin'],  action:'정산 완료', need:function(b){
+          var p = b.payment || {};
+          if (!p.taxInvoice && !p.receipt) return '세금계산서 또는 영수증 확인이 필요합니다.';
+          if (!p.financeName) return '회계 담당자를 입력해주세요.';
+          return null; } }
+    ],
+    SETTLED: [], CANCELED: [], REJECTED: []
+  };
+
+  var LODGING_TYPE = { HOTEL:'호텔', PENSION:'펜션', ETC:'기타' };
+  var OWNERSHIP    = { DIRECT:'직영(회사운영)', PARTNER:'제휴숙소' };
+  var COST_BEARER  = { COMPANY:'회사 부담', BRANCH:'지점 부담', PERSONAL:'개인 부담', ETC:'기타' };
+  var PAY_STATUS   = { PAY_NONE:'미정산', PAY_WAIT:'결제대기', PAY_PARTIAL:'부분결제', PAY_DONE:'결제완료' };
+  var PAY_METHOD   = ['법인카드','계좌이체','현금','개인카드(후정산)','제휴숙소 월정산','기타'];
+  var NOTICE_CAT   = ['예약 신청방법','담당부서','이용규정','취소규정','비용처리 기준','회사 숙소 이용방법','제휴숙소 안내','FAQ'];
+
+  var NOTI_TYPE = {
+    BOOKING_CREATED:   { label:'신규 예약 신청', icon:'📝', roles:['booker','admin'] },
+    APPROVAL_REQUESTED:{ label:'승인 요청',      icon:'⏳', roles:['approver','admin'], grant:'canApprove' },
+    APPROVED:          { label:'승인 완료',      icon:'✅', roles:['booker','admin'] },
+    REJECTED:          { label:'반려',           icon:'🚫', roles:['booker','admin'] },
+    BOOKING_CONFIRMED: { label:'예약 완료',      icon:'🏨', roles:['booker','admin'] },
+    BOOKING_CHANGED:   { label:'예약 변경',      icon:'✏️', roles:['booker','admin'] },
+    BOOKING_CANCELED:  { label:'예약 취소',      icon:'⛔', roles:['booker','admin'] },
+    CHECKIN_TOMORROW:  { label:'체크인 전날',    icon:'🔔', roles:['booker','admin'] },
+    SETTLE_WAITING:    { label:'정산대기 발생',  icon:'💳', roles:['finance','admin'] },
+    INFO_REQUESTED:    { label:'추가정보 요청',  icon:'❓', roles:[] }
+  };
+
+  var STAY = {
+    ROLES:ROLES, ROLE_ORDER:ROLE_ORDER, STATUS:STATUS, STATUS_ORDER:STATUS_ORDER,
+    MAIN_PATH:MAIN_PATH, CLOSED:CLOSED, FLOW:FLOW,
+    LODGING_TYPE:LODGING_TYPE, OWNERSHIP:OWNERSHIP, COST_BEARER:COST_BEARER,
+    PAY_STATUS:PAY_STATUS, PAY_METHOD:PAY_METHOD, NOTICE_CAT:NOTICE_CAT, NOTI_TYPE:NOTI_TYPE
+  };
+
+  /* =====================================================================
+   * 2. 유틸
+   * ===================================================================== */
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+  function ymd(d){ d = (d instanceof Date) ? d : new Date(d);
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+  function ymdhm(d){ d = (d instanceof Date) ? d : new Date(d);
+    return ymd(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function addDays(d, n){ var x = new Date(d instanceof Date ? d.getTime() : new Date(d).getTime());
+    x.setDate(x.getDate()+n); return x; }
+  function nights(ci, co){
+    if (!ci || !co) return 0;
+    var a = new Date(ci+'T00:00:00'), b = new Date(co+'T00:00:00');
+    var n = Math.round((b-a)/86400000);
+    return n > 0 ? n : 0;
+  }
+  function uid(p){ return (p||'id') + '_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
+  function won(n){ if (n === null || n === undefined || n === '') return '-';
+    return Number(n).toLocaleString('ko-KR') + '원'; }
+  function wonShort(n){
+    n = Number(n)||0;
+    if (n >= 100000000) return (n/100000000).toFixed(n%100000000===0?0:1) + '억';
+    if (n >= 10000) return Math.round(n/10000).toLocaleString('ko-KR') + '만';
+    return n.toLocaleString('ko-KR');
+  }
+  STAY.ymd=ymd; STAY.ymdhm=ymdhm; STAY.addDays=addDays; STAY.nights=nights;
+  STAY.uid=uid; STAY.won=won; STAY.wonShort=wonShort; STAY.pad=pad;
+
+  /* =====================================================================
+   * 3. 저장소
+   * ===================================================================== */
+  var KEY = 'ykp_stay_v1';
+  /* 시드(숙소·구성원·공지)가 바뀌면 이 값을 올린다. 저장된 값과 다르면 다시 시드한다.
+   * 미리보기에서 이미 열어본 브라우저가 옛 숙소·옛 담당자를 계속 보는 것을 막기 위함이다.
+   * 서버 저장소로 옮기면 이 장치는 필요 없다. */
+  var SEED_VERSION = 7;
+  var db = null;
+
+  function emptyDb(){
+    return { version:1, seedVersion:SEED_VERSION, branches:[], users:[], lodgings:[], bookings:[], logs:[],
+             notifications:[], notices:[], settings:{}, seq:{}, session:null };
+  }
+  function _read(){
+    if (db) return db;
+    try {
+      var raw = global.localStorage.getItem(KEY);
+      if (raw) { db = JSON.parse(raw); }
+    } catch (e) { db = null; }
+    var stale = db && db.seedVersion !== SEED_VERSION;
+    if (stale) console.info('[stay] 기준 정보가 갱신되어 초기 데이터를 다시 불러옵니다.');
+    if (!db || !db.bookings || stale) { db = emptyDb(); seed(db); _write(); }
+    return db;
+  }
+  function _write(){
+    try { global.localStorage.setItem(KEY, JSON.stringify(db)); }
+    catch (e) { console.warn('[stay] 저장 실패(용량 초과 가능):', e); }
+    if (global.dispatchEvent) global.dispatchEvent(new CustomEvent('stay:changed'));
+  }
+
+  /* =====================================================================
+   * 4. 시드 데이터 (오늘 기준 상대 날짜로 생성)
+   * ===================================================================== */
+  function seed(d){
+    var today = new Date(); today.setHours(0,0,0,0);
+    var Y = today.getFullYear();
+
+    /* 지점 목록 — 본사(부동산팀)만 확정. 나머지는 실제 지점명 확인 전까지 샘플이다. */
+    /* 확정된 지점은 본사뿐이다. 지점 명단을 받기 전까지 신청서에서는 직접 입력받고,
+     * 실제로 쓰인 지점명이 다음 신청자에게 자동완성으로 제안된다. */
+    d.branches = [
+      { id:'br_hq', name:'본사', region:'대구' }
+    ];
+
+    /* 부동산팀은 접수·승인·예약 진행·정산을 팀으로 함께 처리한다.
+     * 그래서 처리 계정도 팀 계정 하나로 통합했고, 노출 연락처는 이동현 사원 번호로 통일한다.
+     * 개인별 처리자 구분이 필요해지면 여기에 팀원 계정을 추가하면 된다. */
+    d.users = [
+      { id:'u_team', name:'옆커폰 부동산팀', title:'', role:'admin', branch:'본사', dept:'부동산팀',
+        phone:'010-8347-2699', email:'', active:true, canApprove:true,
+        duty:'예약 접수 · 승인 · 예약 진행 · 정산 전 과정 처리 (문의: 이동현 사원)' }
+    ];
+
+    /* 회사가 실제 운영 중인 숙소 5곳 (네이버 플레이스에서 이름·주소·전화 확인).
+     * 가격·객실수·이용방법·취소규정 등 운영 정보는 담당자 확인 후 채운다. */
+    d.lodgings = [
+      { id:'lo_1', name:'군위 펜션 독채 스테이레브소유', type:'PENSION', ownership:'DIRECT', region:'대구',
+        address:'대구 군위군 군위읍 장수길 47 (수서리 1218-1)', managerName:'', managerPhone:'',
+        homepage:'https://naver.me/5bC7VCgI', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'독채 (가족실)', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'주차 숙소 내 2대 / 외부 1대', note:'대구 도심에서 약 30분. 운영 정보 확인 필요', active:true },
+
+      { id:'lo_2', name:'거제 펜션 풀빌라 스테이레브소유', type:'PENSION', ownership:'DIRECT', region:'경남',
+        address:'경남 거제시 장목면 흥남길 36-1 (시방리 296), 1·2·3·4동', managerName:'', managerPhone:'',
+        homepage:'https://naver.me/5T0y40DT', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'풀빌라 4개동 (1·2·3·4동)', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'', note:'단체·가족 여행 활용 가능. 운영 정보 확인 필요', active:true },
+
+      { id:'lo_3', name:'스테이레브소유 김해점', type:'HOTEL', ownership:'DIRECT', region:'경남',
+        address:'경남 김해시 분성로511번길 8 (어방동 1092-3)', managerName:'', managerPhone:'055-313-7979',
+        homepage:'https://naver.me/5Neb8tGx', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'', note:'', active:true },
+
+      { id:'lo_4', name:'브라운도트 포항죽도점', type:'HOTEL', ownership:'DIRECT', region:'경북',
+        address:'경북 포항시 북구 죽도로40번길 51 (죽도동 95-39)', managerName:'', managerPhone:'',
+        homepage:'https://naver.me/5fItzQbq', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'', note:'운영 정보 확인 필요', active:true },
+
+      { id:'lo_5', name:'브라운도트 호텔 진주성점', type:'HOTEL', ownership:'DIRECT', region:'경남',
+        address:'경남 진주시 진주대로 1136 (봉곡동 7-6), 1~6층', managerName:'', managerPhone:'0507-1305-1806',
+        homepage:'https://naver.me/5MvDs47e', rackRate:0, partnerRate:0, discountRate:0,
+        roomInfo:'', usage:'', cancelPolicy:'', checkInTime:'', checkOutTime:'',
+        caution:'', note:'운영 정보 확인 필요', active:true }
+    ];
+
+    /* 예약 데이터는 기본적으로 비어 있다. 필요하면 관리자 화면에서 샘플을 넣는다. */
+    d.bookings = [];
+    d.logs = [];
+    d.notifications = [];
+    d.seq = {};
+
+    /* 공지 시드 */
+    var nowIso = new Date().toISOString();
+    d.notices = [
+      { id:uid('nc'), category:'예약 신청방법', pinned:true, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
+        title:'[필독] 호텔·펜션 예약은 전화·카카오톡이 아닌 이 시스템으로만 신청해주세요',
+        body:'그동안 개인에게 전화·카카오톡으로 숙박 예약을 요청하면서 누락·중복 예약이 반복되었습니다.\n\n' +
+             '2026년부터 모든 호텔·펜션 예약은 [예약 신청] 메뉴에서만 접수합니다.\n\n' +
+             '1) 좌측 메뉴 [예약 신청] 클릭\n' +
+             '2) 신청서 작성 후 제출 (체크인/체크아웃만 넣으면 숙박일수는 자동 계산됩니다)\n' +
+             '3) 제출 즉시 예약번호(STAY-연도-일련번호)가 발급되고 부동산팀에 알림이 갑니다\n' +
+             '4) 진행 상황은 [내 예약 조회]에서 예약번호와 신청자명으로 확인할 수 있습니다\n\n' +
+             '※ 부득이하게 전화로 요청하신 경우에도 부동산팀이 시스템에 대신 등록합니다. 등록되지 않은 요청은 처리되지 않습니다.\n' +
+             '   문의는 부동산팀 이동현 사원 010-8347-2699 한 곳으로 주시면 됩니다.' },
+      { id:uid('nc'), category:'담당부서', pinned:true, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
+        title:'숙박 예약 문의는 부동산팀 한 곳으로 주세요',
+        body:'숙박 예약 관련 모든 문의는 부동산팀에서 받습니다.\n\n' +
+             '📞 부동산팀 대표 연락처 : 이동현 사원 010-8347-2699\n\n' +
+             '접수·승인·예약·정산은 부동산팀 안에서 나눠 처리하므로,\n' +
+             '어느 단계인지 몰라도 위 번호 한 곳으로 문의하시면 됩니다.\n' +
+             '팀원 개개인에게 따로 연락하실 필요가 없습니다.\n\n' +
+             '· 승인은 부동산팀원 누구나 할 수 있어 담당자 부재로 지연되지 않습니다.\n' +
+             '· 다만 예약 신청 자체는 전화가 아니라 [예약 신청] 메뉴로 넣어주세요.\n' +
+             '  전화로 주신 요청도 부동산팀이 시스템에 대신 등록하지만, 등록되지 않으면 처리·정산이 되지 않습니다.' },
+      { id:uid('nc'), category:'이용규정', pinned:false, author:'고호정', createdAt:nowIso, updatedAt:nowIso,
+        title:'숙박 이용 기준 및 객실 배정 규정',
+        body:'· 1객실 2인 기준 배정이 원칙입니다. 1인 1객실은 팀장급 이상 또는 야간 업무 시에만 승인됩니다.\n' +
+             '· 회사가 직접 운영하는 숙소를 우선 이용합니다. 지역별 운영 숙소는 [숙소 안내]에서 확인하세요.\n' +
+             '· 성수기(7~8월, 연말)와 주말은 일반 예약이 많으므로 최소 2주 전에 신청해주세요.\n' +
+             '· 가족 동반 숙박은 개인 부담을 원칙으로 하며, 포상 숙박은 별도 승인이 필요합니다.' },
+      { id:uid('nc'), category:'취소규정', pinned:false, author:'이동현', createdAt:nowIso, updatedAt:nowIso,
+        title:'예약 취소·변경 시 반드시 확인할 것',
+        body:'취소·변경은 [예약 상세] 화면의 "수정 요청 / 취소 요청" 버튼으로 접수해주세요.\n\n' +
+             '숙소별 취소 규정이 다르며 위약금이 발생할 수 있습니다.\n' +
+             '펜션(군위·거제)은 일반 예약 손실이 커서 호텔보다 취소 조건이 엄격합니다.\n\n' +
+             '※ 숙소별 정확한 취소 규정은 확인되는 대로 [숙소 안내]와 이 공지에 반영합니다.\n' +
+             '   등록 전까지는 예약 담당자에게 확인 후 취소해주세요.\n\n' +
+             '위약금이 발생하면 해당 지점 부담으로 처리됩니다.' },
+      { id:uid('nc'), category:'비용처리 기준', pinned:false, author:'안효준', createdAt:nowIso, updatedAt:nowIso,
+        title:'숙박비 비용처리·증빙 기준',
+        body:'· 회사 부담 : 법인카드 결제 또는 숙소 월정산. 세금계산서는 회계팀이 직접 수취합니다.\n' +
+             '· 지점 부담 : 지점 법인카드로 결제 후 [정산 관리]에 카드전표/영수증을 첨부해주세요.\n' +
+             '· 개인 부담(선결제 후 정산) : 영수증 원본 이미지를 반드시 첨부해야 지급됩니다.\n' +
+             '· 증빙 미첨부 건은 정산완료 처리되지 않습니다.\n' +
+             '· 정산 마감은 매월 5일이며, 전월 이용분은 그때까지 증빙이 등록되어야 합니다.' },
+      { id:uid('nc'), category:'회사 숙소 이용방법', pinned:false, author:'이동현', createdAt:nowIso, updatedAt:nowIso,
+        title:'회사 운영 숙소 5곳 안내',
+        body:'회사가 직접 운영하는 숙소입니다. 숙소 배정은 이 중에서 우선 진행합니다.\n\n' +
+             '· 군위 펜션 독채 스테이레브소유 — 대구 군위군 군위읍 장수길 47\n' +
+             '  독채(가족실). 대구 도심에서 약 30분. 주차 숙소 내 2대 / 외부 1대\n\n' +
+             '· 거제 펜션 풀빌라 스테이레브소유 — 경남 거제시 장목면 흥남길 36-1\n' +
+             '  풀빌라 4개동(1·2·3·4동). 단체·가족 여행 활용 가능\n\n' +
+             '· 스테이레브소유 김해점 — 경남 김해시 분성로511번길 8 (055-313-7979)\n\n' +
+             '· 브라운도트 포항죽도점 — 경북 포항시 북구 죽도로40번길 51\n\n' +
+             '· 브라운도트 호텔 진주성점 — 경남 진주시 진주대로 1136 (0507-1305-1806)\n\n' +
+             '※ 객실 수·요금·입퇴실 시간·취소 규정은 확인되는 대로 [숙소 안내]에 등록합니다.\n' +
+             '   그 전까지는 예약 담당자가 숙소에 확인 후 안내드립니다.' },
+      { id:uid('nc'), category:'제휴숙소 안내', pinned:false, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
+        title:'운영 숙소가 없는 지역은 어떻게 하나요',
+        body:'현재 회사 운영 숙소는 대구(군위)·경남(거제·김해·진주)·경북(포항) 5곳입니다.\n\n' +
+             '이 지역을 방문할 때는 운영 숙소를 우선 이용해주세요.\n' +
+             '운영 숙소가 없는 지역은 예약 신청서의 숙박 유형에서 “기타”를 고르고\n' +
+             '희망 숙소를 직접 입력해주시면 예약 담당자가 확인 후 진행합니다.\n\n' +
+             '※ 외부 제휴 숙소가 생기면 이 공지와 [숙소 안내]에 추가합니다.' },
+      { id:uid('nc'), category:'FAQ', pinned:false, author:'문소진', createdAt:nowIso, updatedAt:nowIso,
+        title:'자주 묻는 질문 (FAQ)',
+        body:'Q. 급해서 전화로 요청했는데 시스템에도 넣어야 하나요?\n' +
+             'A. 부동산팀이 대신 등록합니다. 다만 등록 여부는 [예약 관리]에서 직접 확인해주세요. 등록되지 않은 건은 기록이 남지 않아 정산이 불가합니다.\n\n' +
+             'Q. 예약이 지금 어디까지 진행됐는지 어떻게 아나요?\n' +
+             'A. [내 예약 조회]에 예약번호와 신청자명을 넣으면 진행 타임라인이 나옵니다. 누가 언제 무엇을 처리했는지 전부 표시됩니다.\n\n' +
+             'Q. 승인은 누가 하나요?\n' +
+             'A. 부동산팀원 누구나 승인할 수 있습니다. 담당자 부재로 승인이 밀리지 않도록 팀 전체에 권한이 있습니다.\n\n' +
+             'Q. 예약번호가 두 개인데 뭐가 다른가요?\n' +
+             'A. STAY-로 시작하는 것은 우리 시스템 접수번호이고, 숙소 예약번호는 호텔·펜션이 발급한 번호입니다. 체크인 시에는 숙소 예약번호를 말씀하시면 됩니다.\n\n' +
+             'Q. 아이를 데려가도 되나요?\n' +
+             'A. 신청서에 아동 인원을 입력해주세요. 가족 동반은 원칙적으로 개인 부담입니다.' }
+    ];
+
+    d.settings = {
+      /* 모든 문의를 받는 단일 창구. 개인에게 전화가 몰리지 않도록 한 곳으로 통일한다. */
+      contact: { team:'부동산팀', name:'이동현', title:'사원', phone:'010-8347-2699' },
+      codePrefix: 'STAY',
+      autoUpcomingDays: 7,
+      approvalThreshold: 100000,
+      channels: [
+        { id:'inapp', label:'시스템 내부 알림', enabled:true,  builtin:true },
+        { id:'kakao', label:'카카오톡 알림톡',  enabled:false, builtin:false },
+        { id:'sms',   label:'문자(SMS)',        enabled:false, builtin:false },
+        { id:'email', label:'이메일',           enabled:false, builtin:false },
+        { id:'slack', label:'Slack',            enabled:false, builtin:false }
+      ]
+    };
+    d.session = { userId:'u_team' };
+  }
+
+
+  /* =====================================================================
+   * 4-1. 샘플 예약 데이터 (선택)
+   * 실제 운영 데이터가 아니라 화면 확인·교육용이다.
+   * 기본값은 '넣지 않음'이며 관리자 > 시스템 설정에서 넣고 뺄 수 있다.
+   * ===================================================================== */
+  function seedDemoBookings(d){
+    var today = new Date(); today.setHours(0,0,0,0);
+    var byId = {}; d.users.forEach(function(u){ byId[u.id]=u; });
+    var loById = {}; d.lodgings.forEach(function(l){ loById[l.id]=l; });
+    d.bookings = []; d.logs = []; d.notifications = []; d.seq = {};
+    var seq = { };
+    function code(dt){
+      var y = new Date(dt).getFullYear();
+      seq[y] = (seq[y]||0) + 1;
+      return 'STAY-' + y + '-' + ('000' + seq[y]).slice(-4);
+    }
+    var rows = [
+      /* 과거 완료건 (정산완료) — 월별 비용 그래프용. 최근 12개월을 고르게 덮도록 배치 */
+      { off:-330, ci:-326, n:2, st:'SETTLED', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 여행', bearer:'BRANCH' },
+      { off:-318, ci:-312, n:1, st:'SETTLED', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'김해 가족 여행', bearer:'COMPANY' },
+      { off:-300, ci:-295, n:2, st:'SETTLED', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 주말 여행', bearer:'COMPANY' },
+      { off:-286, ci:-280, n:3, st:'SETTLED', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 휴가 여행', bearer:'COMPANY' },
+      { off:-268, ci:-262, n:1, st:'SETTLED', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'군위 독채 가족 여행', bearer:'COMPANY' },
+      { off:-252, ci:-246, n:2, st:'SETTLED', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 바다 여행', bearer:'BRANCH' },
+      { off:-238, ci:-232, n:1, st:'SETTLED', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산 근교 주말 여행', bearer:'COMPANY' },
+      { off:-220, ci:-214, n:2, st:'SETTLED', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 일대 가족 여행', bearer:'BRANCH' },
+      { off:-205, ci:-198, n:2, st:'SETTLED', lo:'lo_5', rm:2, ad:9, ch:0, cost:0, purpose:'진주 1박 여행', bearer:'COMPANY' },
+      { off:-190, ci:-184, n:1, st:'SETTLED', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:126000, purpose:'대구 근교 나들이', bearer:'COMPANY' },
+      { off:-172, ci:-166, n:2, st:'SETTLED', lo:'lo_2', rm:2, ad:8, ch:2, cost:400000, purpose:'우수사원 포상 휴양', bearer:'BRANCH' },
+      { off:-158, ci:-150, n:1, st:'SETTLED', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 주말 휴양', bearer:'COMPANY' },
+      { off:-140, ci:-134, n:2, st:'SETTLED', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 단체 여행', bearer:'COMPANY' },
+      { off:-126, ci:-120, n:1, st:'SETTLED', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'신입사원 단합 여행', bearer:'COMPANY' },
+      { off:-112, ci:-106, n:2, st:'SETTLED', lo:'lo_4', rm:1, ad:2, ch:0, cost:224000, purpose:'포항 바다 나들이', bearer:'COMPANY' },
+      { off:-96, ci:-92, n:2, st:'SETTLED', br:'대구점', lo:'lo_1', rm:2, ad:3, ch:0, cost:252000, purpose:'대구 근교 힐링 여행', bearer:'COMPANY' },
+      { off:-88, ci:-84, n:1, st:'SETTLED', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산 시내 여행', bearer:'COMPANY' },
+      { off:-70, ci:-66, n:2, st:'SETTLED', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 여행', bearer:'BRANCH' },
+      { off:-64, ci:-60, n:1, st:'SETTLED', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'포항 1박 여행', bearer:'COMPANY' },
+      { off:-58, ci:-54, n:3, st:'SETTLED', lo:'lo_2', rm:3, ad:12, ch:0, cost:600000, purpose:'하계 휴가 여행', bearer:'COMPANY' },
+      { off:-44, ci:-40, n:1, st:'SETTLED', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 주말 여행', bearer:'COMPANY' },
+      { off:-38, ci:-34, n:2, st:'SETTLED', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:1, cost:252000, purpose:'군위 독채 가족 여행', bearer:'COMPANY' },
+      { off:-33, ci:-29, n:1, st:'SETTLED', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'김해 가족 여행', bearer:'COMPANY' },
+      { off:-26, ci:-20, n:2, st:'SETTLED', br:'부산점', lo:'lo_2', rm:1, ad:2, ch:0, cost:330000, purpose:'경남 일대 가족 여행', bearer:'BRANCH' },
+      /* 최근 진행건 */
+      { off:-21, ci:-14, n:2, st:'SETTLED', lo:'lo_5', rm:2, ad:8, ch:0, cost:0, purpose:'서부경남 가족 여행', bearer:'COMPANY' },
+      { off:-16, ci:-8,  n:1, st:'SETTLED', lo:'lo_4', rm:1, ad:1, ch:0, cost:112000, purpose:'경북 동해안 여행', bearer:'COMPANY' },
+      { off:-13, ci:-6,  n:2, st:'SETTLING', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'대구 근교 나들이', bearer:'BRANCH' },
+      { off:-12, ci:-5,  n:1, st:'SETTLE_WAIT', lo:'lo_3', rm:1, ad:2, ch:0, cost:142000, purpose:'부산 근교 주말 여행', bearer:'COMPANY' },
+      { off:-11, ci:-4,  n:1, st:'SETTLE_WAIT', lo:'lo_1', rm:2, ad:4, ch:0, cost:0, purpose:'신입사원 단합 여행', bearer:'COMPANY' },
+      { off:-10, ci:-2,  n:2, st:'SETTLE_WAIT', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:1, cost:363000, purpose:'우수사원 포상 휴양', bearer:'COMPANY' },
+      { off:-9,  ci:-1,  n:1, st:'USED', lo:'lo_2', rm:1, ad:4, ch:2, cost:200000, purpose:'거제 단체 여행', bearer:'BRANCH' },
+      /* 오늘 체크인/체크아웃 */
+      { off:-8,  ci:0,   n:2, st:'UPCOMING', br:'대구점', lo:'lo_1', rm:1, ad:2, ch:0, cost:252000, purpose:'대구 근교 힐링 여행', bearer:'COMPANY' },
+      { off:-7,  ci:0,   n:1, st:'UPCOMING', lo:'lo_4', rm:2, ad:3, ch:0, cost:224000, purpose:'포항 바다 여행', bearer:'BRANCH' },
+      { off:-9,  ci:-1,  n:1, st:'UPCOMING', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 주말 휴양', bearer:'COMPANY' },
+      /* 내일 체크인 */
+      { off:-6,  ci:1,   n:2, st:'BOOKED', br:'부산점', lo:'lo_2', rm:2, ad:4, ch:0, cost:330000, purpose:'거제 풀빌라 단체 여행', bearer:'BRANCH' },
+      { off:-5,  ci:3,   n:1, st:'BOOKED', lo:'lo_1', rm:1, ad:2, ch:0, cost:0, purpose:'대구 근교 주말 여행', bearer:'COMPANY' },
+      { off:-4,  ci:8,   n:3, st:'BOOKING', lo:'lo_2', rm:3, ad:14, ch:0, cost:600000, purpose:'하계 휴가 여행', bearer:'COMPANY' },
+      { off:-3,  ci:12,  n:2, st:'APPROVED', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'군위 독채 가족 여행', bearer:'COMPANY' },
+      { off:-2,  ci:14,  n:1, st:'APPROVAL_PENDING', lo:'lo_3', rm:2, ad:3, ch:0, cost:284000, purpose:'부산 시내 여행', bearer:'COMPANY' },
+      { off:-2,  ci:16,  n:2, st:'APPROVAL_PENDING', br:'부산점', lo:'lo_2', rm:3, ad:6, ch:0, cost:495000, purpose:'경남 일대 가족 여행', bearer:'COMPANY' },
+      { off:-1,  ci:20,  n:2, st:'REVIEWING', lo:'lo_5', rm:2, ad:10, ch:0, cost:0, purpose:'진주 단체 여행', bearer:'COMPANY' },
+      { off:-1,  ci:10,  n:1, st:'RECEIVED', lo:'lo_1', rm:1, ad:2, ch:1, cost:0, purpose:'대구 근교 나들이', bearer:'BRANCH' },
+      { off:0,   ci:18,  n:2, st:'NEW', br:'대구점', lo:'lo_1', rm:2, ad:4, ch:0, cost:252000, purpose:'신입사원 단합 여행', bearer:'COMPANY' },
+      { off:0,   ci:25,  n:1, st:'NEW', lo:'lo_2', rm:2, ad:6, ch:2, cost:400000, purpose:'우수사원 포상 휴양', bearer:'COMPANY' },
+      /* 취소/반려 */
+      { off:-15, ci:-3,  n:1, st:'CANCELED', lo:'lo_3', rm:1, ad:1, ch:0, cost:142000, purpose:'김해 가족 여행', bearer:'COMPANY' },
+      { off:-18, ci:-9,  n:2, st:'REJECTED', br:'부산점', lo:'lo_2', rm:4, ad:8, ch:0, cost:1320000, purpose:'거제 단체 여행', bearer:'COMPANY' }
+    ];
+
+    /* 신청자는 계정이 없는 지점 담당자다(실제로도 링크로 들어와 이름을 직접 적는다).
+     * 이름은 예시용이며 연락처는 자리표시자로 둔다. */
+    var applicants = [
+      { name:'김도현', branch:'대구점',   dept:'지점' },
+      { name:'박지훈', branch:'부산점',   dept:'지점' },
+      { name:'이수민', branch:'포항점',   dept:'지점' },
+      { name:'정한별', branch:'진주점',   dept:'지점' },
+      { name:'최우진', branch:'김해점',   dept:'지점' }
+    ];
+    var team = byId['u_team'];
+
+    d.bookings = rows.map(function(r, i){
+      var reqAt = addDays(today, r.off); reqAt.setHours(9 + (i%8), (i*7)%60, 0, 0);
+      var ap = applicants[i % applicants.length];
+      var u = { id:null, name:ap.name, role:'applicant', branch:r.br || ap.branch,
+                dept:ap.dept, phone:'010-0000-0000' };
+      var lo = loById[r.lo];
+      var ci = ymd(addDays(today, r.ci)), co = ymd(addDays(today, r.ci + r.n));
+      var assignee = team;
+      var st = r.st;
+      var b = {
+        id: uid('bk'), code: code(reqAt),
+        requestedAt: reqAt.toISOString(),
+        applicantId: null, applicantName: u.name, branch: u.branch, dept: u.dept, phone: u.phone,
+        purpose: r.purpose,
+        lodgingType: lo.type, lodgingId: lo.id, lodgingName: lo.name,
+        checkIn: ci, checkOut: co, nights: r.n,
+        adults: r.ad, children: r.ch, guests: r.ad + r.ch, rooms: r.rm,
+        guestName: u.name, guestPhone: u.phone,
+        estimatedCost: r.cost, costBearer: r.bearer,
+        specialRequest: i % 4 === 0 ? '가능하면 고층 금연 객실로 부탁드립니다.' : '',
+        attachments: [],
+        status: st,
+        assigneeId: null, assigneeName: null,
+        approval: { requestedAt:null, approverId:null, approverName:null, result:null, opinion:'', decidedAt:null },
+        reservation: { confirmNo:'', roomInfo:'', amount:0, reservedAt:null, note:'' },
+        payment: { status:'PAY_NONE', method:'', paidAmount:0, paidAt:null, taxInvoice:false, receipt:false,
+                   evidence:[], financeId:null, financeName:'', settledAt:null, note:'' },
+        changeRequest:null, cancelRequest:null,
+        memos: [], updatedAt: reqAt.toISOString()
+      };
+      var order = STATUS[st].no;
+      var t = new Date(reqAt);
+      function step(min){ t = new Date(t.getTime() + min*60000); return t.toISOString(); }
+      var logs = [];
+      function log(at, user, action, memo, from, to){
+        logs.push({ id:uid('lg'), at:at, bookingId:b.id, bookingCode:b.code, userId:user.id, userName:user.name,
+                    role:user.role, branch:user.branch,
+                    action:action, from:from||null, to:to||null, memo:memo||'' });
+      }
+      log(reqAt.toISOString(), u, '신규 예약 신청', r.purpose, null, 'NEW');
+
+      var terminal = (st === 'CANCELED' || st === 'REJECTED');
+      var reach = terminal ? (st === 'REJECTED' ? 4 : 6) : order;
+
+      if (reach >= 2) { b.assigneeId = assignee.id; b.assigneeName = assignee.name;
+        log(step(15), assignee, '예약 접수', '담당자 배정: ' + assignee.name, 'NEW', 'RECEIVED'); }
+      if (reach >= 3) log(step(25), assignee, '내용 확인 시작', '신청내용 검토', 'RECEIVED', 'REVIEWING');
+      if (reach >= 4) { b.approval.requestedAt = step(30);
+        log(b.approval.requestedAt, assignee, '승인 요청', '예상비용 ' + won(r.cost), 'REVIEWING', 'APPROVAL_PENDING'); }
+      if (st === 'REJECTED') {
+        b.approval.result = 'REJECTED'; b.approval.approverId=team.id; b.approval.approverName=team.name;
+        b.approval.opinion = '동일 기간 타 지점 예약과 중복되며 인원 대비 객실 수가 과다합니다. 객실 수 조정 후 재신청 바랍니다.';
+        b.approval.decidedAt = step(180);
+        log(b.approval.decidedAt, team, '반려', b.approval.opinion, 'APPROVAL_PENDING', 'REJECTED');
+      } else if (reach >= 5) {
+        b.approval.result = 'APPROVED'; b.approval.approverId=team.id; b.approval.approverName=team.name;
+        b.approval.opinion = '이용 목적 확인. 승인합니다.'; b.approval.decidedAt = step(120);
+        log(b.approval.decidedAt, team, '승인', b.approval.opinion, 'APPROVAL_PENDING', 'APPROVED');
+      }
+      if (reach >= 6 && st !== 'REJECTED') log(step(40), assignee, '숙소 예약 진행', lo.name + ' 예약 문의', 'APPROVED', 'BOOKING');
+      if (st === 'CANCELED') {
+        b.cancelRequest = { at: step(60), reason:'여행 일정이 변경되어 취소 요청드립니다.', by:u.name, handled:true };
+        log(b.cancelRequest.at, u, '예약 취소 요청', b.cancelRequest.reason, null, null);
+        log(step(30), assignee, '예약 취소', '신청자 요청으로 취소 처리 (위약금 없음)', 'BOOKING', 'CANCELED');
+      }
+      if (reach >= 7 && !terminal) {
+        b.reservation.confirmNo = (lo.ownership==='DIRECT' ? 'YKP-' : lo.name.slice(0,2)) + ymd(reqAt).replace(/-/g,'').slice(2) + '-' + ('00'+(i+1)).slice(-3);
+        b.reservation.roomInfo = (((lo.roomInfo || '').split('/')[0].trim() + ' ').trimStart()) + r.rm + '실 / ' + r.n + '박';
+        b.reservation.amount = r.cost;
+        b.reservation.reservedAt = step(90);
+        b.reservation.note = '회사 운영 숙소 배정 완료';
+        log(b.reservation.reservedAt, assignee, '예약 완료',
+            '예약번호 ' + b.reservation.confirmNo + ' / ' + b.reservation.roomInfo + ' / ' + won(r.cost),
+            'BOOKING', 'BOOKED');
+        log(step(5), assignee, '예약정보 신청자 전달', b.applicantName + '님께 예약 확정 안내 발송', null, null);
+      }
+      if (reach >= 8 && !terminal) log(step(60), assignee, '이용예정 전환', '체크인 ' + ci, 'BOOKED', 'UPCOMING');
+      if (reach >= 9 && !terminal) {
+        var usedAt = addDays(today, r.ci + r.n); usedAt.setHours(11,30,0,0);
+        log(usedAt.toISOString(), assignee, '이용완료 처리', '숙박 이용 종료', 'UPCOMING', 'USED');
+        t = usedAt;
+      }
+      if (reach >= 10 && !terminal) {
+        b.payment.status = 'PAY_WAIT';
+        log(step(60), assignee, '정산 요청', '회계팀 정산 요청', 'USED', 'SETTLE_WAIT');
+      }
+      if (reach >= 11 && !terminal) {
+        b.payment.method = (i % 3 === 0) ? '계좌이체' : '법인카드';
+        b.payment.paidAmount = r.cost;
+        b.payment.paidAt = ymd(addDays(today, r.ci + r.n));
+        b.payment.status = r.cost ? 'PAY_DONE' : 'PAY_NONE';
+        b.payment.financeId=team.id; b.payment.financeName=team.name;
+        log(step(120), team, '정산 시작',
+            '결제방법 ' + b.payment.method + ' / 결제금액 ' + won(r.cost), 'SETTLE_WAIT', 'SETTLING');
+      }
+      if (reach >= 12 && !terminal) {
+        b.payment.taxInvoice = (i % 2 === 0);
+        b.payment.receipt = true;
+        b.payment.settledAt = step(24*60);
+        log(b.payment.settledAt, team, '정산 완료',
+            (b.payment.taxInvoice ? '세금계산서 수취 완료' : '영수증 확인 완료') + ' / 비용처리 완료', 'SETTLING', 'SETTLED');
+      }
+      if (i % 5 === 2) {
+        b.memos.push({ at: step(10), userId:assignee.id, userName:assignee.name, role:'booker',
+                       text:'숙소에 조식 포함 여부 확인 완료. 추가 비용 없음.' });
+      }
+      b.updatedAt = logs[logs.length-1].at;
+      d.logs = d.logs.concat(logs);
+      return b;
+    });
+
+    d.seq = seq;
+    d.logs.sort(function(a,b){ return a.at < b.at ? 1 : -1; });
+
+    /* 알림 시드 */
+    d.notifications = [];
+    var recent = d.bookings.filter(function(b){ return ['NEW','RECEIVED','APPROVAL_PENDING','SETTLE_WAIT','BOOKED'].indexOf(b.status) >= 0; });
+    recent.slice(0, 9).forEach(function(b, i){
+      var type = b.status === 'NEW' ? 'BOOKING_CREATED'
+               : b.status === 'APPROVAL_PENDING' ? 'APPROVAL_REQUESTED'
+               : b.status === 'SETTLE_WAIT' ? 'SETTLE_WAITING'
+               : b.status === 'BOOKED' ? 'BOOKING_CONFIRMED' : 'BOOKING_CREATED';
+      d.notifications.push({
+        id: uid('nt'), at: b.updatedAt, type: type,
+        title: NOTI_TYPE[type].label + ' · ' + b.code,
+        body: b.branch + ' ' + b.applicantName + ' / ' + b.lodgingName + ' / ' + b.checkIn + '~' + b.checkOut,
+        bookingId: b.id, roles: NOTI_TYPE[type].roles.slice(), userIds: [b.applicantId], readBy: []
+      });
+    });
+    d.notifications.sort(function(a,b){ return a.at < b.at ? 1 : -1; });
+
+  }
+
+  /* =====================================================================
+   * 5. Store API
+   * ===================================================================== */
+  var Store = {
+    _read:_read, _write:_write,
+    reset: function(){ try{ global.localStorage.removeItem(KEY); }catch(e){} db = null; _read(); },
+    raw: function(){ return _read(); },
+
+    /* -- 마스터 -- */
+    users:    function(){ return _read().users.slice(); },
+    user:     function(id){ var f = _read().users.filter(function(u){return u.id===id;}); return f[0]||null; },
+    branches: function(){ return _read().branches.slice(); },
+    lodgings: function(){ return _read().lodgings.slice(); },
+    lodging:  function(id){ var f = _read().lodgings.filter(function(l){return l.id===id;}); return f[0]||null; },
+    notices:  function(){ return _read().notices.slice().sort(function(a,b){
+                  if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+                  return a.createdAt < b.createdAt ? 1 : -1; }); },
+    settings: function(){ return _read().settings; },
+    logs:     function(){ return _read().logs.slice(); },
+
+    /* id 를 직접 지정해 새로 넣는 경우도 있으므로 "있으면 갱신, 없으면 추가"로 처리한다. */
+    saveUser: function(u){
+      var d = _read();
+      var exists = u.id && d.users.some(function(x){ return x.id === u.id; });
+      if (exists) { d.users = d.users.map(function(x){ return x.id===u.id ? Object.assign({}, x, u) : x; }); }
+      else { if (!u.id) u.id = uid('u'); u.active = u.active !== false; d.users.push(u); }
+      _write(); return u;
+    },
+    removeUser: function(id){ var d=_read(); d.users = d.users.filter(function(u){return u.id!==id;}); _write(); },
+    saveLodging: function(l){
+      var d = _read();
+      var exists = l.id && d.lodgings.some(function(x){ return x.id === l.id; });
+      if (exists) { d.lodgings = d.lodgings.map(function(x){ return x.id===l.id ? Object.assign({}, x, l) : x; }); }
+      else { if (!l.id) l.id = uid('lo'); l.active = l.active !== false; d.lodgings.push(l); }
+      _write(); return l;
+    },
+    removeLodging: function(id){ var d=_read(); d.lodgings = d.lodgings.filter(function(l){return l.id!==id;}); _write(); },
+    saveNotice: function(n){
+      var d = _read(); var now = new Date().toISOString();
+      if (n.id) { d.notices = d.notices.map(function(x){ return x.id===n.id ? Object.assign({}, x, n, {updatedAt:now}) : x; }); }
+      else { n.id = uid('nc'); n.createdAt = now; n.updatedAt = now; d.notices.push(n); }
+      _write(); return n;
+    },
+    removeNotice: function(id){ var d=_read(); d.notices = d.notices.filter(function(n){return n.id!==id;}); _write(); },
+    saveSettings: function(s){ var d=_read(); d.settings = Object.assign({}, d.settings, s); _write(); },
+
+    /* -- 예약 -- */
+    bookings: function(){ return _read().bookings.slice(); },
+    booking:  function(id){ var f = _read().bookings.filter(function(b){return b.id===id;}); return f[0]||null; },
+    byCode:   function(code){ var f = _read().bookings.filter(function(b){return b.code===code;}); return f[0]||null; },
+
+    /** 로그인 사용자가 볼 수 있는 예약만 (applicant = 본인 + 소속지점) */
+    visibleBookings: function(user){
+      var all = _read().bookings.slice();
+      if (!user) return [];
+      if (user.role === 'applicant') {
+        return all.filter(function(b){ return b.applicantId === user.id || b.branch === user.branch; });
+      }
+      return all;
+    },
+
+    nextCode: function(dt){
+      var d = _read(), y = new Date(dt||Date.now()).getFullYear();
+      d.seq = d.seq || {};
+      d.seq[y] = (d.seq[y]||0) + 1;
+      return (d.settings.codePrefix||'STAY') + '-' + y + '-' + ('000'+d.seq[y]).slice(-4);
+    },
+
+    createBooking: function(input, actor){
+      var d = _read();
+      var now = new Date().toISOString();
+      var lo = input.lodgingId ? Store.lodging(input.lodgingId) : null;
+      var b = {
+        id: uid('bk'), code: Store.nextCode(now), requestedAt: input.requestedAt || now,
+        applicantId: input.applicantId || actor.id, applicantName: input.applicantName || actor.name,
+        branch: input.branch || actor.branch, dept: input.dept || actor.dept, phone: input.phone || actor.phone,
+        purpose: input.purpose || '',
+        lodgingType: input.lodgingType || 'HOTEL',
+        lodgingId: input.lodgingId || null,
+        lodgingName: input.lodgingName || (lo ? lo.name : ''),
+        checkIn: input.checkIn, checkOut: input.checkOut,
+        nights: nights(input.checkIn, input.checkOut),
+        adults: Number(input.adults)||0, children: Number(input.children)||0,
+        guests: (Number(input.adults)||0) + (Number(input.children)||0),
+        rooms: Number(input.rooms)||1,
+        guestName: input.guestName || '', guestPhone: input.guestPhone || '',
+        estimatedCost: Number(input.estimatedCost)||0,
+        costBearer: input.costBearer || 'COMPANY',
+        specialRequest: input.specialRequest || '',
+        attachments: input.attachments || [],
+        status: 'NEW',
+        assigneeId: null, assigneeName: null,
+        approval: { requestedAt:null, approverId:null, approverName:null, result:null, opinion:'', decidedAt:null },
+        reservation: { confirmNo:'', roomInfo:'', amount:0, reservedAt:null, note:'' },
+        payment: { status:'PAY_NONE', method:'', paidAmount:0, paidAt:null, taxInvoice:false, receipt:false,
+                   evidence:[], financeId:null, financeName:'', settledAt:null, note:'' },
+        changeRequest:null, cancelRequest:null, memos:[], updatedAt: now,
+        proxyBy: input.proxyBy || null   /* 전화/카톡 요청을 담당자가 대신 등록한 경우 */
+      };
+      d.bookings.push(b);
+      Store.log(b, actor, '신규 예약 신청', (b.proxyBy ? '['+b.proxyBy+' 접수 대행] ' : '') + (b.purpose||''), null, 'NEW');
+      _write();
+      Notify.send('BOOKING_CREATED', b, actor);
+      return b;
+    },
+
+    /** 필드 부분 수정 + 변경 내역 로그 */
+    updateBooking: function(id, patch, actor, action, memo){
+      var d = _read();
+      var idx = -1; d.bookings.forEach(function(b,i){ if (b.id===id) idx = i; });
+      if (idx < 0) return null;
+      var b = d.bookings[idx];
+      var before = JSON.parse(JSON.stringify(b));
+      deepAssign(b, patch);
+      if (b.checkIn && b.checkOut) b.nights = nights(b.checkIn, b.checkOut);
+      b.guests = (Number(b.adults)||0) + (Number(b.children)||0);
+      b.updatedAt = new Date().toISOString();
+      var diff = diffFields(before, b);
+      Store.log(b, actor, action || '정보 수정', memo || diff, null, null);
+      _write();
+      return b;
+    },
+
+    /** 상태 전이 — 권한/필수값 검증 + 로그 + 알림 */
+    canTransition: function(b, to, user){
+      if (!b || !user) return { ok:false, msg:'대상이 없습니다.' };
+      var opts = FLOW[b.status] || [];
+      var hit = null; opts.forEach(function(o){ if (o.to === to) hit = o; });
+      if (!hit) return { ok:false, msg:STATUS[b.status].label + ' → ' + STATUS[to].label + ' 로는 변경할 수 없습니다.' };
+      var byRole  = hit.roles.indexOf(user.role) >= 0;
+      var byGrant = !!(hit.grant && user[hit.grant]);
+      if (!byRole && !byGrant) {
+        return { ok:false, msg:'이 처리는 ' + hit.roles.map(function(r){ return ROLES[r].label; }).join(' / ') +
+                 (hit.grant === 'canApprove' ? ' 또는 승인 권한을 가진 부동산팀원' : '') + '만 가능합니다.' };
+      }
+      if (hit.need) { var e = hit.need(b); if (e) return { ok:false, msg:e }; }
+      return { ok:true, opt:hit };
+    },
+
+    transition: function(id, to, user, memo, extraPatch){
+      var b = Store.booking(id);
+      var chk = Store.canTransition(b, to, user);
+      if (!chk.ok) return chk;
+      var d = _read();
+      d.bookings.forEach(function(x){
+        if (x.id !== id) return;
+        if (extraPatch) deepAssign(x, extraPatch);
+        var from = x.status;
+        x.status = to;
+        x.updatedAt = new Date().toISOString();
+        if (to === 'APPROVAL_PENDING') x.approval.requestedAt = x.updatedAt;
+        if (to === 'APPROVED')  { x.approval.result='APPROVED'; x.approval.approverId=user.id;
+                                  x.approval.approverName=user.name; x.approval.decidedAt=x.updatedAt;
+                                  if (memo) x.approval.opinion = memo; }
+        if (to === 'REJECTED')  { x.approval.result='REJECTED'; x.approval.approverId=user.id;
+                                  x.approval.approverName=user.name; x.approval.decidedAt=x.updatedAt;
+                                  if (memo) x.approval.opinion = memo; }
+        if (to === 'BOOKED' && !x.reservation.reservedAt) x.reservation.reservedAt = x.updatedAt;
+        if (to === 'SETTLE_WAIT' && x.payment.status === 'PAY_NONE') x.payment.status = 'PAY_WAIT';
+        if (to === 'SETTLED') { x.payment.settledAt = x.updatedAt; if (x.payment.paidAmount) x.payment.status = 'PAY_DONE'; }
+        if (to === 'CANCELED' && x.cancelRequest) x.cancelRequest.handled = true;
+        Store.log(x, user, chk.opt.action, memo || '', from, to);
+        b = x;
+      });
+      _write();
+      var evt = { APPROVAL_PENDING:'APPROVAL_REQUESTED', APPROVED:'APPROVED', REJECTED:'REJECTED',
+                  BOOKED:'BOOKING_CONFIRMED', CANCELED:'BOOKING_CANCELED', SETTLE_WAIT:'SETTLE_WAITING' }[to];
+      if (evt) Notify.send(evt, b, user, memo);
+      return { ok:true, booking:b };
+    },
+
+    addMemo: function(id, text, user){
+      var d = _read(), hit = null;
+      d.bookings.forEach(function(b){
+        if (b.id !== id) return;
+        b.memos.push({ at:new Date().toISOString(), userId:user.id, userName:user.name, role:user.role, text:text });
+        b.updatedAt = new Date().toISOString();
+        Store.log(b, user, '메모 작성', text, null, null);
+        hit = b;
+      });
+      _write(); return hit;
+    },
+
+    requestChange: function(id, kind, reason, user){
+      var d = _read(), hit=null;
+      d.bookings.forEach(function(b){
+        if (b.id !== id) return;
+        var rec = { at:new Date().toISOString(), reason:reason, by:user.name, handled:false };
+        if (kind === 'cancel') b.cancelRequest = rec; else b.changeRequest = rec;
+        b.updatedAt = rec.at;
+        Store.log(b, user, kind==='cancel' ? '예약 취소 요청' : '예약 수정 요청', reason, null, null);
+        hit = b;
+      });
+      _write();
+      if (hit) Notify.send(kind==='cancel' ? 'BOOKING_CANCELED' : 'BOOKING_CHANGED', hit, user, reason, true);
+      return hit;
+    },
+
+    log: function(b, user, action, memo, from, to){
+      var d = _read();
+      d.logs.unshift({ id:uid('lg'), at:new Date().toISOString(), bookingId:b.id, bookingCode:b.code,
+                       userId:user.id, userName:user.name, role:user.role, branch:user.branch,
+                       action:action, from:from||null, to:to||null, memo:memo||'' });
+      if (d.logs.length > 3000) d.logs.length = 3000;
+    },
+    bookingLogs: function(bookingId){
+      return _read().logs.filter(function(l){ return l.bookingId === bookingId; })
+                   .sort(function(a,b){ return a.at < b.at ? -1 : 1; });
+    },
+
+    /** 샘플 예약 데이터를 채운다 (화면 확인·교육용). 기존 예약은 모두 대체된다. */
+    loadDemoBookings: function(){
+      var d = _read();
+      seedDemoBookings(d);
+      _write();
+      return d.bookings.length;
+    },
+    /** 예약·처리로그·알림을 전부 비운다. 숙소·구성원·공지·설정은 유지된다. */
+    clearBookings: function(){
+      var d = _read();
+      d.bookings = []; d.logs = []; d.notifications = []; d.seq = {};
+      _write();
+    },
+
+    /* -- 체크인 전날 알림 자동 생성 (진입 시 1회) -- */
+    runDailyJobs: function(){
+      var d = _read(), tomorrow = ymd(addDays(new Date(), 1)), made = 0;
+      d.bookings.forEach(function(b){
+        if (['BOOKED','UPCOMING'].indexOf(b.status) < 0) return;
+        if (b.checkIn !== tomorrow) return;
+        var dup = d.notifications.some(function(n){ return n.type==='CHECKIN_TOMORROW' && n.bookingId===b.id; });
+        if (dup) return;
+        Notify.send('CHECKIN_TOMORROW', b, null, '내일 체크인 예정입니다.');
+        made++;
+      });
+      if (made) _write();
+      return made;
+    }
+  };
+
+  function deepAssign(target, patch){
+    Object.keys(patch).forEach(function(k){
+      var v = patch[k];
+      if (v && typeof v === 'object' && !Array.isArray(v) && target[k] && typeof target[k] === 'object' && !Array.isArray(target[k])) {
+        deepAssign(target[k], v);
+      } else { target[k] = v; }
+    });
+    return target;
+  }
+  var FIELD_LABEL = {
+    checkIn:'체크인', checkOut:'체크아웃', rooms:'객실 수', adults:'성인', children:'아동',
+    estimatedCost:'예상비용', lodgingName:'숙소', purpose:'이용목적', assigneeName:'담당자',
+    guestName:'예약자명', guestPhone:'예약자 연락처', specialRequest:'특별요청', costBearer:'비용구분',
+    'reservation.confirmNo':'숙소 예약번호', 'reservation.roomInfo':'객실정보', 'reservation.amount':'예약금액',
+    'payment.method':'결제방법', 'payment.paidAmount':'실결제금액', 'payment.paidAt':'결제일',
+    'payment.taxInvoice':'세금계산서', 'payment.receipt':'영수증', 'payment.financeName':'회계담당자'
+  };
+  function diffFields(a, b){
+    var out = [];
+    Object.keys(FIELD_LABEL).forEach(function(path){
+      var av = path.split('.').reduce(function(o,k){ return o ? o[k] : undefined; }, a);
+      var bv = path.split('.').reduce(function(o,k){ return o ? o[k] : undefined; }, b);
+      if (av === undefined && bv === undefined) return;
+      if (String(av) !== String(bv)) out.push(FIELD_LABEL[path] + ': ' + fmtVal(av) + ' → ' + fmtVal(bv));
+    });
+    return out.join(' / ');
+  }
+  function fmtVal(v){
+    if (v === true) return '확인';
+    if (v === false) return '미확인';
+    if (v === null || v === undefined || v === '') return '(없음)';
+    return String(v);
+  }
+  Store.diffFields = diffFields;
+
+  /* =====================================================================
+   * 6. 알림 (확장 가능 어댑터 구조)
+   * ===================================================================== */
+  var Notify = {
+    /** 채널 어댑터. 새 채널은 여기에 push 만 하면 된다.
+     *  { id, label, send(notification, booking) } */
+    channels: [
+      { id:'inapp', label:'시스템 내부 알림', send:function(n){
+          var d = _read(); d.notifications.unshift(n);
+          if (d.notifications.length > 500) d.notifications.length = 500;
+        } }
+      /* 예) { id:'kakao', label:'카카오톡', send:function(n,b){ fetch('/api/stay/notify/kakao',{method:'POST',body:JSON.stringify(n)}); } } */
+    ],
+    enabledChannels: function(){
+      var conf = _read().settings.channels || [];
+      return Notify.channels.filter(function(c){
+        var f = conf.filter(function(x){ return x.id === c.id; })[0];
+        return !f || f.enabled;
+      });
+    },
+    send: function(type, booking, actor, memo, silentStore){
+      var meta = NOTI_TYPE[type] || { label:type, icon:'🔔', roles:[] };
+      var n = {
+        id: uid('nt'), at: new Date().toISOString(), type: type,
+        title: meta.label + ' · ' + booking.code,
+        body: booking.branch + ' ' + booking.applicantName + ' / ' + booking.lodgingName +
+              ' / ' + booking.checkIn + '~' + booking.checkOut + (memo ? '\n' + memo : ''),
+        bookingId: booking.id,
+        roles: meta.roles.slice(),
+        userIds: [booking.applicantId].concat(booking.assigneeId ? [booking.assigneeId] : []),
+        readBy: actor ? [actor.id] : []
+      };
+      /* 신청자에게도 결과를 알려야 하는 이벤트 */
+      if (['APPROVED','REJECTED','BOOKING_CONFIRMED','BOOKING_CANCELED','CHECKIN_TOMORROW'].indexOf(type) >= 0) {
+        n.roles = n.roles.concat(['applicant']);
+      }
+      if (meta.grant) n.grant = meta.grant;
+      Notify.enabledChannels().forEach(function(c){ try { c.send(n, booking); } catch(e){ console.warn('[notify]', c.id, e); } });
+      if (!silentStore) _write();
+      return n;
+    },
+    listFor: function(user){
+      if (!user) return [];
+      return _read().notifications.filter(function(n){
+        if (user.role === 'admin') return true;
+        if (n.userIds && n.userIds.indexOf(user.id) >= 0) return true;
+        if (n.grant && user[n.grant]) return true;
+        return (n.roles || []).indexOf(user.role) >= 0;
+      });
+    },
+    unreadCount: function(user){
+      return Notify.listFor(user).filter(function(n){ return (n.readBy||[]).indexOf(user.id) < 0; }).length;
+    },
+    markRead: function(id, user){
+      var d = _read();
+      d.notifications.forEach(function(n){
+        if (n.id !== id) return;
+        n.readBy = n.readBy || [];
+        if (n.readBy.indexOf(user.id) < 0) n.readBy.push(user.id);
+      });
+      _write();
+    },
+    markAllRead: function(user){
+      var d = _read();
+      Notify.listFor(user).forEach(function(n){
+        n.readBy = n.readBy || [];
+        if (n.readBy.indexOf(user.id) < 0) n.readBy.push(user.id);
+      });
+      _write();
+    }
+  };
+
+  global.STAY = STAY;
+  global.Store = Store;
+  global.Notify = Notify;
+})(window);
+
+</script>
+<script>
+/* 옆커폰 숙박 예약관리 — 세션 / 권한
+ * 실제 배포 시 Auth.current() 만 사내 SSO 세션으로 교체하면 나머지 로직은 그대로 동작한다. */
+(function (global) {
+  'use strict';
+
+  var MENUS = [
+    { id:'dash',     href:'#/index',         icon:'📊', label:'대시보드',        roles:'*' },
+    { id:'new',      href:'#/new',           icon:'➕', label:'예약 신청',       roles:'*' },
+    { id:'mystay',   href:'#/mystay',        icon:'🔎', label:'내 예약 조회',    roles:'*', staffOnly:true },
+    { id:'requests', href:'#/requests',      icon:'📋', label:'예약 관리',       roles:'*' },
+    { id:'approve',  href:'#/approvals',     icon:'✅', label:'승인 관리',       roles:['approver','admin','booker'], grant:'canApprove' },
+    { id:'settle',   href:'#/settlement',    icon:'💳', label:'정산 관리',       roles:['finance','admin','booker'] },
+    { id:'lodging',  href:'#/lodgings',      icon:'🏨', label:'숙소 관리',       roles:'*', staffLabel:'숙소 안내' },
+    { id:'noti',     href:'#/notifications', icon:'🔔', label:'알림센터',        roles:'*' },
+    { id:'notice',   href:'#/notices',       icon:'📢', label:'공지·이용지침',   roles:'*' },
+    { id:'admin',    href:'#/admin',         icon:'⚙️', label:'관리자',          roles:['admin'] }
+  ];
+
+  /* 행위 권한 매트릭스 */
+  var CAN = {
+    createBooking:   '*',
+    receive:         ['booker','admin'],
+    requestInfo:     ['booker','admin'],
+    requestApproval: ['booker','admin'],
+    decideApproval:  ['approver','admin'],   /* + canApprove 플래그 보유자 (아래 Auth.can 참고) */
+    doReservation:   ['booker','admin'],
+    editReservation: ['booker','admin'],
+    cancelBooking:   ['booker','admin'],
+    markUsed:        ['booker','admin'],
+    settle:          ['finance','admin'],
+    assign:          ['booker','admin'],
+    memo:            '*',
+    manageLodging:   ['booker','admin'],
+    manageNotice:    ['admin'],
+    manageUser:      ['admin'],
+    viewAllLogs:     ['admin'],
+    settings:        ['admin']
+  };
+
+  /* ------------------------------------------------------------------
+   * 배포 모드
+   *  admin : 부동산팀이 쓰는 전체 관리 시스템 (기본값)
+   *  staff : 지점 직원에게 배포하는 신청 창구 — 신청 / 내 예약 조회 /
+   *          숙소 안내 / 이용지침만 열려 있고 로그인이 없다.
+   * 배포할 때 STAY_MODE 전역을 지정한다 (staff 로 두면 직원용):
+   *   window.STAY_MODE = 'staff';
+   * ------------------------------------------------------------------ */
+  var STAFF_MENUS  = ['new', 'mystay', 'lodging', 'notice'];
+  var STAFF_ROUTES = ['new', 'mystay', 'lodgings', 'notices'];
+
+  var Deploy = {
+    get mode(){ return global.STAY_MODE === 'staff' ? 'staff' : 'admin'; },
+    isStaff: function(){ return Deploy.mode === 'staff'; },
+    /** 직원용 배포에서 열려 있는 메뉴인지 */
+    allowsMenu: function(id){ return !Deploy.isStaff() || STAFF_MENUS.indexOf(id) >= 0; },
+    /** 직원용 배포에서 열려 있는 화면인지 (주소를 직접 쳐서 들어오는 경우 차단) */
+    allowsRoute: function(page){ return !Deploy.isStaff() || STAFF_ROUTES.indexOf(page) >= 0; },
+    /** 배포 모드별 첫 화면 */
+    home: function(){ return Deploy.isStaff() ? 'new' : 'index'; }
+  };
+
+  /* 직원용 배포에는 로그인이 없다. 신청자가 이름·지점을 직접 입력한다. */
+  var GUEST = { id:'guest', name:'', role:'applicant', branch:'', dept:'', phone:'', email:'', guest:true };
+
+  var Auth = {
+    MENUS: MENUS,
+    Deploy: Deploy,
+    GUEST: GUEST,
+    current: function () {
+      if (Deploy.isStaff()) return GUEST;
+      var d = Store.raw();
+      var id = (d.session && d.session.userId) || 'u_bk1';
+      return Store.user(id) || Store.users()[0];
+    },
+    switchTo: function (userId) {
+      var d = Store.raw();
+      d.session = { userId: userId };
+      Store._write();
+    },
+    role: function () { var u = Auth.current(); return u ? u.role : null; },
+    roleLabel: function (r) { return (STAY.ROLES[r || Auth.role()] || {}).label || '-'; },
+    is: function (r) { return Auth.role() === r; },
+    /* 역할과 별개로 계정에 부여된 권한 플래그 */
+    GRANTS: { decideApproval: 'canApprove' },
+    can: function (action, user) {
+      user = user || Auth.current();
+      var rule = CAN[action];
+      if (!rule) return false;
+      if (rule === '*') return true;
+      if (rule.indexOf(user.role) >= 0) return true;
+      var g = Auth.GRANTS[action];
+      return !!(g && user[g]);
+    },
+    /** 예약 1건에 대한 접근 가능 여부 */
+    canSee: function (b, user) {
+      user = user || Auth.current();
+      if (!b) return false;
+      if (user.role !== 'applicant') return true;
+      return b.applicantId === user.id || b.branch === user.branch;
+    },
+    /** 신청자가 본인 건에 대해 요청(수정/취소)을 낼 수 있는지 */
+    canRequestChange: function (b, user) {
+      user = user || Auth.current();
+      if (!b) return false;
+      if (STAY.CLOSED.indexOf(b.status) >= 0) return false;
+      if (user.role === 'applicant') return b.applicantId === user.id || b.branch === user.branch;
+      return true;
+    },
+    menus: function (user) {
+      user = user || Auth.current();
+      return MENUS.filter(function (m) {
+        if (!Deploy.allowsMenu(m.id)) return false;
+        if (m.staffOnly && !Deploy.isStaff()) return false;   /* '내 예약 조회'는 직원용 전용 */
+        if (m.roles === '*' || m.roles.indexOf(user.role) >= 0) return true;
+        return !!(m.grant && user[m.grant]);
+      }).map(function (m) {
+        /* 같은 화면이라도 직원용에서는 '관리'가 아니라 '안내'로 보여야 한다 */
+        return (Deploy.isStaff() && m.staffLabel) ? Object.assign({}, m, { label: m.staffLabel }) : m;
+      });
+    }
+  };
+
+  global.Auth = Auth;
+  global.Deploy = Deploy;
+})(window);
+
+</script>
+<script>
+/* 옆커폰 숙박 예약관리 — 공통 UI (셸/배지/모달/토스트/헬퍼) */
+(function (global) {
+  'use strict';
+
+  function esc(s){
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function nl2br(s){ return esc(s).replace(/\n/g,'<br>'); }
+  function qs(sel, root){ return (root||document).querySelector(sel); }
+  function qsa(sel, root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); }
+  function el(html){ var t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
+  function on(root, evt, sel, fn){
+    root.addEventListener(evt, function(e){
+      var t = e.target.closest(sel);
+      if (t && root.contains(t)) fn.call(t, e, t);
+    });
+  }
+  /* 개인 이름은 끝 두 글자(홍길동→길동), 띄어쓰기가 있는 조직명은 각 낱말 첫 글자(옆커폰 부동산팀→옆부) */
+  function initials(name){
+    var n = String(name || '?').trim();
+    if (n.indexOf(' ') > 0) return n.split(/\s+/).slice(0, 2).map(function(w){ return w.charAt(0); }).join('');
+    return n.slice(-2);
+  }
+
+  var WD = ['일','월','화','수','목','금','토'];
+  function dateK(s){ if (!s) return '-'; var d = new Date(s.length<=10 ? s+'T00:00:00' : s);
+    return (d.getMonth()+1) + '/' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
+  function dateFull(s){ if (!s) return '-'; return STAY.ymd(s.length<=10 ? s+'T00:00:00' : s); }
+  function dtFull(s){ if (!s) return '-'; return STAY.ymdhm(s); }
+  function ago(s){
+    if (!s) return '';
+    var diff = (Date.now() - new Date(s).getTime())/1000;
+    if (diff < 60) return '방금';
+    if (diff < 3600) return Math.floor(diff/60) + '분 전';
+    if (diff < 86400) return Math.floor(diff/3600) + '시간 전';
+    if (diff < 86400*7) return Math.floor(diff/86400) + '일 전';
+    return STAY.ymd(s);
+  }
+  function isToday(ds){ return ds === STAY.ymd(new Date()); }
+
+  function badge(status){
+    var s = STAY.STATUS[status];
+    if (!s) return '<span class="badge">-</span>';
+    return '<span class="badge b-' + status + '"><i class="d"></i>' + esc(s.label) + '</span>';
+  }
+  function payBadge(p){
+    var k = (p && p.status) || 'PAY_NONE';
+    return '<span class="badge b-' + k + '"><i class="d"></i>' + esc(STAY.PAY_STATUS[k] || '-') + '</span>';
+  }
+
+  /* ---------------- 토스트 ---------------- */
+  function toast(msg, kind){
+    var box = qs('.toasts');
+    if (!box) { box = el('<div class="toasts"></div>'); document.body.appendChild(box); }
+    var t = el('<div class="toast ' + (kind||'') + '">' +
+               (kind==='ok'?'✔':kind==='bad'?'⚠':'ℹ') + ' <span>' + esc(msg) + '</span></div>');
+    box.appendChild(t);
+    setTimeout(function(){ t.style.opacity='0'; t.style.transition='.25s'; setTimeout(function(){ t.remove(); }, 260); }, 2600);
+  }
+
+  /* ---------------- 모달 ---------------- */
+  function modal(opt){
+    var m = el(
+      '<div class="mask"><div class="modal ' + (opt.wide?'wide':'') + '">' +
+        '<div class="modal-h"><h3>' + esc(opt.title||'') + '</h3><button class="x" aria-label="닫기">×</button></div>' +
+        '<div class="modal-b"></div>' +
+        (opt.footer === false ? '' : '<div class="modal-f"></div>') +
+      '</div></div>');
+    qs('.modal-b', m).innerHTML = opt.body || '';
+    var close = function(){ m.remove(); document.body.style.overflow=''; };
+    qs('.x', m).onclick = close;
+    m.addEventListener('mousedown', function(e){ if (e.target === m) close(); });
+    document.addEventListener('keydown', function esckey(e){
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esckey); }
+    });
+    if (opt.footer !== false) {
+      var f = qs('.modal-f', m);
+      (opt.buttons || [{label:'닫기'}]).forEach(function(b){
+        var btn = el('<button class="btn ' + (b.cls||'') + '">' + esc(b.label) + '</button>');
+        btn.onclick = function(){ if (!b.onClick || b.onClick(m, close) !== false) { if (b.keepOpen !== true) close(); } };
+        f.appendChild(btn);
+      });
+    }
+    document.body.appendChild(m);
+    document.body.style.overflow='hidden';
+    if (opt.onOpen) opt.onOpen(m, close);
+    return { root:m, close:close };
+  }
+  function confirmBox(title, msg, okLabel, danger){
+    return new Promise(function(res){
+      modal({
+        title: title,
+        body: '<p style="margin:0;font-size:14px;line-height:1.7">' + nl2br(msg) + '</p>',
+        buttons: [
+          { label:'취소', onClick:function(){ res(false); } },
+          { label: okLabel || '확인', cls: danger ? 'btn-danger' : 'btn-primary', onClick:function(){ res(true); } }
+        ]
+      });
+    });
+  }
+  function promptBox(title, label, opt){
+    opt = opt || {};
+    return new Promise(function(res){
+      var id = 'pb_' + Math.random().toString(36).slice(2,7);
+      modal({
+        title: title,
+        body: '<div class="field"><label>' + esc(label) + (opt.required?'<span class="req">*</span>':'') + '</label>' +
+              '<textarea class="textarea" id="' + id + '" placeholder="' + esc(opt.placeholder||'') + '">' + esc(opt.value||'') + '</textarea>' +
+              (opt.hint ? '<div class="hint">' + esc(opt.hint) + '</div>' : '') + '</div>',
+        onOpen: function(m){ setTimeout(function(){ qs('#'+id, m).focus(); }, 30); },
+        buttons: [
+          { label:'취소', onClick:function(){ res(null); } },
+          { label: opt.okLabel || '확인', cls: opt.danger ? 'btn-danger' : 'btn-primary', keepOpen:true,
+            onClick:function(m, close){
+              var v = qs('#'+id, m).value.trim();
+              if (opt.required && !v) { toast('내용을 입력해주세요.', 'bad'); return false; }
+              close(); res(v);
+            } }
+        ]
+      });
+    });
+  }
+
+  /* ---------------- 셸 ---------------- */
+  function counters(user){
+    if (Deploy.isStaff()) return { requests:0, approve:0, settle:0, noti:0, todayIn:0 };
+    var list = Store.visibleBookings(user);
+    var today = STAY.ymd(new Date());
+    return {
+      requests: list.filter(function(b){ return ['NEW','RECEIVED','REVIEWING'].indexOf(b.status)>=0; }).length,
+      approve:  list.filter(function(b){ return b.status==='APPROVAL_PENDING'; }).length,
+      settle:   list.filter(function(b){ return ['SETTLE_WAIT','SETTLING'].indexOf(b.status)>=0; }).length,
+      noti:     Notify.unreadCount(user),
+      todayIn:  list.filter(function(b){ return b.checkIn===today && ['BOOKED','UPCOMING'].indexOf(b.status)>=0; }).length
+    };
+  }
+
+  function shell(activeId, title, crumb){
+    /* 잠겨 있으면 화면을 그리지 않는다. 호출한 페이지 스크립트도 여기서 중단된다.
+     * (번들 라우터는 이보다 먼저 검사하므로 여기까지 오지 않는다) */
+    if (global.Gate && Gate.locked()) {
+      Gate.render(function(){ NAV.reload(); });
+      throw new Error('STAY_LOCKED');
+    }
+    var user = Auth.current();
+    Store.runDailyJobs();
+    var c = counters(user);
+    var cntMap = { requests:c.requests, approve:c.approve, settle:c.settle, noti:c.noti };
+
+    var nav = Auth.menus(user).map(function(m){
+      var n = cntMap[m.id];
+      return '<a href="' + m.href + '" class="' + (m.id===activeId?'on':'') + '">' +
+             '<span class="ic">' + m.icon + '</span>' + esc(m.label) +
+             (n ? '<span class="cnt">' + (n>99?'99+':n) + '</span>' : '') + '</a>';
+    }).join('');
+
+    var sidebar = el(
+      '<aside class="sidebar" id="sb">' +
+        '<div class="sb-brand">' +
+          '<button class="sb-close" id="sbclose" aria-label="메뉴 닫기">✕</button>' +
+          '<a href="#/index" class="wm">옆커폰 <em>부동산팀</em></a>' +
+          '<div class="sys">숙박 예약' + (Deploy.isStaff() ? ' <em>신청</em>' : '관리 <em>시스템</em>') + '</div>' +
+        '</div>' +
+        '<nav class="sb-nav"><div class="sb-group">업무</div>' + nav + '</nav>' +
+        '<div class="sb-foot">' +
+          (Deploy.isStaff()
+            ? '호텔·펜션 예약은<br>전화·카카오톡이 아닌<br><b style="color:#c6c8ce">이곳으로만</b> 신청해주세요.<br>' +
+              '<a href="#/notices">이용지침 보기</a><br><br>' +
+     '<span style="color:#5c5f68">미리보기 · 입력한 내용은<br>이 브라우저에만 저장됩니다</span>'
+            : '모든 호텔·펜션 예약은<br>이 시스템으로만 접수됩니다.<br>' +
+              '<a href="#/notices">이용지침 보기</a><br><br>' +
+     '<span style="color:#5c5f68">미리보기 · 입력한 내용은<br>이 브라우저에만 저장됩니다</span>') +
+        '</div>' +
+      '</aside>');
+
+    var topbar = el(
+      '<header class="topbar">' +
+        '<button class="burger" aria-label="메뉴">☰</button>' +
+        '<div><h1>' + esc(title) + '</h1>' + (crumb ? '<div class="crumb">' + esc(crumb) + '</div>' : '') + '</div>' +
+        '<div class="sp"></div>' +
+        (Deploy.isStaff()
+          ? '<span class="tag">지점 직원용 신청 창구</span>'
+          : '<form class="tb-search" id="gsearch" role="search"><span>🔎</span>' +
+              '<input type="search" placeholder="예약번호·신청자·숙소 검색" aria-label="통합검색"></form>' +
+            '<button class="tb-icon" id="bell" aria-label="알림">🔔' + (c.noti ? '<span class="dot">' + (c.noti>9?'9+':c.noti) + '</span>' : '') + '</button>' +
+            '<button class="userchip" id="uchip">' +
+              '<span class="avatar">' + esc(initials(user.name)) + '</span>' +
+              '<span style="text-align:left"><span class="nm">' + esc(user.name) + '</span><br>' +
+              '<span class="rl">' + esc(STAY.ROLES[user.role].label) + ' · ' + esc(user.branch) + '</span></span>' +
+            '</button>') +
+      '</header>');
+
+    var app = el('<div class="app"></div>');
+    var main = el('<div class="main"></div>');
+    var content = el('<div class="content" id="content"></div>');
+    main.appendChild(topbar); main.appendChild(content);
+    app.appendChild(sidebar); app.appendChild(main);
+    document.getElementById('stay-root').appendChild(app);
+
+    /* 모바일 사이드바 (오프캔버스) */
+    function closeSb(){
+      sidebar.classList.remove('open');
+      qsa('.backdrop').forEach(function(x){ x.remove(); });
+    }
+    qs('.burger', topbar).onclick = function(){
+      sidebar.classList.add('open');
+      var bd = el('<div class="backdrop"></div>');
+      bd.onclick = closeSb;
+      document.body.appendChild(bd);
+    };
+    qs('#sbclose', sidebar).onclick = closeSb;
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSb();
+    });
+    /* 아래 세 가지는 관리용 배포에만 존재한다 */
+    var chip = qs('#uchip', topbar);
+    if (chip) chip.onclick = function(){ userSwitcher(); };
+    var bell = qs('#bell', topbar);
+    if (bell) bell.onclick = function(e){ e.stopPropagation(); notifPanel(); };
+    var gs = qs('#gsearch', topbar);
+    if (gs) gs.onsubmit = function(e){
+      e.preventDefault();
+      var v = this.querySelector('input').value.trim();
+      if (v) NAV.href = '#/requests?q=' + encodeURIComponent(v);
+    };
+    return content;
+  }
+
+  function userSwitcher(){
+    var cur = Auth.current();
+    var users = Store.users().filter(function(u){ return u.active !== false; });
+    var c = (Store.settings() || {}).contact || {};
+
+    /* 부동산팀은 접수·승인·예약·정산을 팀으로 함께 처리하므로 역할별로 나누어 보여주지 않는다.
+     * 노출하는 연락처도 팀 대표 번호 하나로 통일한다. */
+    var body = '<p class="muted" style="margin:0 0 12px;font-size:12.5px">' +
+      '부동산팀은 접수·승인·예약 진행·정산을 팀으로 함께 처리합니다. ' +
+      '실제 운영에서는 사내 로그인 계정이 자동으로 적용됩니다.</p>' +
+      '<div class="list" style="border:1px solid var(--line);border-radius:10px;overflow:hidden">' +
+      users.map(function(u){
+        return '<div class="li' + (u.id === cur.id ? ' unread' : '') + '" data-u="' + u.id + '">' +
+          '<span class="avatar">' + esc(initials(u.name)) + '</span>' +
+          '<span class="tx"><span class="t1">' + esc(u.name) +
+            (u.title ? ' <span class="muted" style="font-weight:600">' + esc(u.title) + '</span>' : '') +
+            (u.id === cur.id ? ' <span class="tag gold">현재</span>' : '') + '</span>' +
+          '<span class="t2">' + esc((STAY.ROLES[u.role] || {}).label || '') +
+            ' · 예약 접수 · 승인 · 예약 진행 · 정산 전 과정 처리</span></span></div>';
+      }).join('') + '</div>' +
+      '<div class="note info" style="margin-top:12px">숙박 예약 문의는 ' + esc(c.team || '부동산팀') +
+        ' <b>' + esc(c.name || '') + ' ' + esc(c.title || '') + ' ' + esc(c.phone || '') + '</b> 로 주세요.</div>';
+
+    var m = modal({ title:'사용자 전환 (권한 미리보기)', body:body, buttons:[{label:'닫기'}] });
+    on(m.root, 'click', '.li[data-u]', function(){
+      Auth.switchTo(this.dataset.u);
+      NAV.reload();
+    });
+  }
+
+  function notifPanel(){
+    var old = qs('.pop#npop'); if (old) { old.remove(); return; }
+    var user = Auth.current();
+    var list = Notify.listFor(user).slice(0, 30);
+    var pop = el('<div class="pop" id="npop">' +
+      '<div class="ph"><h4>알림</h4><span class="sp" style="margin-left:auto"></span>' +
+        '<button class="btn btn-sm btn-ghost" id="allread">모두 읽음</button></div>' +
+      '<div class="pb list"></div>' +
+      '<div class="pf"><a class="btn btn-sm" href="#/notifications">알림센터 전체보기</a></div></div>');
+    var pb = qs('.pb', pop);
+    if (!list.length) pb.innerHTML = '<div class="empty"><span class="em">🔔</span>새 알림이 없습니다.</div>';
+    else pb.innerHTML = list.map(function(n){
+      var unread = (n.readBy||[]).indexOf(user.id) < 0;
+      var meta = STAY.NOTI_TYPE[n.type] || {icon:'🔔'};
+      return '<div class="li' + (unread?' unread':'') + '" data-n="' + n.id + '" data-b="' + (n.bookingId||'') + '">' +
+        '<span class="ic">' + meta.icon + '</span>' +
+        '<span class="tx"><span class="t1">' + esc(n.title) + '</span>' +
+        '<span class="t2">' + esc((n.body||'').split('\n')[0]) + '</span></span>' +
+        '<span class="rt"><span class="t2">' + ago(n.at) + '</span></span></div>';
+    }).join('');
+    document.querySelector('.main').appendChild(pop);
+    qs('#allread', pop).onclick = function(e){ e.stopPropagation(); Notify.markAllRead(user); NAV.reload(); };
+    on(pop, 'click', '.li[data-n]', function(){
+      Notify.markRead(this.dataset.n, user);
+      if (this.dataset.b) NAV.href = '#/detail?id=' + this.dataset.b;
+      else NAV.reload();
+    });
+    setTimeout(function(){
+      document.addEventListener('click', function cl(e){
+        if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', cl); }
+      });
+    }, 10);
+  }
+
+  /* ---------------- 진행 스텝바 ---------------- */
+  function steps(b){
+    var path = STAY.MAIN_PATH;
+    var closedBad = (b.status==='CANCELED' || b.status==='REJECTED');
+    var curNo = STAY.STATUS[b.status].no;
+    var groups = [
+      { label:'신청',   keys:['NEW'] },
+      { label:'접수',   keys:['RECEIVED','REVIEWING'] },
+      { label:'승인',   keys:['APPROVAL_PENDING','APPROVED'] },
+      { label:'예약',   keys:['BOOKING','BOOKED'] },
+      { label:'이용',   keys:['UPCOMING','USED'] },
+      { label:'정산',   keys:['SETTLE_WAIT','SETTLING'] },
+      { label:'완료',   keys:['SETTLED'] }
+    ];
+    return '<div class="steps">' + groups.map(function(g){
+      var maxNo = Math.max.apply(null, g.keys.map(function(k){ return STAY.STATUS[k].no; }));
+      var minNo = Math.min.apply(null, g.keys.map(function(k){ return STAY.STATUS[k].no; }));
+      var cls = '';
+      if (closedBad) { cls = curNo === 13 ? (minNo <= 6 ? 'done' : '') : (minNo <= 4 ? 'done' : ''); if (!cls) cls=''; }
+      if (!closedBad) {
+        if (curNo > maxNo) cls = 'done';
+        else if (curNo >= minNo) cls = (b.status === 'SETTLED') ? 'done' : 'now';
+      }
+      return '<div class="step ' + cls + '"><div class="bar"></div>' + g.label + '</div>';
+    }).join('') + (closedBad ? '<div class="step bad"><div class="bar"></div>' + STAY.STATUS[b.status].label + '</div>' : '') + '</div>';
+  }
+
+  /* ---------------- 기타 헬퍼 ---------------- */
+  function empty(msg, icon){
+    return '<div class="empty"><span class="em">' + (icon||'🗂') + '</span>' + esc(msg) + '</div>';
+  }
+  function optionList(obj, sel){
+    return Object.keys(obj).map(function(k){
+      return '<option value="' + k + '"' + (k===sel?' selected':'') + '>' + esc(obj[k]) + '</option>';
+    }).join('');
+  }
+  /* 파일 저장. 성공/실패 안내까지 여기서 책임진다(호출부가 미리 성공을 알리지 않도록). */
+  function download(filename, text, mime){
+    var isCsv = /\.csv$/i.test(filename);
+    var body = isCsv ? '﻿' + text : text;   /* 엑셀에서 한글이 깨지지 않도록 BOM */
+    var a = document.createElement('a');
+    a.href = 'data:' + (mime || (isCsv ? 'text/csv' : 'text/plain')) + ';charset=utf-8,' + encodeURIComponent(body);
+    if (window.claude && typeof window.claude.use === 'function') {
+      window.claude.use('downloads').then(function (dl) {
+        if (!dl) { toast('이 미리보기에서는 파일 저장을 지원하지 않습니다.', 'bad'); return null; }
+        return dl.save({ filename: filename, data: body }).catch(function (err) {
+          /* csv 는 확장 허용목록에 없을 수 있다 — 같은 내용을 .txt 로 다시 제안 */
+          if (err && err.code === 'extension_not_enabled' && isCsv) {
+            return dl.save({ filename: filename.replace(/\.csv$/i, '.txt'), data: body });
+          }
+          throw err;
+        });
+      }).then(function (r) {
+        if (r) toast('파일을 저장했습니다.', 'ok');
+      }).catch(function (err) {
+        if (err && err.code === 'declined') return;              /* 사용자가 취소 */
+        toast('파일 저장에 실패했습니다' + (err && err.code ? ' (' + err.code + ')' : '') + '.', 'bad');
+      });
+      return;
+    }
+    a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    toast(filename + ' 파일을 내려받았습니다.', 'ok');
+  }
+  function toCsv(rows){
+    return rows.map(function(r){
+      return r.map(function(c){
+        c = (c === null || c === undefined) ? '' : String(c);
+        return /[",\n]/.test(c) ? '"' + c.replace(/"/g,'""') + '"' : c;
+      }).join(',');
+    }).join('\n');
+  }
+  function param(k){ return new URLSearchParams(NAV.search).get(k) || ''; }
+
+  global.UI = {
+    esc:esc, nl2br:nl2br, qs:qs, qsa:qsa, el:el, on:on, initials:initials,
+    dateK:dateK, dateFull:dateFull, dtFull:dtFull, ago:ago, isToday:isToday,
+    badge:badge, payBadge:payBadge, toast:toast, modal:modal, confirm:confirmBox, prompt:promptBox,
+    shell:shell, userSwitcher:userSwitcher, notifPanel:notifPanel, steps:steps,
+    empty:empty, optionList:optionList, download:download, toCsv:toCsv, param:param, counters:counters
+  };
+})(window);
+
+</script>
+<script>
+
+/* 해시 라우터 — 원본의 페이지 이동(location.href='x.html?q')을 그대로 흡수한다 */
+var PAGES = {};
+var CUR = { page:'index', q:'' };
+
+function parseHash(h){
+  h = String(h || '').replace(/^#\/?/, '');
+  var i = h.indexOf('?');
+  return { page: (i < 0 ? h : h.slice(0, i)) || Deploy.home(), q: i < 0 ? '' : h.slice(i + 1) };
+}
+
+var NAV = {
+  /* 'detail.html?id=x' 같은 원본 형식을 받아 해시로 옮긴다 */
+  set href(v){
+    var s = String(v).replace(/^[.\/]*/, '').replace(/^#\//, '').replace(/\.html/, '');
+    var target = '#/' + s;
+    if (location.hash === target) draw();      /* 같은 주소면 이벤트가 안 오므로 직접 다시 그린다 */
+    else location.hash = target;
+  },
+  get href(){ return location.href; },
+  get search(){ return CUR.q ? '?' + CUR.q : ''; },
+  reload: function(){ draw(); }
+};
+
+function draw(){
+  CUR = parseHash(location.hash);
+  /* 직원용 배포에서 주소를 직접 쳐서 관리 화면으로 들어오는 것을 막는다 */
+  if (!Deploy.allowsRoute(CUR.page) || !PAGES[CUR.page]) {
+    var home = Deploy.home();
+    if (CUR.page !== home) { CUR = { page: home, q: '' }; }
+  }
+  /* 이전 화면과 떠 있던 오버레이 정리 */
+  ['.app', '.pop', '.mask', '.backdrop', '.toasts'].forEach(function(sel){
+    Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ el.remove(); });
+  });
+  document.body.style.overflow = '';
+  var fn = PAGES[CUR.page] || PAGES[Deploy.home()];
+  try { fn(); }
+  catch (e) {
+    console.error('[stay] 화면 오류', CUR.page, e);
+    document.getElementById('stay-root').innerHTML =
+      '<div style="padding:40px;font-weight:700">화면을 그리는 중 오류가 발생했습니다: ' + CUR.page + '</div>';
+  }
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener('hashchange', draw);
+
+/* 공유 링크 잠금 — 풀린 뒤에 화면을 그린다 */
+function start(){
+  if (Gate.locked()) Gate.render(start);
+  else draw();
+}
+
+</script>
+<script>
+PAGES["new"] = function(){
+
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('new', '신규 숙박 예약 신청', '예약 신청 → 접수 → 승인 → 예약 진행 → 예약 완료 → 숙박 이용 → 정산 → 완료');
+  var lodgings = Store.lodgings().filter(function(l){ return l.active !== false; });
+  /* 지점 명단이 아직 확정되지 않았다. 등록된 지점 + 이미 신청에 쓰인 지점명을 모아
+   * 자동완성으로 제안하고, 없으면 직접 입력하게 한다. 전 지점 누구나 신청할 수 있어야 하므로
+   * 목록에 없다고 막지 않는다. */
+  function branchOptions(){
+    var set = {};
+    Store.branches().forEach(function(b){ set[b.name] = 1; });
+    Store.bookings().forEach(function(b){ if (b.branch) set[b.branch] = 1; });
+    return Object.keys(set).sort();
+  }
+  var todayStr = STAY.ymd(new Date());
+  var files = [];
+  var isProxy = (user.role === 'booker' || user.role === 'admin');
+  var isStaff = Deploy.isStaff();   /* 직원용 배포 — 로그인 없음 */
+
+  root.innerHTML =
+   '<div class="pagehead"><div><h2>신규 숙박 예약 신청</h2>' +
+     '<p>필수 항목(<span style="color:var(--red)">*</span>)을 모두 입력해주세요. 제출 즉시 예약번호가 발급되고 예약관리팀에 알림이 전달됩니다.</p></div></div>' +
+   (isProxy && !isStaff ? '<div class="note info" style="margin-bottom:14px">☎️ 전화·카카오톡으로 받은 요청을 대신 등록하는 경우 아래 <b>“대리 접수”</b>를 체크하고 실제 신청자를 선택해주세요. 모든 요청은 시스템에 남아야 처리·정산됩니다.</div>' : '') +
+   '<form id="f" class="card"><div class="card-b">' +
+
+   '<fieldset class="fs"><legend>신청자 정보</legend>' +
+     (isProxy && !isStaff ? '<div class="field"><label class="check"><input type="checkbox" id="proxy"> 전화/카카오톡 등으로 받은 요청을 대신 등록합니다 (대리 접수)</label></div>' : '') +
+     '<div class="frow">' +
+       '<div class="field"><label>신청일<span class="req">*</span></label>' +
+         '<input class="input" type="date" name="requestedDate" value="' + todayStr + '" required></div>' +
+       '<div class="field"><label>신청자명<span class="req">*</span></label>' +
+         (isStaff
+           ? '<input class="input" name="applicantName" id="applicantName" placeholder="예) 김도현" required>'
+           : '<select class="select" name="applicantId" id="applicantId" ' + (isProxy?'':'disabled') + '>' +
+               Store.users().filter(function(u){ return u.active!==false; }).map(function(u){
+                 return '<option value="' + u.id + '"' + (u.id===user.id?' selected':'') + '>' + UI.esc(u.name) + ' (' + UI.esc(u.branch) + ')</option>';
+               }).join('') + '</select>') +
+         '<div class="hint" id="applicantHint">' +
+           (isStaff ? '이 이름으로 예약 진행상황을 조회하게 됩니다.'
+                    : (isProxy ? '대리 접수 시 실제 신청자를 선택하세요.' : '로그인 계정으로 자동 지정됩니다.')) +
+         '</div></div>' +
+       '<div class="field"><label>연락처<span class="req">*</span></label>' +
+         '<input class="input" name="phone" id="phone" value="' + UI.esc(user.phone) + '" placeholder="010-0000-0000" required></div>' +
+     '</div>' +
+     '<div class="frow f2">' +
+       '<div class="field"><label>소속 지점<span class="req">*</span></label>' +
+         '<input class="input" name="branch" id="branch" list="branchList" required autocomplete="off"' +
+           (isStaff ? '' : ' value="' + UI.esc(user.branch) + '"') + ' placeholder="예) 대구점">' +
+         '<datalist id="branchList">' +
+           branchOptions().map(function(b){ return '<option value="' + UI.esc(b) + '">'; }).join('') +
+         '</datalist>' +
+         '<div class="hint">목록에 없으면 직접 입력하세요. 입력한 지점명은 다음 신청자에게 자동완성으로 제안됩니다.</div></div>' +
+       '<div class="field"><label>소속 부서<span class="req">*</span></label>' +
+         '<input class="input" name="dept" id="dept" value="' + UI.esc(user.dept) + '" required></div>' +
+     '</div>' +
+     '<div class="field"><label>이용 목적<span class="req">*</span></label>' +
+       '<input class="input" name="purpose" placeholder="예) 가족과 여름 휴가 · 2박 3일" required>' +
+       '<div class="hint">누구와 어떤 일정으로 이용하는지 적어주시면 승인이 빨라집니다.</div></div>' +
+   '</fieldset>' +
+
+   '<fieldset class="fs"><legend>숙박 정보</legend>' +
+     '<div class="field"><label>숙박 유형<span class="req">*</span></label>' +
+       '<div class="radios" id="typeRadios">' +
+         Object.keys(STAY.LODGING_TYPE).map(function(k,i){
+           return '<label class="radio' + (i===0?' on':'') + '"><input type="radio" name="lodgingType" value="' + k + '"' + (i===0?' checked':'') + '>' + STAY.LODGING_TYPE[k] + '</label>';
+         }).join('') + '</div></div>' +
+     '<div class="frow f2">' +
+       '<div class="field"><label>이용 숙소<span class="req">*</span></label>' +
+         '<select class="select" name="lodgingId" id="lodgingId" required><option value="">숙소를 선택하세요</option></select>' +
+         '<div class="hint" id="lodgingHint">등록된 숙소가 없으면 “기타”를 선택하고 직접 입력하세요.</div></div>' +
+       '<div class="field" id="etcWrap" style="display:none"><label>숙소명 직접 입력<span class="req">*</span></label>' +
+         '<input class="input" name="lodgingNameEtc" placeholder="예) 경주 OO리조트"></div>' +
+     '</div>' +
+     '<div id="loInfo"></div>' +
+     '<div class="frow f4">' +
+       '<div class="field"><label>체크인 날짜<span class="req">*</span></label>' +
+         '<input class="input" type="date" name="checkIn" id="checkIn" min="' + todayStr + '" required></div>' +
+       '<div class="field"><label>체크아웃 날짜<span class="req">*</span></label>' +
+         '<input class="input" type="date" name="checkOut" id="checkOut" min="' + todayStr + '" required></div>' +
+       '<div class="field"><label>숙박일수 (자동계산)</label>' +
+         '<input class="input" id="nights" value="-" disabled></div>' +
+       '<div class="field"><label>객실 수<span class="req">*</span></label>' +
+         '<input class="input" type="number" name="rooms" id="rooms" min="1" value="1" required></div>' +
+     '</div>' +
+     '<div class="frow">' +
+       '<div class="field"><label>성인 인원<span class="req">*</span></label>' +
+         '<input class="input" type="number" name="adults" id="adults" min="1" value="1" required></div>' +
+       '<div class="field"><label>아동 인원</label>' +
+         '<input class="input" type="number" name="children" id="children" min="0" value="0"></div>' +
+       '<div class="field"><label>이용 인원 (자동합계)</label>' +
+         '<input class="input" id="guests" value="1" disabled></div>' +
+     '</div>' +
+   '</fieldset>' +
+
+   '<fieldset class="fs"><legend>예약자 · 비용</legend>' +
+     '<div class="frow f2">' +
+       '<div class="field"><label>예약자명<span class="req">*</span></label>' +
+         '<input class="input" name="guestName" id="guestName" value="' + UI.esc(user.name) + '" required>' +
+         '<div class="hint">실제 숙소에 체크인하는 분의 성함</div></div>' +
+       '<div class="field"><label>예약자 연락처<span class="req">*</span></label>' +
+         '<input class="input" name="guestPhone" id="guestPhone" value="' + UI.esc(user.phone) + '" required></div>' +
+     '</div>' +
+     '<div class="frow f2">' +
+       '<div class="field"><label>예상 비용<span class="req">*</span></label>' +
+         '<input class="input" type="number" name="estimatedCost" id="estimatedCost" min="0" step="1000" value="0" required>' +
+         '<div class="hint" id="costHint">숙소·객실수·박수를 선택하면 제휴가 기준으로 자동 계산됩니다. 수정 가능합니다.</div></div>' +
+       '<div class="field"><label>비용 구분<span class="req">*</span></label>' +
+         '<div class="radios">' +
+           Object.keys(STAY.COST_BEARER).map(function(k,i){
+             return '<label class="radio' + (i===0?' on':'') + '"><input type="radio" name="costBearer" value="' + k + '"' + (i===0?' checked':'') + '>' + STAY.COST_BEARER[k] + '</label>';
+           }).join('') + '</div></div>' +
+     '</div>' +
+     '<div class="field"><label>특별 요청사항</label>' +
+       '<textarea class="textarea" name="specialRequest" placeholder="예) 고층 금연 객실 희망, 늦은 체크인(22시 이후) 예정, 조식 필요 등"></textarea></div>' +
+     '<div class="field"><label>첨부파일</label>' +
+       '<div class="drop" id="drop">📎 클릭해서 파일 선택 (견적서·출장품의서·회의일정 등 · 파일당 2MB 이하)</div>' +
+       '<input type="file" id="fileInput" multiple class="sr">' +
+       '<div class="filelist" id="filelist"></div></div>' +
+   '</fieldset>' +
+
+   '<div class="note warn">제출하면 상태가 <b>신규신청</b>이 되고 예약관리팀에 알림이 전달됩니다. ' +
+     '접수·승인·예약 진행 상황은 [예약 관리]에서 실시간으로 확인할 수 있습니다.</div>' +
+
+   '</div><div class="card-h" style="border-top:1px solid var(--line-2);border-bottom:none;justify-content:flex-end">' +
+     '<button type="button" class="btn" id="cancel">취소</button>' +
+     '<button type="submit" class="btn btn-gold btn-lg">예약 신청 제출</button>' +
+   '</div></form>';
+
+  var f = UI.qs('#f');
+  /* --- 라디오 UI --- */
+  UI.on(root, 'change', 'input[type=radio]', function(){
+    UI.qsa('input[name="' + this.name + '"]').forEach(function(r){ r.closest('.radio').classList.toggle('on', r.checked); });
+    if (this.name === 'lodgingType') fillLodgings();
+  });
+
+  /* --- 숙소 목록 --- */
+  function curType(){ return (UI.qs('input[name=lodgingType]:checked')||{}).value || 'HOTEL'; }
+  function fillLodgings(){
+    var t = curType();
+    var sel = UI.qs('#lodgingId');
+    var opts = lodgings.filter(function(l){ return l.type === t; });
+    sel.innerHTML = '<option value="">숙소를 선택하세요</option>' +
+      opts.map(function(l){
+        return '<option value="' + l.id + '">' + UI.esc(l.name) + ' (' + UI.esc(l.region) + ' · ' +
+               (l.ownership==='DIRECT'?'직영':'제휴') + ')</option>'; }).join('') +
+      '<option value="__etc">＋ 목록에 없음 (직접 입력)</option>';
+    UI.qs('#etcWrap').style.display = 'none';
+    UI.qs('#loInfo').innerHTML = '';
+    calcCost();
+  }
+  UI.qs('#lodgingId').onchange = function(){
+    var etc = this.value === '__etc';
+    UI.qs('#etcWrap').style.display = etc ? '' : 'none';
+    UI.qs('[name=lodgingNameEtc]').required = etc;
+    var lo = Store.lodging(this.value);
+    UI.qs('#loInfo').innerHTML = lo ? lodgingCard(lo) : '';
+    calcCost();
+  };
+  /* 아직 등록되지 않은 항목은 아예 표시하지 않는다 (빈칸·0원이 잘못된 정보로 읽히지 않도록) */
+  function lodgingCard(l){
+    var bits = [];
+    if (l.address) bits.push(UI.esc(l.address));
+    if (l.checkInTime || l.checkOutTime)
+      bits.push('입실 ' + UI.esc(l.checkInTime || '-') + ' / 퇴실 ' + UI.esc(l.checkOutTime || '-'));
+    if (l.roomInfo) bits.push('객실 ' + UI.esc(l.roomInfo));
+    if (l.rackRate) bits.push('정상가 ' + STAY.won(l.rackRate) +
+      (l.partnerRate ? ' → 적용가 <b>' + STAY.won(l.partnerRate) + '</b>' : ''));
+    if (l.cancelPolicy) bits.push('취소규정: ' + UI.esc(l.cancelPolicy));
+    if (l.managerPhone) bits.push('숙소 연락처 ' + UI.esc(l.managerPhone));
+    var missing = !l.rackRate && !l.cancelPolicy && !l.checkInTime;
+    return '<div class="note info" style="margin-bottom:14px">' +
+      '<b>' + UI.esc(l.name) + '</b> <span class="tag ' + (l.ownership==='DIRECT'?'direct':'partner') + '">' +
+        UI.esc(STAY.OWNERSHIP[l.ownership]) + '</span>' +
+      (bits.length ? '<br>' + bits.join('<br>') : '') +
+      (l.caution ? '<br>⚠ ' + UI.esc(l.caution) : '') +
+      (missing ? '<br><span style="color:#9a4b06">요금·입퇴실·취소규정이 아직 등록되지 않았습니다. 예약 담당자가 확인 후 안내드립니다.</span>' : '') +
+      '</div>';
+  }
+
+  /* --- 자동계산 --- */
+  function calcNights(){
+    var ci = UI.qs('#checkIn').value, co = UI.qs('#checkOut').value;
+    var n = STAY.nights(ci, co);
+    UI.qs('#nights').value = (ci && co) ? (n > 0 ? n + '박 ' + (n+1) + '일' : '체크아웃이 체크인보다 빠릅니다') : '-';
+    if (ci) UI.qs('#checkOut').min = ci;
+    return n;
+  }
+  function calcGuests(){
+    var a = Number(UI.qs('#adults').value)||0, c = Number(UI.qs('#children').value)||0;
+    UI.qs('#guests').value = (a+c) + '명 (성인 ' + a + ' / 아동 ' + c + ')';
+  }
+  var costTouched = false;
+  function calcCost(){
+    if (costTouched) return;
+    var lo = Store.lodging(UI.qs('#lodgingId').value);
+    var n = STAY.nights(UI.qs('#checkIn').value, UI.qs('#checkOut').value);
+    var rooms = Number(UI.qs('#rooms').value)||1;
+    if (!lo || !n) return;
+    var unit = lo.partnerRate || lo.rackRate;
+    if (!unit) {   /* 요금이 아직 등록되지 않은 숙소 — 0원으로 채우면 오해를 부른다 */
+      UI.qs('#costHint').textContent = lo.name + ' 요금이 아직 등록되지 않았습니다. 예상 비용을 직접 입력해주세요.';
+      return;
+    }
+    UI.qs('#estimatedCost').value = unit * n * rooms;
+    UI.qs('#costHint').textContent = lo.name + ' ' + STAY.won(unit) + ' × ' + n + '박 × ' + rooms + '실 = ' +
+      STAY.won(unit*n*rooms) + ' (자동계산 · 수정 가능)';
+  }
+  ['#checkIn','#checkOut'].forEach(function(s){ UI.qs(s).addEventListener('change', function(){ calcNights(); calcCost(); }); });
+  ['#adults','#children'].forEach(function(s){ UI.qs(s).addEventListener('input', calcGuests); });
+  UI.qs('#rooms').addEventListener('input', calcCost);
+  UI.qs('#estimatedCost').addEventListener('input', function(){ costTouched = true; });
+
+  /* --- 대리 접수 --- */
+  var proxy = UI.qs('#proxy');
+  if (proxy) proxy.onchange = function(){
+    applicantSel.disabled = !this.checked;
+    if (!this.checked) { applicantSel.value = user.id; syncApplicant(); }
+  };
+  var applicantSel = UI.qs('#applicantId');
+  if (applicantSel) applicantSel.onchange = syncApplicant;
+  function syncApplicant(){
+    if (!applicantSel) return;
+    var u = Store.user(applicantSel.value);
+    if (!u) return;
+    UI.qs('#branch').value = u.branch; UI.qs('#dept').value = u.dept; UI.qs('#phone').value = u.phone;
+    UI.qs('#guestName').value = u.name; UI.qs('#guestPhone').value = u.phone;
+  }
+
+  /* --- 첨부파일 --- */
+  UI.qs('#drop').onclick = function(){ UI.qs('#fileInput').click(); };
+  UI.qs('#fileInput').onchange = function(){
+    Array.prototype.forEach.call(this.files, function(file){
+      if (file.size > 2*1024*1024) { UI.toast(file.name + ' : 2MB를 초과해 제외했습니다.', 'bad'); return; }
+      var fr = new FileReader();
+      fr.onload = function(){
+        files.push({ name:file.name, size:file.size, type:file.type, dataUrl:fr.result });
+        renderFiles();
+      };
+      fr.readAsDataURL(file);
+    });
+    this.value = '';
+  };
+  function renderFiles(){
+    UI.qs('#filelist').innerHTML = files.map(function(f, i){
+      return '<div class="fileitem">📄 ' + UI.esc(f.name) + ' <span class="muted">(' + Math.round(f.size/1024) + 'KB)</span>' +
+        '<span class="sp"></span><button type="button" class="btn btn-sm btn-ghost" data-rm="' + i + '">삭제</button></div>';
+    }).join('');
+  }
+  UI.on(root, 'click', '[data-rm]', function(){ files.splice(Number(this.dataset.rm),1); renderFiles(); });
+
+  UI.qs('#cancel').onclick = function(){ NAV.href='#/new'; };
+
+  /* --- 제출 --- */
+  f.onsubmit = function(e){
+    e.preventDefault();
+    var fd = new FormData(f);
+    var loId = fd.get('lodgingId');
+    var n = calcNights();
+    if (!n) { UI.toast('체크아웃 날짜는 체크인 이후여야 합니다.', 'bad'); UI.qs('#checkOut').focus(); return; }
+    if (loId === '__etc' && !String(fd.get('lodgingNameEtc')||'').trim()) {
+      UI.toast('숙소명을 직접 입력해주세요.', 'bad'); return; }
+    var applicant = isStaff
+      ? { id:null, name:String(fd.get('applicantName') || '').trim() }
+      : (Store.user(fd.get('applicantId')) || user);
+    if (isStaff && !applicant.name) { UI.toast('신청자명을 입력해주세요.', 'bad'); return; }
+    if (isStaff && !fd.get('branch')) { UI.toast('소속 지점을 선택해주세요.', 'bad'); return; }
+    /* 처리 로그에 남길 사람. 직원용은 로그인이 없으므로 입력한 신청자 정보를 그대로 쓴다. */
+    var actor = isStaff
+      ? { id:'guest', name:applicant.name, role:'applicant', branch:fd.get('branch') }
+      : user;
+    var isProxyOn = proxy && proxy.checked;
+
+    var reqDate = fd.get('requestedDate');
+    var reqAt = (reqDate === STAY.ymd(new Date()))
+      ? new Date().toISOString()
+      : new Date(reqDate + 'T09:00:00').toISOString();
+
+    var b = Store.createBooking({
+      requestedAt: reqAt,
+      applicantId: applicant.id, applicantName: applicant.name,
+      branch: fd.get('branch'), dept: fd.get('dept'), phone: fd.get('phone'),
+      purpose: fd.get('purpose'),
+      lodgingType: fd.get('lodgingType'),
+      lodgingId: loId === '__etc' ? null : loId,
+      lodgingName: loId === '__etc' ? fd.get('lodgingNameEtc') : (Store.lodging(loId)||{}).name,
+      checkIn: fd.get('checkIn'), checkOut: fd.get('checkOut'),
+      adults: fd.get('adults'), children: fd.get('children'), rooms: fd.get('rooms'),
+      guestName: fd.get('guestName'), guestPhone: fd.get('guestPhone'),
+      estimatedCost: fd.get('estimatedCost'), costBearer: fd.get('costBearer'),
+      specialRequest: fd.get('specialRequest'),
+      attachments: files,
+      proxyBy: isProxyOn ? user.name : null
+    }, actor);
+
+    UI.modal({
+      title:'예약 신청이 접수되었습니다',
+      body:'<div class="note" style="margin-bottom:14px">예약번호 <b style="font-size:17px">' + UI.esc(b.code) + '</b></div>' +
+           '<dl class="dl one">' +
+           '<div class="dr"><dt>숙소</dt><dd>' + UI.esc(b.lodgingName) + '</dd></div>' +
+           '<div class="dr"><dt>일정</dt><dd>' + UI.esc(b.checkIn) + ' ~ ' + UI.esc(b.checkOut) + ' (' + b.nights + '박)</dd></div>' +
+           '<div class="dr"><dt>인원/객실</dt><dd>' + b.guests + '명 / ' + b.rooms + '실</dd></div>' +
+           '<div class="dr"><dt>예상비용</dt><dd>' + STAY.won(b.estimatedCost) + '</dd></div>' +
+           '<div class="dr"><dt>현재상태</dt><dd>' + UI.badge('NEW') + '</dd></div></dl>' +
+           '<p class="muted" style="font-size:12.5px;margin:12px 0 0">예약관리팀에 알림이 전달되었습니다.' +
+           (isStaff ? ' <b>예약번호를 꼭 메모해두세요.</b> [내 예약 조회]에서 이 번호와 신청자명으로 진행상황을 확인할 수 있습니다.'
+                    : ' 진행 상황은 예약 상세 화면에서 확인할 수 있습니다.') + '</p>',
+      buttons: isStaff
+        ? [ { label:'닫기' },
+            { label:'진행상황 보기', cls:'btn-gold',
+              onClick:function(){ NAV.href='#/mystay?code=' + encodeURIComponent(b.code); } } ]
+        : [ { label:'목록으로', onClick:function(){ NAV.href='#/requests'; } },
+            { label:'예약 상세 보기', cls:'btn-gold', onClick:function(){ NAV.href='#/detail?id=' + b.id; } } ]
+    });
+  };
+
+  fillLodgings();
+  calcGuests();
+})();
+
+};
+
+PAGES["mystay"] = function(){
+
+(function(){
+  var root = UI.shell('mystay', '내 예약 조회', '예약번호와 신청자명으로 진행상황을 확인합니다');
+  var ct = Store.settings().contact || { team:'부동산팀', name:'', title:'', phone:'' };
+  var RECENT_KEY = 'ykp_stay_recent';
+  var found = null;
+
+  /* 조회에 성공한 예약번호만 이 브라우저에 기억한다(다음 방문 시 재입력 줄이기) */
+  function recent(){
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch(e){ return []; }
+  }
+  function remember(code, name){
+    try {
+      var list = recent().filter(function(r){ return r.code !== code; });
+      list.unshift({ code:code, name:name });
+      localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 5)));
+    } catch(e){}
+  }
+
+  /* 예약번호는 대소문자·공백·접두어 유무를 가리지 않고 찾는다 */
+  function normalize(code){
+    return String(code || '').toUpperCase().replace(/\s/g, '');
+  }
+  function lookup(code, name){
+    var c = normalize(code);
+    var n = String(name || '').trim();
+    if (!c || !n) return { err:'예약번호와 신청자명을 모두 입력해주세요.' };
+    var hit = Store.bookings().filter(function(b){
+      var bc = normalize(b.code);
+      return bc === c || bc.slice(-4) === c;   /* 뒤 4자리만 입력해도 찾도록 */
+    });
+    if (!hit.length) return { err:'해당 예약번호를 찾을 수 없습니다. 번호를 다시 확인해주세요.' };
+    var mine = hit.filter(function(b){ return b.applicantName === n || b.guestName === n; });
+    if (!mine.length) return { err:'예약번호는 있으나 신청자명이 일치하지 않습니다. 신청하실 때 입력한 이름으로 조회해주세요.' };
+    return { booking: mine[0] };
+  }
+
+  function render(msg){
+    var r = recent();
+    root.innerHTML =
+     '<div class="pagehead"><div><h2>내 예약 진행상황 조회</h2>' +
+       '<p>신청할 때 발급받은 <b>예약번호</b>와 <b>신청자명</b>을 입력하면 지금 어느 단계인지 확인할 수 있습니다.</p></div></div>' +
+
+     '<div class="card"><div class="card-b">' +
+       '<div class="frow f2" style="align-items:end">' +
+         '<div class="field" style="margin:0"><label>예약번호<span class="req">*</span></label>' +
+           '<input class="input" id="q_code" placeholder="STAY-2026-0001 (뒤 4자리만 입력해도 됩니다)" autocomplete="off"></div>' +
+         '<div class="field" style="margin:0"><label>신청자명<span class="req">*</span></label>' +
+           '<div class="btnrow" style="flex-wrap:nowrap">' +
+             '<input class="input" id="q_name" placeholder="예) 김도현" autocomplete="off">' +
+             '<button class="btn btn-gold" id="q_go" style="flex:none">조회</button></div></div>' +
+       '</div>' +
+       (r.length ? '<div class="hr"></div><div class="chips">' +
+          '<span class="muted" style="font-size:12px;font-weight:700;align-self:center">최근 조회</span>' +
+          r.map(function(x){
+            return '<button class="chip" data-recent="' + UI.esc(x.code) + '" data-name="' + UI.esc(x.name) + '">' +
+              UI.esc(x.code) + '</button>';
+          }).join('') + '</div>' : '') +
+     '</div></div>' +
+
+     (msg ? '<div class="note bad mt">' + UI.esc(msg) + '</div>' : '') +
+     '<div id="result" class="mt"></div>' +
+
+     (found ? '' :
+       '<div class="note info mt">예약번호를 잊으셨나요? 신청 직후 화면과 담당자 안내 메시지에 <b>STAY-연도-일련번호</b> 형식으로 안내됩니다. ' +
+       '찾기 어려우시면 ' + UI.esc(ct.team) + ' ' + UI.esc(ct.phone) + ' 로 문의해주세요.</div>');
+
+    if (found) drawResult(found);
+
+    UI.qs('#q_go').onclick = doLookup;
+    ['#q_code','#q_name'].forEach(function(sel){
+      UI.qs(sel).addEventListener('keydown', function(e){ if (e.key === 'Enter') doLookup(); });
+    });
+  }
+
+  function doLookup(){
+    var code = UI.qs('#q_code').value, name = UI.qs('#q_name').value;
+    var res = lookup(code, name);
+    if (res.err) { found = null; render(res.err); UI.qs('#q_code').value = code; UI.qs('#q_name').value = name; return; }
+    found = res.booking;
+    remember(found.code, name.trim());
+    render();
+    UI.qs('#q_code').value = found.code; UI.qs('#q_name').value = name.trim();
+  }
+
+  /* ---------------- 결과 ---------------- */
+  function drawResult(b){
+    var logs = Store.bookingLogs(b.id);
+    var lo = b.lodgingId ? Store.lodging(b.lodgingId) : null;
+    var r = b.reservation || {};
+    var confirmed = ['BOOKED','UPCOMING','USED','SETTLE_WAIT','SETTLING','SETTLED'].indexOf(b.status) >= 0;
+    var closed = ['CANCELED','REJECTED'].indexOf(b.status) >= 0;
+
+    /* 신청자에게는 처리 이력 중 '무슨 일이 있었는지'만 보여준다(내부 메모는 제외) */
+    var visible = logs.filter(function(l){ return l.action !== '메모 작성'; });
+
+    function dr(k, v){ return '<div class="dr"><dt>' + k + '</dt><dd>' + v + '</dd></div>'; }
+
+    UI.qs('#result').innerHTML =
+     '<div class="card"><div class="card-h">' +
+       '<h3>' + UI.esc(b.code) + '</h3>' + UI.badge(b.status) +
+       '<span class="sp"></span><span class="sub">최종 변경 ' + UI.dtFull(b.updatedAt) + '</span></div>' +
+      '<div class="card-b">' + UI.steps(b) + '</div>' +
+
+      '<div class="card-b" style="border-top:1px solid var(--line-2)">' +
+        statusMessage(b) +
+        '<dl class="dl mt">' +
+          dr('이용 숙소', UI.esc(b.lodgingName) + (lo ? ' <span class="tag ' + (lo.ownership==='DIRECT'?'direct':'partner') + '">' +
+              UI.esc(STAY.OWNERSHIP[lo.ownership]) + '</span>' : '')) +
+          dr('이용 목적', UI.esc(b.purpose)) +
+          dr('체크인', UI.dateFull(b.checkIn) + ' ' + UI.dateK(b.checkIn) + (lo ? ' <span class="muted">' + UI.esc(lo.checkInTime) + '~</span>' : '')) +
+          dr('체크아웃', UI.dateFull(b.checkOut) + ' ' + UI.dateK(b.checkOut) + (lo ? ' <span class="muted">~' + UI.esc(lo.checkOutTime) + '</span>' : '')) +
+          dr('숙박일수', '<b>' + b.nights + '박 ' + (b.nights+1) + '일</b>') +
+          dr('인원 / 객실', b.guests + '명 (성인 ' + b.adults + ' / 아동 ' + b.children + ') · ' + b.rooms + '실') +
+          dr('신청자', UI.esc(b.applicantName) + ' <span class="muted">' + UI.esc(b.branch) + '</span>') +
+          dr('예약자', UI.esc(b.guestName) + ' <span class="muted">' + UI.esc(b.guestPhone) + '</span>') +
+          dr('예상 비용', STAY.won(b.estimatedCost) + ' <span class="muted">(' + UI.esc(STAY.COST_BEARER[b.costBearer]) + ')</span>') +
+          dr('신청일', UI.dtFull(b.requestedAt)) +
+        '</dl>' +
+        (b.specialRequest ? '<div class="hr"></div><div class="muted" style="font-size:12.5px;font-weight:800">특별 요청사항</div>' +
+          '<div style="margin-top:4px">' + UI.nl2br(b.specialRequest) + '</div>' : '') +
+      '</div>' +
+
+      (confirmed ? '<div class="card-b" style="border-top:1px solid var(--line-2);background:#fbfef9">' +
+        '<div class="muted" style="font-size:12.5px;font-weight:800;margin-bottom:8px">🏨 예약 확정정보 — 체크인 시 아래 번호를 말씀하세요</div>' +
+        '<dl class="dl">' +
+          dr('숙소 예약번호', '<b style="font-size:15px">' + UI.esc(r.confirmNo || '-') + '</b>') +
+          dr('객실 정보', UI.esc(r.roomInfo || '-')) +
+          (lo && lo.managerPhone ? dr('숙소 연락처', UI.esc(lo.managerPhone)) : '') +
+          (lo && lo.address ? dr('주소', UI.esc(lo.address)) : '') +
+          dr('문의', UI.esc(ct.team) + ' <a href="tel:' + UI.esc(ct.phone) + '" style="text-decoration:underline">' +
+             UI.esc(ct.phone) + '</a>') +
+        '</dl>' +
+        (lo && lo.caution ? '<div class="note warn" style="margin-top:10px">⚠ ' + UI.esc(lo.caution) + '</div>' : '') +
+        (lo && lo.cancelPolicy ? '<div class="note mt" style="margin-top:8px">취소규정: ' + UI.esc(lo.cancelPolicy) + '</div>' : '') +
+      '</div>' : '') +
+
+      (b.status === 'REJECTED' && b.approval && b.approval.opinion
+        ? '<div class="card-b" style="border-top:1px solid var(--line-2)">' +
+          '<div class="note bad" style="margin:0">🚫 <b>반려 사유</b><br>' + UI.nl2br(b.approval.opinion) + '</div></div>' : '') +
+
+      ((b.changeRequest && !b.changeRequest.handled) || (b.cancelRequest && !b.cancelRequest.handled)
+        ? '<div class="card-b" style="border-top:1px solid var(--line-2)">' +
+          '<div class="note warn" style="margin:0">✏️ 요청하신 ' +
+          ((b.cancelRequest && !b.cancelRequest.handled) ? '취소' : '수정') +
+          ' 건을 담당자가 확인하고 있습니다.</div></div>' : '') +
+
+      (closed ? '' :
+        '<div class="card-b no-print" style="border-top:1px solid var(--line-2)">' +
+          '<div class="btnrow"><button class="btn" id="reqChange">수정 요청</button>' +
+          '<button class="btn btn-danger" id="reqCancel">취소 요청</button>' +
+          '<span class="muted" style="font-size:12px;align-self:center">전화하지 마시고 여기로 요청하시면 기록이 남습니다.</span></div>' +
+        '</div>') +
+     '</div>' +
+
+     '<div class="card mt"><div class="card-h"><h3>🕒 진행 이력</h3><span class="sp"></span>' +
+       '<span class="sub">' + visible.length + '건</span></div>' +
+      '<div class="card-b"><div class="timeline">' +
+        visible.map(function(l, i){
+          var isLast = i === visible.length - 1;
+          var bad = l.to === 'CANCELED' || l.to === 'REJECTED';
+          return '<div class="tl ' + (bad ? 'bad' : (isLast && !closed ? 'now' : 'done')) + '">' +
+            '<div class="td">' + UI.dtFull(l.at) + '</div>' +
+            '<div class="tt">' + UI.esc(l.action) +
+              (l.to ? ' <span class="badge b-' + l.to + '" style="font-size:10.5px"><i class="d"></i>' + STAY.STATUS[l.to].label + '</span>' : '') + '</div>' +
+            '<div class="tm">' + UI.esc(l.userName) + ' <span class="muted">' + UI.esc(STAY.ROLES[l.role].short) + '</span>' +
+            (l.memo ? '<br>' + UI.nl2br(l.memo) : '') + '</div></div>';
+        }).join('') +
+      '</div></div></div>';
+
+    var rc = UI.qs('#reqChange');
+    if (rc) rc.onclick = function(){
+      UI.prompt('예약 수정 요청', '어떤 내용을 수정하고 싶으신가요?', { required:true, okLabel:'요청 보내기',
+        placeholder:'예) 체크인을 하루 늦춰주세요 (8/21 → 8/22). 인원도 2명 추가됩니다.' }).then(function(v){
+        if (v == null) return;
+        Store.requestChange(b.id, 'change', v, requester(b));
+        UI.toast('수정 요청을 보냈습니다. 부동산팀이 확인 후 연락드립니다.', 'ok');
+        found = Store.booking(b.id); render();
+      });
+    };
+    var cc = UI.qs('#reqCancel');
+    if (cc) cc.onclick = function(){
+      UI.prompt('예약 취소 요청', '취소 사유를 입력해주세요', { required:true, danger:true, okLabel:'취소 요청',
+        hint:'숙소 취소규정에 따라 위약금이 발생할 수 있습니다.',
+        placeholder:'예) 출장 일정이 취소되었습니다.' }).then(function(v){
+        if (v == null) return;
+        Store.requestChange(b.id, 'cancel', v, requester(b));
+        UI.toast('취소 요청을 보냈습니다.', 'ok');
+        found = Store.booking(b.id); render();
+      });
+    };
+  }
+
+  /* 요청 기록에 남길 사람 — 로그인이 없으므로 예약에 적힌 신청자를 그대로 쓴다 */
+  function requester(b){
+    return Store.user(b.applicantId) ||
+      { id:b.applicantId || 'guest', name:b.applicantName, role:'applicant', branch:b.branch };
+  }
+
+  /* 지금 단계에서 신청자가 무엇을 기다리면 되는지 한 줄로 */
+  function statusMessage(b){
+    var M = {
+      NEW:              ['info', '신청이 접수 대기 중입니다. 부동산팀이 확인하면 접수완료로 바뀝니다.'],
+      RECEIVED:         ['info', '부동산팀이 접수했습니다. 신청 내용을 검토하고 있습니다.'],
+      REVIEWING:        ['info', '신청 내용을 확인하고 있습니다. 추가 정보가 필요하면 연락드립니다.'],
+      APPROVAL_PENDING: ['warn', '부동산팀 승인을 기다리고 있습니다.'],
+      APPROVED:         ['info', '승인되었습니다. 부동산팀이 숙소에 예약을 진행할 예정입니다.'],
+      BOOKING:          ['info', '부동산팀이 숙소에 예약을 진행하고 있습니다.'],
+      BOOKED:           ['',     '예약이 확정되었습니다. 아래 숙소 예약번호로 체크인하시면 됩니다.'],
+      UPCOMING:         ['',     '이용 예정입니다. 체크인 날짜를 확인해주세요.'],
+      USED:             ['info', '숙박 이용이 끝났습니다. 부동산팀 정산이 진행됩니다.'],
+      SETTLE_WAIT:      ['info', '정산 대기 중입니다. 신청자가 따로 하실 일은 없습니다.'],
+      SETTLING:         ['info', '부동산팀이 정산 처리 중입니다.'],
+      SETTLED:          ['',     '정산까지 모두 완료된 건입니다.'],
+      CANCELED:         ['bad',  '취소된 예약입니다.'],
+      REJECTED:         ['bad',  '반려된 예약입니다. 사유를 확인하고 조정 후 다시 신청해주세요.']
+    };
+    var m = M[b.status] || ['', ''];
+    return '<div class="note ' + m[0] + '" style="margin:0">' +
+      STAY.STATUS[b.status].icon + ' <b>' + UI.esc(STAY.STATUS[b.status].label) + '</b> — ' + UI.esc(m[1]) + '</div>';
+  }
+
+  UI.on(root, 'click', '[data-recent]', function(){
+    UI.qs('#q_code').value = this.dataset.recent;
+    UI.qs('#q_name').value = this.dataset.name || '';
+    doLookup();
+  });
+
+  render();
+
+  /* 신청 직후 안내 화면에서 넘어온 경우 예약번호를 미리 채워둔다 */
+  var pre = UI.param('code');
+  if (pre) {
+    UI.qs('#q_code').value = pre;
+    var last = recent().filter(function(x){ return x.code === pre; })[0];
+    if (last) { UI.qs('#q_name').value = last.name; doLookup(); }
+    else UI.qs('#q_name').focus();
+  }
+})();
+
+};
+
+PAGES["lodgings"] = function(){
+
+(function(){
+  var user = Auth.current();
+  var isStaff = Deploy.isStaff();
+  var root = UI.shell('lodging',
+    isStaff ? '숙소 안내' : '숙소 관리',
+    isStaff ? '회사가 운영하는 숙소 이용 안내' : '호텔 · 펜션 마스터 (직영 / 제휴 구분)');
+  var canEdit = !isStaff && Auth.can('manageLodging');
+  var st = { q:'', type:'', own:'', region:'' };
+
+  function rows(){
+    var list = Store.lodgings();
+    if (st.q){ var q = st.q.toLowerCase();
+      list = list.filter(function(l){ return [l.name,l.address,l.region,l.managerName,l.note]
+        .some(function(v){ return v && String(v).toLowerCase().indexOf(q)>=0; }); }); }
+    if (st.type)   list = list.filter(function(l){ return l.type === st.type; });
+    if (st.own)    list = list.filter(function(l){ return l.ownership === st.own; });
+    if (st.region) list = list.filter(function(l){ return l.region === st.region; });
+    if (isStaff) {
+      list = list.filter(function(l){ return l.active !== false; });
+      list.sort(function(a, b){                       /* 직영 숙소를 먼저 안내한다 */
+        if (a.ownership !== b.ownership) return a.ownership === 'DIRECT' ? -1 : 1;
+        return a.name < b.name ? -1 : 1;
+      });
+    }
+    return list;
+  }
+  /* 운영 정보가 비어 있는 숙소 수 */
+  function incomplete(){
+    return Store.lodgings().filter(function(l){
+      return !l.rackRate || !l.cancelPolicy || !l.checkInTime || !l.usage;
+    }).length;
+  }
+  function usage(loId){
+    var bs = Store.bookings().filter(function(b){ return b.lodgingId===loId && ['CANCELED','REJECTED'].indexOf(b.status)<0; });
+    return { n: bs.length, sum: bs.reduce(function(s,b){ return s + ((b.reservation&&b.reservation.amount)||b.estimatedCost||0); }, 0) };
+  }
+
+  function render(){
+    var all = Store.lodgings();
+    var regions = all.map(function(l){ return l.region; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+    var list = rows();
+    root.innerHTML =
+     '<div class="pagehead"><div><h2>' + (isStaff ? '숙소 안내' : '숙소 관리') + '</h2>' +
+       '<p>' + (isStaff
+         ? '회사가 직접 운영하는 숙소입니다. 예약 신청 시 아래 숙소 중에서 선택해주세요.'
+         : '회사 운영 숙소와 외부 제휴 숙소를 구분해 관리합니다. 예약 신청 화면의 숙소 목록이 여기서 채워집니다.') + '</p></div>' +
+       '<div class="sp"></div>' + (canEdit ? '<button class="btn btn-gold" id="add">＋ 숙소 등록</button>' : '') + '</div>' +
+
+     '<div class="kpis" style="grid-template-columns:repeat(' + (isStaff?3:4) + ',1fr)">' +
+       '<div class="kpi k-ink"><div class="lb">전체 숙소</div><div class="vl">' + all.length + '<small>곳</small></div></div>' +
+       '<div class="kpi k-blue"><div class="lb">직영 (회사운영)</div><div class="vl">' +
+         all.filter(function(l){return l.ownership==='DIRECT';}).length + '<small>곳</small></div><div class="sub">회사가 직접 운영</div></div>' +
+       '<div class="kpi k-violet"><div class="lb">제휴 숙소</div><div class="vl">' +
+         all.filter(function(l){return l.ownership==='PARTNER';}).length + '<small>곳</small></div><div class="sub">제휴가 적용</div></div>' +
+       (isStaff ? '' : '<div class="kpi k-gold"><div class="lb">평균 할인율</div><div class="vl">' +
+         Math.round(all.filter(function(l){return l.ownership==="PARTNER";}).reduce(function(s,l){return s+(l.discountRate||0);},0) /
+           Math.max(1, all.filter(function(l){return l.ownership==="PARTNER";}).length)) + '<small>%</small></div>' +
+         '<div class="sub">제휴 숙소 기준</div></div>') +
+     '</div>' +
+
+     (incomplete() ? '<div class="note warn" style="margin-bottom:14px">📝 요금·객실·입퇴실·취소규정이 아직 등록되지 않은 숙소가 <b>' +
+        incomplete() + '곳</b> 있습니다. ' +
+        (isStaff ? '해당 항목은 예약 담당자가 확인 후 안내드립니다.' : '숙소를 열어 정보를 채워주세요.') + '</div>' : '') +
+     '<div class="card mt"><div class="card-b"><div class="filterbar">' +
+       '<div class="field"><label>검색</label><input class="input" id="f_q" value="' + UI.esc(st.q) + '" placeholder="숙소명·주소·담당자"></div>' +
+       '<div class="field"><label>구분</label><select class="select" id="f_type"><option value="">전체</option>' +
+         UI.optionList(STAY.LODGING_TYPE, st.type) + '</select></div>' +
+       '<div class="field"><label>운영형태</label><select class="select" id="f_own"><option value="">전체</option>' +
+         UI.optionList(STAY.OWNERSHIP, st.own) + '</select></div>' +
+       '<div class="field"><label>지역</label><select class="select" id="f_region"><option value="">전체</option>' +
+         regions.map(function(r){ return '<option' + (r===st.region?' selected':'') + '>' + UI.esc(r) + '</option>'; }).join('') + '</select></div>' +
+     '</div></div></div>' +
+
+     '<div class="grid g2 mt" id="cards"></div>';
+
+    UI.qs('#cards').innerHTML = list.length ? list.map(function(l){
+      var u = usage(l.id);
+      return '<div class="card"><div class="card-h">' +
+        '<h3>' + UI.esc(l.name) + '</h3>' +
+        '<span class="tag ' + (l.ownership==='DIRECT'?'direct':'partner') + '">' + UI.esc(STAY.OWNERSHIP[l.ownership]) + '</span>' +
+        '<span class="tag">' + UI.esc(STAY.LODGING_TYPE[l.type]) + '</span>' +
+        (l.active===false ? '<span class="tag" style="color:var(--red)">비활성</span>' : '') +
+        '<span class="sp"></span>' +
+        (canEdit ? '<button class="btn btn-sm" data-ed="' + l.id + '">수정</button>' : '') + '</div>' +
+        '<div class="card-b"><dl class="dl">' +
+          d('지역', UI.esc(l.region)) + d('주소', UI.esc(l.address)) +
+          (l.managerName ? d('담당자', UI.esc(l.managerName)) : '') +
+          d('연락처', l.managerPhone ? UI.esc(l.managerPhone) : miss()) +
+          d('네이버 플레이스', l.homepage ? '<a href="' + UI.esc(l.homepage) + '" target="_blank" rel="noopener" style="text-decoration:underline">보기</a>' : '<span class="muted">-</span>') +
+          d('입실/퇴실', (l.checkInTime || l.checkOutTime) ? (UI.esc(l.checkInTime||'-') + ' / ' + UI.esc(l.checkOutTime||'-')) : miss()) +
+          d('요금', l.rackRate ? (STAY.won(l.rackRate) + (l.partnerRate ? ' → <b>' + STAY.won(l.partnerRate) + '</b> (' + (l.discountRate||0) + '%)' : '')) : miss()) +
+          (isStaff ? '' : d('이용 실적', u.n + '건 · ' + STAY.won(u.sum))) +
+        '</dl>' +
+        '<div class="hr"></div>' +
+        '<dl class="dl one">' +
+          d('객실정보', l.roomInfo ? UI.esc(l.roomInfo) : miss()) +
+          d('이용방법', l.usage ? UI.esc(l.usage) : miss()) +
+          d('취소규정', l.cancelPolicy ? UI.esc(l.cancelPolicy) : miss()) +
+          (l.caution ? d('주의사항', '<span style="color:var(--orange)">⚠ ' + UI.esc(l.caution) + '</span>') : '') +
+          (l.note ? d('비고', UI.esc(l.note)) : '') +
+        '</dl></div></div>';
+    }).join('') : '<div class="card"><div class="card-b">' + UI.empty('조건에 맞는 숙소가 없습니다.', '🏨') + '</div></div>';
+
+    ['#f_q','#f_type','#f_own','#f_region'].forEach(function(s){
+      var e = UI.qs(s); e.oninput = e.onchange = function(){
+        st.q = UI.qs('#f_q').value.trim(); st.type = UI.qs('#f_type').value;
+        st.own = UI.qs('#f_own').value; st.region = UI.qs('#f_region').value; render();
+      };
+    });
+  }
+  function d(k, v){ return '<div class="dr"><dt>' + k + '</dt><dd>' + v + '</dd></div>'; }
+  /* 값을 지어내지 않고 '아직 등록되지 않았다'는 사실을 그대로 보여준다 */
+  function miss(){ return '<span style="color:var(--orange);font-weight:700">미등록</span>'; }
+
+  function editModal(l){
+    l = l || { type:'HOTEL', ownership:'PARTNER', active:true, discountRate:0,
+               checkInTime:'15:00', checkOutTime:'11:00', rackRate:0, partnerRate:0 };
+    function f(label, name, val, type, ph){
+      return '<div class="field"><label>' + label + '</label><input class="input" type="' + (type||'text') +
+        '" name="' + name + '" value="' + UI.esc(val===0?0:(val||'')) + '"' + (ph?' placeholder="'+UI.esc(ph)+'"':'') + '></div>';
+    }
+    function ta(label, name, val, ph){
+      return '<div class="field"><label>' + label + '</label><textarea class="textarea" name="' + name + '"' +
+        (ph?' placeholder="'+UI.esc(ph)+'"':'') + '>' + UI.esc(val||'') + '</textarea></div>';
+    }
+    UI.modal({
+      title: l.id ? '숙소 정보 수정' : '신규 숙소 등록', wide:true,
+      body:'<div class="frow f2">' +
+          f('숙소명 *','name', l.name) +
+          '<div class="field"><label>구분</label><select class="select" name="type">' + UI.optionList(STAY.LODGING_TYPE, l.type) + '</select></div>' +
+          '<div class="field"><label>운영형태</label><select class="select" name="ownership">' + UI.optionList(STAY.OWNERSHIP, l.ownership) + '</select></div>' +
+          f('지역','region', l.region, 'text', '예) 대구') +
+        '</div>' +
+        f('주소','address', l.address) +
+        '<div class="frow">' +
+          f('담당자','managerName', l.managerName) +
+          f('연락처','managerPhone', l.managerPhone) +
+          f('홈페이지','homepage', l.homepage, 'url') +
+        '</div>' +
+        '<div class="frow f4">' +
+          f('정상가격','rackRate', l.rackRate, 'number') +
+          f('제휴가격','partnerRate', l.partnerRate, 'number') +
+          f('할인율(%)','discountRate', l.discountRate, 'number') +
+          '<div class="field"><label>사용 여부</label><select class="select" name="active">' +
+            '<option value="true"' + (l.active!==false?' selected':'') + '>사용</option>' +
+            '<option value="false"' + (l.active===false?' selected':'') + '>미사용</option></select></div>' +
+        '</div>' +
+        '<div class="frow f2">' + f('입실시간','checkInTime', l.checkInTime, 'time') + f('퇴실시간','checkOutTime', l.checkOutTime, 'time') + '</div>' +
+        ta('객실정보','roomInfo', l.roomInfo, '예) 스탠다드 트윈 10실 / 디럭스 5실') +
+        ta('이용방법','usage', l.usage, '예) 전화 예약 시 "옆커폰 법인" 언급, 월말 일괄 세금계산서') +
+        ta('취소규정','cancelPolicy', l.cancelPolicy, '예) 3일 전 무료, 2일 전 30%, 당일 100%') +
+        ta('이용 시 주의사항','caution', l.caution) +
+        ta('비고','note', l.note),
+      buttons:[
+        (l.id ? { label:'삭제', cls:'btn-danger', keepOpen:true, onClick:function(mm, close){
+            UI.confirm('숙소 삭제', UI.esc(l.name) + ' 을(를) 삭제합니다.\n기존 예약 기록은 유지됩니다.', '삭제', true).then(function(ok){
+              if (!ok) return; Store.removeLodging(l.id); close(); UI.toast('삭제했습니다.','ok'); render();
+            });
+            return false;
+          } } : { label:'취소' }),
+        { label:'저장', cls:'btn-primary', keepOpen:true, onClick:function(mm, close){
+            var out = { id: l.id };
+            UI.qsa('[name]', mm).forEach(function(i){ out[i.name] = i.value; });
+            if (!out.name.trim()) { UI.toast('숙소명을 입력해주세요.','bad'); return false; }
+            ['rackRate','partnerRate','discountRate'].forEach(function(k){ out[k] = Number(out[k])||0; });
+            out.active = out.active === 'true';
+            Store.saveLodging(out);
+            close(); UI.toast('저장했습니다.','ok'); render();
+          } }
+      ]
+    });
+  }
+
+  UI.on(root, 'click', '#add', function(){ editModal(null); });
+  UI.on(root, 'click', '[data-ed]', function(){ editModal(Store.lodging(this.dataset.ed)); });
+  render();
+})();
+
+};
+
+PAGES["notices"] = function(){
+
+(function(){
+  var user = Auth.current();
+  var root = UI.shell('notice', '공지 · 이용지침', '숙박 예약 신청방법 · 규정 · FAQ');
+  var ct = Store.settings().contact || { team:'부동산팀', name:'', title:'', phone:'' };
+  var canEdit = !Deploy.isStaff() && Auth.can('manageNotice');
+  var cat = '';
+
+  function render(){
+    var all = Store.notices();
+    var list = cat ? all.filter(function(n){ return n.category === cat; }) : all;
+
+    root.innerHTML =
+     '<div class="pagehead"><div><h2>공지 · 이용지침</h2>' +
+       '<p>처음 오신 지점장·신규 직원도 <b>담당자에게 전화하지 않고</b> 이 문서만으로 예약 방법을 알 수 있도록 정리했습니다.</p></div>' +
+       '<div class="sp"></div>' + (canEdit ? '<button class="btn btn-gold" id="add">＋ 공지 등록</button>' : '') + '</div>' +
+
+     '<div class="card" style="margin-bottom:14px"><div class="card-b">' +
+       '<div class="grid g4" style="gap:10px">' +
+         step('1', '예약 신청', '좌측 [예약 신청] 메뉴에서 신청서를 작성합니다. 체크인·체크아웃만 넣으면 숙박일수는 자동 계산됩니다.') +
+         step('2', '접수 · 승인', '부동산팀이 접수하고 내용을 확인합니다. 승인은 부동산팀원 누구나 할 수 있어 담당자 부재로 지연되지 않습니다.') +
+         step('3', '예약 완료', '부동산팀이 숙소에 예약하고 예약번호·객실정보를 등록하면 신청자에게 알림이 갑니다.') +
+         step('4', '이용 · 정산', '숙박 이용 후 부동산팀 회계 담당이 결제·증빙을 확인하고 정산을 완료합니다.') +
+       '</div>' +
+       '<div class="hr"></div>' +
+       '<div class="note">☎️ <b>예약 신청은 전화·카카오톡이 아니라 이 시스템으로 넣어주세요.</b> ' +
+         '개인에게 요청이 몰리면 누락·중복 예약이 발생합니다. 부득이하게 전화로 요청하신 경우에도 ' +
+         '부동산팀이 시스템에 대신 등록하며, <b>등록되지 않은 요청은 처리·정산되지 않습니다.</b><br>' +
+         '문의는 <b>' + UI.esc(ct.team) + ' ' + UI.esc(ct.phone) + '</b> 한 곳으로 주시면 됩니다.</div>' +
+     '</div></div>' +
+
+     '<div class="grid g-1-2">' +
+       '<div><div class="card"><div class="card-h"><h3>📇 문의 창구</h3></div>' +
+         '<div class="card-b">' +
+           '<div class="note" style="margin:0">' +
+             '<div style="font-size:13px;font-weight:800;color:#7a5800">숙박 예약 관련 모든 문의</div>' +
+             '<div style="font-size:20px;font-weight:900;margin:6px 0 2px;color:var(--ink)">' + UI.esc(ct.team) + '</div>' +
+             '<a href="tel:' + UI.esc(ct.phone) + '" style="font-size:17px;font-weight:900;color:var(--ink);text-decoration:underline">' +
+               UI.esc(ct.phone) + '</a>' +
+             '<div style="font-size:12.5px;margin-top:4px;color:#7a5800">' + UI.esc(ct.name) +
+               (ct.title ? ' ' + UI.esc(ct.title) : '') + '</div>' +
+           '</div>' +
+           '<p class="muted" style="font-size:12.5px;margin:12px 0 0">접수·승인·예약·정산은 부동산팀 안에서 나눠 처리합니다. ' +
+             '어느 단계인지 몰라도 위 한 곳으로 문의하시면 됩니다. 팀원 개개인에게 따로 연락하실 필요가 없습니다.</p>' +
+         '</div></div>' +
+         '<div class="card mt"><div class="card-h"><h3>🗂 분류</h3></div><div class="card-b">' +
+           '<div class="chips"><button class="chip' + (cat===''?' on':'') + '" data-c="">전체<span class="n">' + all.length + '</span></button>' +
+           STAY.NOTICE_CAT.map(function(c){
+             var n = all.filter(function(x){ return x.category===c; }).length;
+             return '<button class="chip' + (cat===c?' on':'') + '" data-c="' + UI.esc(c) + '">' + UI.esc(c) +
+               '<span class="n">' + n + '</span></button>';
+           }).join('') + '</div></div></div>' +
+       '</div>' +
+
+       '<div id="docs">' +
+         (list.length ? list.map(function(n){
+           return '<details class="acc"' + (n.pinned ? ' open' : '') + '>' +
+             '<summary>' + (n.pinned ? '<span class="tag gold">중요</span>' : '') +
+               '<span class="tag">' + UI.esc(n.category) + '</span>' +
+               '<span>' + UI.esc(n.title) + '</span></summary>' +
+             '<div class="accb">' + UI.esc(n.body) + '</div>' +
+             '<div class="accb" style="padding-top:0;font-size:11.5px;color:var(--muted);display:flex;gap:8px;align-items:center">' +
+               '작성 ' + UI.esc(n.author) + ' · ' + UI.dateFull(n.createdAt) +
+               (canEdit ? '<span style="margin-left:auto"></span>' +
+                 '<button class="btn btn-sm" data-ed="' + n.id + '">수정</button>' +
+                 '<button class="btn btn-sm btn-danger" data-del="' + n.id + '">삭제</button>' : '') +
+             '</div></details>';
+         }).join('') : '<div class="card"><div class="card-b">' + UI.empty('등록된 공지가 없습니다.','📢') + '</div></div>') +
+       '</div>' +
+     '</div>';
+  }
+  function step(no, t, d){
+    return '<div style="border:1px solid var(--line);border-radius:12px;padding:14px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+      '<span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--gold);' +
+      'display:grid;place-items:center;font-weight:900;font-size:12px">' + no + '</span>' +
+      '<b style="font-size:14px">' + t + '</b></div>' +
+      '<div style="font-size:12.5px;color:var(--text-2);line-height:1.6">' + d + '</div></div>';
+  }
+
+  function editModal(n){
+    n = n || { category:STAY.NOTICE_CAT[0], pinned:false, author:user.name };
+    UI.modal({
+      title: n.id ? '공지 수정' : '공지 등록', wide:true,
+      body:'<div class="frow f2">' +
+          '<div class="field"><label>분류</label><select class="select" name="category">' +
+            STAY.NOTICE_CAT.map(function(c){ return '<option' + (c===n.category?' selected':'') + '>' + UI.esc(c) + '</option>'; }).join('') +
+          '</select></div>' +
+          '<div class="field"><label>상단 고정</label><select class="select" name="pinned">' +
+            '<option value="false"' + (!n.pinned?' selected':'') + '>일반</option>' +
+            '<option value="true"' + (n.pinned?' selected':'') + '>중요 (상단 고정)</option></select></div>' +
+        '</div>' +
+        '<div class="field"><label>제목</label><input class="input" name="title" value="' + UI.esc(n.title||'') + '"></div>' +
+        '<div class="field"><label>내용</label><textarea class="textarea" name="body" style="min-height:220px">' + UI.esc(n.body||'') + '</textarea></div>',
+      buttons:[{label:'취소'},{label:'저장', cls:'btn-primary', keepOpen:true, onClick:function(mm, close){
+        var out = { id:n.id, author:n.author || user.name };
+        UI.qsa('[name]', mm).forEach(function(i){ out[i.name] = i.value; });
+        if (!out.title.trim()) { UI.toast('제목을 입력해주세요.','bad'); return false; }
+        out.pinned = out.pinned === 'true';
+        Store.saveNotice(out); close(); UI.toast('저장했습니다.','ok'); render();
+      }}]
+    });
+  }
+
+  UI.on(root, 'click', '.chip[data-c]', function(){ cat = this.dataset.c; render(); });
+  UI.on(root, 'click', '#add', function(){ editModal(null); });
+  UI.on(root, 'click', '[data-ed]', function(e){
+    e.preventDefault();
+    var n = Store.notices().filter(function(x){ return x.id === this.dataset.ed; }.bind(this))[0];
+    editModal(n);
+  });
+  UI.on(root, 'click', '[data-del]', function(e){
+    e.preventDefault();
+    var id = this.dataset.del;
+    UI.confirm('공지 삭제', '이 공지를 삭제합니다.', '삭제', true).then(function(ok){
+      if (!ok) return; Store.removeNotice(id); UI.toast('삭제했습니다.','ok'); render();
+    });
+  });
+  render();
+})();
+
+};
+</script>
+<script>
+start();
+</script>
