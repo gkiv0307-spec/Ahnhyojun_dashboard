@@ -51,10 +51,12 @@
 | `ahj_course_start_patch_chunk_` | `[{studentId, courseStartDate}]` 덮어씀 |
 | `ahj_market_chunk_` | 데일리 경매분석 upsert(caseNumber 기준). 현황판 연동도 이 형식 |
 | `ahj_kpi_log_chunk_` | `[{key:"analysis", date, count}]` 권리분석 건수 |
+| `ahj_patch_chunk_` | **범용 패치** `[{op:"set"|"push"|"delete", list, match, fields, upsert?, allowBulk?}]` — 허용 목록의 아무 항목이나 수정·추가·삭제. 새 종류의 데이터 변경은 이걸 먼저 쓴다(재발행 불필요). 118명 이관 학생은 allowBulk 없이는 건드리지 않음 |
 | `ahj_blog_chunk_` | 블로그 파이프라인 결과 `{runAt,status,addedCount,note,items:[…]}` / `-verify` 파일은 `[{id,status,url,publishedAt}]` |
 
 - 청크 파일명은 UTC 날짜. 같은 이름 파일이 있어도 id로 구분해 각각 한 번씩 처리된다.
-- 다른 접두사가 필요하면 대시보드 코드에 merge 함수를 추가하고 재발행해야 한다(`mergeXxxChunksIfNeeded` 패턴, init·setInterval·visibilitychange 세 곳에 배선).
+- 위 표에 없는 변경은 `ahj_patch_chunk_`로 처리한다. 정말 새 병합 로직이 필요할 때만 merge 함수를 추가하고 재발행한다(`mergeXxxChunksIfNeeded` 패턴, init·setInterval·visibilitychange 세 곳에 배선).
+- 데이터 변경 작업의 마무리 규칙: 파일을 올린 뒤 Drive에서 파일이 있는지 확인하고, 답변에 파일명을 적는다.
 
 ## 5. 발행·검증 절차
 
