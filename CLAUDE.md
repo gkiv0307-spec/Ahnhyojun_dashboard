@@ -18,7 +18,7 @@
 - **수업중 인원**: "등록완료"만으로는 부족하다. **실제 입금(금액 > 0)이 확인된 학생만** 수업중으로 센다.
 - **2026-08-05 대량 이관 학생 118명**은 과거 데이터다. 절대 수정·삭제·재분류하지 않는다 (코드의 `AUG5_BULK_IMPORT_STUDENT_IDS`).
 - **입금 처리**: 우리은행 거래내역 엑셀을 대리님이 보내면 대시보드에 없는 거래만 등록한다. 카드 결제는 카드사 정산(롯데·신한·현대·하나·NH…)으로 수수료가 빠진 금액이 들어온다. 마법사에서 "카드결제"로 등록된 학생이 있으면 대시보드가 정산 입금(수강료의 95~100%, 3주 이내)을 자동으로 연결하고 수강료를 실제 입금액(예: 328,680원)으로 맞춘다. 후보가 둘 이상이면 연결하지 않고 "미확정 입금"으로 남는다. 4대보험 과오납 환급은 `general`, 대리입찰 컨설팅비는 `consulting`.
-- **경매 업무**: 현황판에서 물건을 골라 권리분석을 한다. "권리분석보내기" 체크 → 대시보드 데일리 경매분석에 자동 등록(조사중, 분석글 미작성). 현황판 데이터가 갱신되어 물건이 종료·매각되면 `courtResult`가 대시보드로 넘어오고, 최종 상태(유찰/낙찰/패찰)는 대리님이 카드의 빠른 버튼으로 고른다. 매각기일이 지났는데 결과가 없는 물건은 홈 긴급 목록에 "경매 결과 미입력 N건"으로 뜬다. 대리입찰 컨설팅도 한다. 경매 물건 블로그 글은 `.claude/skills/naver-auction-blog-writer` 규칙을 따른다.
+- **경매 업무**: 현황판에서 물건을 골라 권리분석을 한다. "권리분석보내기" 체크 → 대시보드 데일리 경매분석에 자동 등록(조사중, 분석글 미작성). 매각 결과는 **자동 동기화**한다: 매일 07시 루틴이 현황판 HTML의 회차 기록(ld)과 대시보드를 대조해 유찰(다음 회차로 이동)·매각종료(타인 낙찰가 기록)·변경·취하를 `scripts/auction_results_sync.py`로 판정하고 `ahj_market_chunk_<날짜>_results.json`으로 올린다. 대리님은 직접 입찰한 건만 낙찰/패찰로 바꾼다. 현황판에 결과가 아직 없는 물건만 홈 긴급 목록 "경매 결과 미입력 N건"과 카드 빠른 버튼으로 남는다. 대리님은 이 부분을 손으로 하지 않기를 원한다. 대리입찰 컨설팅도 한다. 경매 물건 블로그 글은 `.claude/skills/naver-auction-blog-writer` 규칙을 따른다.
 - **KPI**: 매주 팀 KPI 양식에 입력한다. 대시보드 홈 "주간 KPI 입력표"가 같은 기준으로 계산한다.
 - **블로그 게시**: 네이버에 올린 뒤 대시보드 카드의 "네이버에 올렸어요 → 발행 완료" 버튼을 누르면 발행완료가 되고 글 주소를 붙여넣을 수 있다. 아침 루틴은 발행대기 20건 이상이면 새 글을 만들지 않고, 10~19건이면 1건, 그 아래면 1~2건만 만든다.
 
@@ -69,7 +69,7 @@
 
 ## 6. 자동 루틴 (Claude_Code_Remote 트리거, UTC)
 
-- `trig_01BvA6VTCjaQVkN93pbwgDgM` 22:06 UTC(07시 KST): 네이버 블로그 발행 확인. `mcp__PlayMCP__NaverSearch-search_blog`로 "옆커폰부동산에듀" 검색, `bloggerlink === https://blog.naver.com/ykphone_edu`만 채택. 매칭된 것만 `-verify` 청크 업로드.
+- `trig_01BvA6VTCjaQVkN93pbwgDgM` 22:06 UTC(07시 KST): A. 경매 결과 자동 동기화(`scripts/auction_results_sync.py`) + B. 네이버 블로그 발행 확인. `mcp__PlayMCP__NaverSearch-search_blog`로 "옆커폰부동산에듀" 검색, `bloggerlink === https://blog.naver.com/ykphone_edu`만 채택. 매칭된 것만 `-verify` 청크 업로드.
 - `trig_017apcdF32gc1UkJcRUGoU2f` 23:03 UTC(08시 KST): 블로그 제작 파이프라인(아이디어→정보검수→작성→SEO검수→최종검토). 각 단계의 상세 규칙은 `.claude/skills/blog-idea-scout`, `blog-fact-checker`, `blog-writer`, `blog-seo-editor`, `blog-final-reviewer` 스킬을 따른다(경매 물건 글은 `naver-auction-blog-writer`, 인스타 캐러셀은 `image-carousel-designer`, 경쟁사 분석은 `brand-strategy-analyst`). 요약 규칙: 메타디스크립션 첫 줄 필수, 본문 1,500자 이상, 질문형 소제목 2개 이상, 핵심정리·FAQ·해시태그 5개 이상, "무조건/확실한 수익" 금지, 출처 원문 대조 필수, 최근 7일 소재와 60% 이상 달라야 함. 소재 없으면 0건으로 기록.
 - 도구 제약: WebFetch가 naver·chosun 도메인을 막는다. casenote.kr는 가끔 503(law.go.kr 대체). PlayMCP 세션이 자주 만료되니 ToolSearch로 다시 로드한다.
 
