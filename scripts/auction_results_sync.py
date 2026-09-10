@@ -84,7 +84,11 @@ def sync(snapshot, board_by, today):
 
 if __name__ == "__main__":
     snap_path, board_path, out_path = sys.argv[1:4]
-    today = sys.argv[4] if len(sys.argv) > 4 else datetime.date.today().isoformat()
+    # 대시보드는 한국시각 기준으로 "매각기일 지남"을 판단한다. 이 스크립트를 UTC 날짜로
+    # 돌리면 07시(KST) 루틴에서는 UTC가 아직 전날이라, 어제 매각된 건이 하루 동안
+    # "결과 미입력"으로 남는다. 인자를 안 주면 KST(UTC+9) 오늘 날짜를 쓴다.
+    today = sys.argv[4] if len(sys.argv) > 4 else (
+        datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).date().isoformat())
     snap = json.load(open(snap_path, encoding="utf-8"))
     updates, waiting, missing = sync(snap, load_board_items(board_path), today)
     json.dump(updates, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)
