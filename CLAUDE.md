@@ -26,7 +26,7 @@
 | `auctionSync` | 운영 비서 | 매일 07:00 |
 | `blogVerify` | 운영 비서 | 매일 07:00 |
 | `ceoOrder` | 운영 비서 | 매일 07:00 |
-| `closingReport` | 운영 비서 | 매일 15:50 |
+| `closingReport` | 운영 비서 | 매일 15:41 |
 | `blogPipeline` | 시장조사 담당 | 매일 08:00 |
 | `blogFactCheck` | 콘텐츠기획 담당 | 매일 08:00 |
 | `blogWrite` | 블로그제작 담당 | 매일 08:00 |
@@ -42,7 +42,9 @@
   - 항목 id 는 `wr-<날짜>-ai` / `wr-<날짜>-codex` / `wr-<날짜>-closing`(15:50 루틴) 으로 갈린다. 같은 id 면 새로 만들지 않고 갱신한다.
   - 문서가 수정되면 다시 읽는다(처리 키 = 파일ID + 수정시각, `state.meta.processedWorkLogDocs`).
   - 화면: 메뉴 `업무일지` → `📋 업무일지 자동 수집` 카드에 마지막 수집 시각·성공/실패·읽은 원본 문서·`🔄 지금 수집` 버튼.
-  - **브라우저가 닫혀 있으면 대시보드는 수집하지 않는다.** 그 몫은 15:50 KST 루틴(`trig_017v14iuXGFcye7ijECz8PZK`)이 대신한다.
+  - **형식 3종을 다 읽는다** — Google 문서 · Markdown(`.md`/`.txt`) · JSON(`.json`). JSON 은 `sections` 키(`deliverables/outcomes/comparison/problems/solutions/priorities`)를 쓴다. 항목 구분은 동그라미 숫자 `①~⑥` 이고, 보통 숫자 `1.` 은 인식하지 않는다.
+  - **하루 최대 3종**(원본 `-ai` · GPT 최종본 `-codex` · 마감본 `-closing`)을 각각 보관하되, 화면은 날짜로 묶어 **집계 대상 1장**(마감본 우선)만 강조하고 나머지는 근거자료로 표시한다. 중복 합산하지 않는다. 그날 GPT 최종본이 없으면 **"GPT 업무 미반영"** 경고가 뜬다.
+  - **브라우저가 닫혀 있으면 대시보드는 수집하지 않는다.** 그 몫은 15:41~15:50 KST 루틴(`trig_017v14iuXGFcye7ijECz8PZK`)이 대신한다. 루틴은 `startedAt`·`finishedAt` 을 기록하고 화면에 "15:41 시작 → 15:49 완료" 로 표시된다.
 - **대표 지시창(ceo.console)**: 대시보드 홈 사무실 지도 아래에 창 3개가 있다 — `ceo.console`(지시 쓰는 곳) · `live.feed`(오늘 직원들이 뭘 했는지) · `staff.roster`(직원별 출근·진행 상태). 대리님이 ceo.console 에 지시를 적으면 Drive 에 `ahj_ceo_order_<id>.json` 이 올라가고, **다음 아침 점검(07시) 루틴이 읽어서 처리한 뒤 답변을 되돌려준다**(`ceoOrders` 의 status 접수→완료/보류 + reply). 즉시 답이 오는 채팅창이 아니라 "내일 아침 처리" 함이다. 이미 완료·보류로 답한 지시는 다시 처리하지 않는다.
 - **KPI**: 매주 팀 KPI 양식에 입력한다. 대시보드 홈 "주간 KPI 입력표"가 같은 기준으로 계산한다.
 - **블로그 게시**: 네이버에 올린 뒤 대시보드 카드의 "네이버에 올렸어요 → 발행 완료" 버튼을 누르면 발행완료가 되고 글 주소를 붙여넣을 수 있다. 아침 루틴은 발행대기 20건 이상이면 새 글을 만들지 않고, 10~19건이면 1건, 그 아래면 1~2건만 만든다.
@@ -105,7 +107,7 @@
 ## 6. 자동 루틴 (Claude_Code_Remote 트리거, UTC)
 
 - `trig_01BvA6VTCjaQVkN93pbwgDgM` 22:06 UTC(07시 KST) — 아침 점검 4단계. A. 경매 결과 자동 동기화(`scripts/auction_results_sync.py`). B. 네이버 블로그 발행 확인 — 사건번호를 1순위 키로 `mcp__PlayMCP__NaverSearch-search_blog` 검색 후 `scripts/blog_publish_match.py` 로 대조, 우리 블로그 3곳(`ykphone_edu`·`hjko0`·`gkgk0307_`) 모두 채택, 매칭된 것만 `-verify` 청크 업로드. C. 대표 지시 처리 — `ahj_ceo_order_*.json` 을 읽어 처리하고 `ahj_patch_chunk_..._ceo.json` 으로 `ceoOrders` 에 status·reply 를 되돌려준다. D. 세 가지 각각 `routineRuns` 기록(`ahj_patch_chunk_..._routine.json`).
-- `trig_017v14iuXGFcye7ijECz8PZK` 06:50 UTC(15:50 KST): 업무마감보고 작성. 업무일지 폴더(`1ZZysuh-...`)의 오늘 문서를 **읽기만** 해서 ①~⑥ 양식으로 정리하고 `ahj_patch_chunk_<날짜>_closing.json`(`workReports`, id `wr-<날짜>-closing`)으로 올린다. 각 건에 완료/진행/예정을 붙이고 **수치는 추정하지 않는다**(근거 없으면 "집계 예정"·"비교 자료 미확보"). 오늘 문서가 없으면 `hold` 로 기록하고 끝낸다.
+- `trig_017v14iuXGFcye7ijECz8PZK` 06:41 UTC(15:41 KST, **마감 15:50**): 업무마감보고 작성. `startedAt`·`finishedAt` 를 `routineRuns` 에 기록한다. 15:48까지 못 끝내면 축약해서라도 올린다. 업무일지 폴더(`1ZZysuh-...`)의 오늘 문서를 **읽기만** 해서 ①~⑥ 양식으로 정리하고 `ahj_patch_chunk_<날짜>_closing.json`(`workReports`, id `wr-<날짜>-closing`)으로 올린다. 각 건에 완료/진행/예정을 붙이고 **수치는 추정하지 않는다**(근거 없으면 "집계 예정"·"비교 자료 미확보"). 오늘 문서가 없으면 `hold` 로 기록하고 끝낸다.
 - `trig_017apcdF32gc1UkJcRUGoU2f` 23:03 UTC(08시 KST): 블로그 제작 파이프라인(아이디어→정보검수→작성→SEO검수→최종검토). 각 단계의 상세 규칙은 `.claude/skills/blog-idea-scout`, `blog-fact-checker`, `blog-writer`, `blog-seo-editor`, `blog-final-reviewer` 스킬을 따른다(경매 물건 글은 `naver-auction-blog-writer`, 인스타 캐러셀은 `image-carousel-designer`, 경쟁사 분석은 `brand-strategy-analyst`). 요약 규칙: 메타디스크립션 첫 줄 필수, 본문 1,500자 이상, 질문형 소제목 2개 이상, 핵심정리·FAQ·해시태그 5개 이상, "무조건/확실한 수익" 금지, 출처 원문 대조 필수, 최근 7일 소재와 60% 이상 달라야 함. 소재 없으면 0건으로 기록.
 - 도구 제약: WebFetch가 naver·chosun 도메인을 막는다. casenote.kr는 가끔 503(law.go.kr 대체). PlayMCP 세션이 자주 만료되니 ToolSearch로 다시 로드한다.
 
