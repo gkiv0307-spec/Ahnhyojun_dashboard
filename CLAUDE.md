@@ -1,7 +1,7 @@
 # 안효준 대리 업무 대시보드 — 프로젝트 안내 (CLAUDE.md)
 
 > 새 대화가 시작될 때 이 파일을 먼저 읽는다. 여기 적힌 것이 대리님 업무의 기본 맥락과 규칙이다.
-> 여기 없는 사실은 지어내지 말고 대리님께 묻는다. 마지막 갱신: 2026-09-09.
+> 여기 없는 사실은 지어내지 말고 대리님께 묻는다. 마지막 갱신: 2026-09-11.
 
 ## 1. 누구를 위한 작업인가
 
@@ -25,6 +25,7 @@
 |---|---|---|
 | `auctionSync` | 운영 비서 | 매일 07:00 |
 | `blogVerify` | 운영 비서 | 매일 07:00 |
+| `ceoOrder` | 운영 비서 | 매일 07:00 |
 | `blogPipeline` | 시장조사 담당 | 매일 08:00 |
 | `blogFactCheck` | 콘텐츠기획 담당 | 매일 08:00 |
 | `blogWrite` | 블로그제작 담당 | 매일 08:00 |
@@ -34,6 +35,7 @@
 | `brandWeekly` | 브랜드전략 담당 | 매주 |
 
   status 는 `ok`(정상, 0건 처리라도 ok) / `hold`(조건 때문에 일부러 안 함) / `fail`(오류로 못 함). 새 루틴을 만들면 코드의 `ROUTINE_JOBS` 에도 추가한다. 지연·오류가 생기면 홈 "지금 처리할 일"에 "AI 직원 루틴 N건 멈춤"으로 올라온다. 블로그 5단계는 `dependsOn`으로 묶여 있어, 앞 단계가 보류면 뒷 단계는 "미실행"이 아니라 "앞 단계 보류로 대기"로 표시된다.
+- **대표 지시창(ceo.console)**: 대시보드 홈 사무실 지도 아래에 창 3개가 있다 — `ceo.console`(지시 쓰는 곳) · `live.feed`(오늘 직원들이 뭘 했는지) · `staff.roster`(직원별 출근·진행 상태). 대리님이 ceo.console 에 지시를 적으면 Drive 에 `ahj_ceo_order_<id>.json` 이 올라가고, **다음 아침 점검(07시) 루틴이 읽어서 처리한 뒤 답변을 되돌려준다**(`ceoOrders` 의 status 접수→완료/보류 + reply). 즉시 답이 오는 채팅창이 아니라 "내일 아침 처리" 함이다. 이미 완료·보류로 답한 지시는 다시 처리하지 않는다.
 - **KPI**: 매주 팀 KPI 양식에 입력한다. 대시보드 홈 "주간 KPI 입력표"가 같은 기준으로 계산한다.
 - **블로그 게시**: 네이버에 올린 뒤 대시보드 카드의 "네이버에 올렸어요 → 발행 완료" 버튼을 누르면 발행완료가 되고 글 주소를 붙여넣을 수 있다. 아침 루틴은 발행대기 20건 이상이면 새 글을 만들지 않고, 10~19건이면 1건, 그 아래면 1~2건만 만든다.
 - **우리 블로그는 셋이다.** 발행 확인(`-verify` 청크)에서 아래 셋은 모두 "발행완료"로 채택한다. 예전에는 공식블로그만 인정해서, 대표님 블로그에 올라간 글이 계속 발행대기로 남아 적체를 키웠다.
@@ -77,6 +79,7 @@
 | `ahj_market_chunk_` | 데일리 경매분석 upsert(caseNumber 기준). 현황판 연동도 이 형식 |
 | `ahj_kpi_log_chunk_` | `[{key:"analysis", date, count}]` 권리분석 건수 |
 | `ahj_patch_chunk_` | **범용 패치** `[{op:"set"|"push"|"delete", list, match, fields, upsert?, allowBulk?}]` — 허용 목록의 아무 항목이나 수정·추가·삭제. 새 종류의 데이터 변경은 이걸 먼저 쓴다(재발행 불필요). 118명 이관 학생은 allowBulk 없이는 건드리지 않음 |
+| `ahj_ceo_order_` | **대표 지시** — 대시보드가 올림 `{id,at,text}` (파일 1건 = 지시 1건). 아침 루틴이 읽어서 처리하고 `ahj_patch_chunk_..._ceo.json` 으로 `{op:"set", list:"ceoOrders", match:{id}, fields:{status,reply,repliedAt}}` 답변을 남긴다 |
 | `ahj_blog_chunk_` | 블로그 파이프라인 결과 `{runAt,status,addedCount,note,items:[…]}` / `-verify` 파일은 `[{id,status,url,publishedAt}]` |
 
 - 청크 파일명은 UTC 날짜. 같은 이름 파일이 있어도 id로 구분해 각각 한 번씩 처리된다.
@@ -93,7 +96,7 @@
 
 ## 6. 자동 루틴 (Claude_Code_Remote 트리거, UTC)
 
-- `trig_01BvA6VTCjaQVkN93pbwgDgM` 22:06 UTC(07시 KST): A. 경매 결과 자동 동기화(`scripts/auction_results_sync.py`) + B. 네이버 블로그 발행 확인. `mcp__PlayMCP__NaverSearch-search_blog`로 "옆커폰부동산에듀" 검색, `bloggerlink === https://blog.naver.com/ykphone_edu`만 채택. 매칭된 것만 `-verify` 청크 업로드.
+- `trig_01BvA6VTCjaQVkN93pbwgDgM` 22:06 UTC(07시 KST) — 아침 점검 4단계. A. 경매 결과 자동 동기화(`scripts/auction_results_sync.py`). B. 네이버 블로그 발행 확인 — 사건번호를 1순위 키로 `mcp__PlayMCP__NaverSearch-search_blog` 검색 후 `scripts/blog_publish_match.py` 로 대조, 우리 블로그 3곳(`ykphone_edu`·`hjko0`·`gkgk0307_`) 모두 채택, 매칭된 것만 `-verify` 청크 업로드. C. 대표 지시 처리 — `ahj_ceo_order_*.json` 을 읽어 처리하고 `ahj_patch_chunk_..._ceo.json` 으로 `ceoOrders` 에 status·reply 를 되돌려준다. D. 세 가지 각각 `routineRuns` 기록(`ahj_patch_chunk_..._routine.json`).
 - `trig_017apcdF32gc1UkJcRUGoU2f` 23:03 UTC(08시 KST): 블로그 제작 파이프라인(아이디어→정보검수→작성→SEO검수→최종검토). 각 단계의 상세 규칙은 `.claude/skills/blog-idea-scout`, `blog-fact-checker`, `blog-writer`, `blog-seo-editor`, `blog-final-reviewer` 스킬을 따른다(경매 물건 글은 `naver-auction-blog-writer`, 인스타 캐러셀은 `image-carousel-designer`, 경쟁사 분석은 `brand-strategy-analyst`). 요약 규칙: 메타디스크립션 첫 줄 필수, 본문 1,500자 이상, 질문형 소제목 2개 이상, 핵심정리·FAQ·해시태그 5개 이상, "무조건/확실한 수익" 금지, 출처 원문 대조 필수, 최근 7일 소재와 60% 이상 달라야 함. 소재 없으면 0건으로 기록.
 - 도구 제약: WebFetch가 naver·chosun 도메인을 막는다. casenote.kr는 가끔 503(law.go.kr 대체). PlayMCP 세션이 자주 만료되니 ToolSearch로 다시 로드한다.
 
