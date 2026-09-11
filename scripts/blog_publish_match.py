@@ -18,10 +18,12 @@ import re
 import sys
 
 # 우리 블로그. 이 셋에 올라온 글만 '발행완료'로 채택한다.
-OUR_BLOGS = {
-    "https://blog.naver.com/ykphone_edu",   # 공식블로그 — 권리분석 물건 분석글
-    "https://blog.naver.com/hjko0",         # 대표님 블로그 — 학원·정보성 글
-    "https://blog.naver.com/rhghwjd12",
+# 주소 형태가 여러 가지라(blog / m.blog / PostList.naver?blogId=) 전체 URL 이 아니라
+# 블로그 아이디만 뽑아서 비교한다.
+OUR_BLOG_IDS = {
+    "ykphone_edu",   # 공식블로그 — 권리분석 물건 분석글을 올리는 곳
+    "hjko0",         # 대표님 블로그 — 학원 모집·정보성 글
+    "gkgk0307_",
 }
 
 CASE_RE = re.compile(r"20\d\d\s*타\s*경\s*\d+")
@@ -43,9 +45,17 @@ def cases_in(*texts):
     return out
 
 
+BLOG_ID_RE = re.compile(
+    r"(?:m\.)?blog\.naver\.com/(?:PostList\.naver\?blogId=)?([A-Za-z0-9_-]+)")
+
+
+def blog_id(link):
+    m = BLOG_ID_RE.search(link or "")
+    return m.group(1) if m else ""
+
+
 def is_ours(link):
-    link = (link or "").rstrip("/").replace("//m.blog.naver.com", "//blog.naver.com")
-    return link in OUR_BLOGS
+    return blog_id(link) in OUR_BLOG_IDS
 
 
 def match(snapshot, results):
