@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""네이버 블로그 검색 결과를 대시보드 blogPosts 와 대조해 '발행완료' 청크를 만든다.
+"""우리 블로그에 실제로 올라간 글을 대시보드 blogPosts 와 대조한다.
 
-제목만으로는 매칭이 안 된다 — 대리님이 게시할 때 제목을 다시 쓰는 경우가 많아
+제목만으로는 매칭이 안 된다 — 게시할 때 제목을 다시 쓰는 경우가 많아
 대시보드 제목과 실제 게시 제목이 다르다. 대신 권리분석(물건 분석) 글에는
 사건번호가 거의 항상 들어가므로, 사건번호를 1순위 키로 쓴다.
 
-사용법:
-  python3 blog_publish_match.py snapshot.json naver_results.json verify_chunk.json
+두 가지를 낸다:
+  1) verify  — 대시보드에 있는데 주소가 비어 있던 글 -> 발행완료 + 주소 채우기
+  2) backfill — 블로그에는 있는데 대시보드에 아예 없는 글 -> blogPosts 에 새로 등록
+     (2026-09-14 에 이 구멍으로 권리분석 글 13건이 몇 주째 집계에서 빠져 있던 걸 찾았다)
 
-naver_results.json 형식 (search_blog 결과를 그대로 모아 둔 배열):
+사용법:
+  python3 blog_publish_match.py snapshot.json naver_results.json verify_chunk.json [backfill_chunk.json]
+
+naver_results.json 형식 (blog_rss_fetch.py 출력 = search_blog 결과와 같은 모양):
   [{"title":..., "description":..., "link":..., "postdate":"20260824",
     "bloggerlink":"https://blog.naver.com/ykphone_edu"}, ...]
 """
@@ -95,16 +100,73 @@ def match(snapshot, results):
             "publishedAt": f"{d[:4]}-{d[4:6]}-{d[6:8]}" if len(d) == 8 else "",
         })
         already.append((p, r, sorted(pc)))
-    return verify, ambiguous, already
+
+    # 블로그에는 있는데 대시보드에 아예 없는 글. 주소로 한 번, 사건번호로 한 번 거른다.
+    known_urls = {(p.get("url") or "").split("?")[0] for p in posts if p.get("url")}
+    known_cases = set()
+    for p in posts:
+        known_cases |= cases_in(p.get("title"), p.get("memo"), p.get("body"))
+    matched_urls = {v["url"].split("?")[0] for v in verify if v.get("url")}
+    backfill, seen = [], set()
+    for r in results:
+        link = (r.get("link") or "").split("?")[0]
+        if not link or not is_ours(r.get("bloggerlink")) or link in seen:
+            continue
+        if link in known_urls or link in matched_urls:
+            continue
+        rc = cases_in(r.get("title"), r.get("description"))
+        if rc & known_cases:
+            continue  # 같은 물건 글이 이미 대시보드에 있다 — 사람이 확인할 일이지 새로 만들 일이 아니다
+        seen.add(link)
+        backfill.append({
+            "link": link,
+            "title": r.get("title", ""),
+            "postdate": str(r.get("postdate") or ""),
+            "blogId": blog_id(r.get("bloggerlink")),
+            "case": sorted(rc)[0] if rc else "",
+        })
+    backfill.sort(key=lambda x: x["postdate"], reverse=True)
+    return verify, ambiguous, already, backfill
+
+
+def backfill_ops(rows, now_iso):
+    """backfill 행을 ahj_patch_chunk_ 형식(blogPosts upsert)으로 바꾼다."""
+    ops = []
+    for r in rows:
+        d = r["postdate"]
+        date = f"{d[:4]}-{d[4:6]}-{d[6:8]}" if len(d) == 8 else ""
+        ops.append({
+            "op": "set", "list": "blogPosts", "match": {"url": r["link"]}, "upsert": True,
+            "fields": {
+                "id": "blogrss-" + r["link"].rsplit("/", 1)[-1],
+                "date": date, "publishedAt": date, "createdAt": now_iso,
+                "title": r["title"], "status": "발행완료", "url": r["link"],
+                "owner": r["blogId"], "caseNumber": r["case"],
+                "topic": "경매 권리분석" if r["case"] else "블로그",
+                "body": "",
+                "memo": "블로그 RSS 에서 실제 게시일을 확인해 자동 등록. 파이프라인 밖에서 직접 쓴 글이라 "
+                        "대시보드 집계에 없던 것이다. 본문은 대시보드에 없고 원문 링크로 대체한다.",
+                "stageLog": [{"stage": "발행완료", "by": "안효준 대리", "at": date,
+                              "note": "네이버 직접 게시 · RSS 확인으로 자동 등록"}],
+            }})
+    return ops
 
 
 if __name__ == "__main__":
+    import datetime
     snap_path, res_path, out_path = sys.argv[1:4]
+    bf_path = sys.argv[4] if len(sys.argv) > 4 else None
     snap = json.load(open(snap_path, encoding="utf-8"))
     results = json.load(open(res_path, encoding="utf-8"))
-    verify, ambiguous, matched = match(snap, results)
+    verify, ambiguous, matched, backfill = match(snap, results)
     json.dump(verify, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)
-    print(f"matched {len(verify)} | ambiguous {len(ambiguous)}")
+    now_iso = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if bf_path:
+        json.dump(backfill_ops(backfill, now_iso), open(bf_path, "w", encoding="utf-8"),
+                  ensure_ascii=False)
+    print(f"matched {len(verify)} | ambiguous {len(ambiguous)} | 대시보드에 없는 글 {len(backfill)}")
+    for r in backfill:
+        print(f"  NEW {r['postdate']} [{r['blogId']}] {r['title'][:40]}")
     for p, r, cs in matched:
         print(f"  OK  {cs[0]} | {p['status']:5s} | {p['title'][:32]}")
         print(f"        -> {r.get('link')} ({r.get('postdate')})")

@@ -53,10 +53,14 @@
   - `hjko0` — 대표님 블로그. 학원 모집·정보성 글 위주.
   - `gkgk0307_` — 서브블로그. 비중이 낮으니 여기 글이 안 잡혀도 따로 파고들지 않는다.
   주소 형태가 `blog.naver.com/<id>` · `m.blog.naver.com/<id>` · `PostList.naver?blogId=<id>` 로 제각각이라 전체 URL 이 아니라 **블로그 아이디**로 비교한다(`scripts/blog_publish_match.py` 의 `OUR_BLOG_IDS`).
-  주의: 네이버 검색 API는 블로그 주인으로 거르지 못하고 검색어로만 찾는다. 특정 블로그의 글 목록을 통째로 가져올 방법이 없다. "옆커폰부동산에듀" 검색에 안 걸리는 글(브랜드명이 본문에 없는 글)은 사건번호나 제목 키워드로 따로 검색해야 찾을 수 있다. 2026-09-11 기준 `gkgk0307_` 는 브랜드 검색·사건번호 검색 어디에도 한 건도 안 잡혔는데, 서브블로그라 그냥 두면 된다.
-- **발행 확인은 제목이 아니라 사건번호로 맞춘다.** 대리님이 올릴 때 제목을 다시 쓰는 경우가 많아 대시보드 제목과 실제 게시 제목이 다르다(제목 매칭으로는 6건이 몇 주째 안 잡혔다). 권리분석 물건 분석글에는 사건번호가 거의 항상 들어가므로, 사건번호(`20\d\d타경\d+`)를 1순위 키로 쓴다. 사건번호는 고유해서 네이버 검색 결과가 2~20건뿐이라 우리 글이 있으면 반드시 걸린다.
-  `scripts/blog_publish_match.py snapshot.json naver_results.json verify_chunk.json` 가 이 대조를 한다. naver_results.json 은 `search_blog` 결과를 그대로 모은 배열({title,description,link,bloggerlink,postdate})이면 된다. 우리 블로그 글만 고르고, 이미 url 이 있는 글은 건너뛰고, 같은 사건번호로 우리 글이 둘 이상이면 자동 채택하지 않고 ambiguous 로 뺀다.
-  사건번호가 없는 정보성 글(뉴스·팁)은 이 방법으로 못 맞춘다. 그건 여전히 게시 직후 "발행 완료" 버튼 + 글 주소 붙여넣기가 필요하다.
+- **발행 확인은 검색이 아니라 RSS 로 한다** (2026-09-14 변경). 네이버 검색 API 는 블로그 주인으로 거르지 못하고 검색어로만 찾는다. 그래서 본문에 브랜드명이 없는 글은 아무리 검색해도 안 걸렸고, 그 구멍으로 **공식블로그 글 90여 건이 대시보드 집계에서 통째로 빠져 있었다**(9/7~9/11 권리분석 글 13건 포함). 아침 루틴은 매일 "매칭 0건"만 보고하고 있었다.
+  `https://rss.blog.naver.com/<블로그id>.xml` 은 검색어 없이 그 블로그의 **최근 50건**을 게시일까지 정확히 준다. WebFetch 는 naver 를 막지만 urllib·curl 로는 받아진다.
+  - `scripts/blog_rss_fetch.py naver_results.json` — 우리 블로그 3곳 RSS 를 받아 `search_blog` 와 같은 모양({title,description,link,bloggerlink,postdate})으로 만든다. 한두 곳이 실패해도 나머지로 진행하고, 전부 실패하면 종료코드 1.
+  - `scripts/blog_publish_match.py snapshot.json naver_results.json verify_chunk.json backfill_chunk.json` — 두 가지를 낸다. **verify** = 대시보드에 있는데 url 이 비어 있던 글을 발행완료+주소로 채움. **backfill** = 블로그에는 있는데 대시보드에 아예 없는 글을 blogPosts 에 새로 등록(`ahj_patch_chunk_..._blogbackfill.json`, url 을 키로 upsert 라 중복되지 않음). 같은 사건번호로 우리 글이 둘 이상이면 자동 채택하지 않고 ambiguous 로 뺀다.
+  - 한계: RSS 는 최근 50건까지만 준다. 더 오래된 글을 찾아야 할 때만 `search_blog` 로 사건번호를 따로 검색한다.
+  - `gkgk0307_` 는 전체 글이 2건(최신 2026-07-06)뿐인 사실상 휴면 블로그다. 그냥 두면 된다.
+- **매칭 키는 제목이 아니라 사건번호다.** 대리님이 올릴 때 제목을 다시 쓰는 경우가 많아 대시보드 제목과 실제 게시 제목이 다르다. 권리분석 물건 분석글에는 사건번호가 거의 항상 들어가므로 사건번호(`20\d\d타경\d+`)를 1순위 키로 쓴다.
+  사건번호가 없는 정보성 글(뉴스·팁)은 사건번호로는 못 맞추지만, RSS 로 바꾼 뒤로는 **url 기준 backfill** 로 등록되므로 게시 사실 자체는 빠지지 않는다.
 
 ## 3. KPI 계산 기준 (팀 양식의 8월 기준값과 대조해 확정)
 
@@ -106,10 +110,10 @@
 
 ## 6. 자동 루틴 (Claude_Code_Remote 트리거, UTC)
 
-- `trig_01BvA6VTCjaQVkN93pbwgDgM` 22:06 UTC(07시 KST) — 아침 점검 4단계. A. 경매 결과 자동 동기화(`scripts/auction_results_sync.py`). B. 네이버 블로그 발행 확인 — 사건번호를 1순위 키로 `mcp__PlayMCP__NaverSearch-search_blog` 검색 후 `scripts/blog_publish_match.py` 로 대조, 우리 블로그 3곳(`ykphone_edu`·`hjko0`·`gkgk0307_`) 모두 채택, 매칭된 것만 `-verify` 청크 업로드. C. 대표 지시 처리 — `ahj_ceo_order_*.json` 을 읽어 처리하고 `ahj_patch_chunk_..._ceo.json` 으로 `ceoOrders` 에 status·reply 를 되돌려준다. D. 세 가지 각각 `routineRuns` 기록(`ahj_patch_chunk_..._routine.json`).
+- `trig_01BvA6VTCjaQVkN93pbwgDgM` 22:06 UTC(07시 KST) — 아침 점검 4단계. A. 경매 결과 자동 동기화(`scripts/auction_results_sync.py`). B. 네이버 블로그 발행 확인 — `scripts/blog_rss_fetch.py` 로 우리 블로그 3곳 RSS 를 받아 `scripts/blog_publish_match.py` 로 대조, `-verify` 청크(주소 채우기)와 `_blogbackfill` 청크(대시보드에 없던 글 등록)를 각각 업로드. C. 대표 지시 처리 — `ahj_ceo_order_*.json` 을 읽어 처리하고 `ahj_patch_chunk_..._ceo.json` 으로 `ceoOrders` 에 status·reply 를 되돌려준다. D. 세 가지 각각 `routineRuns` 기록(`ahj_patch_chunk_..._routine.json`).
 - `trig_017v14iuXGFcye7ijECz8PZK` 06:41 UTC(15:41 KST, **마감 15:50**): 업무마감보고 작성. `startedAt`·`finishedAt` 를 `routineRuns` 에 기록한다. 15:48까지 못 끝내면 축약해서라도 올린다. 업무일지 폴더(`1ZZysuh-...`)의 오늘 문서를 **읽기만** 해서 ①~⑥ 양식으로 정리하고 `ahj_patch_chunk_<날짜>_closing.json`(`workReports`, id `wr-<날짜>-closing`)으로 올린다. 각 건에 완료/진행/예정을 붙이고 **수치는 추정하지 않는다**(근거 없으면 "집계 예정"·"비교 자료 미확보"). 오늘 문서가 없으면 `hold` 로 기록하고 끝낸다.
 - `trig_017apcdF32gc1UkJcRUGoU2f` 23:03 UTC(08시 KST): 블로그 제작 파이프라인(아이디어→정보검수→작성→SEO검수→최종검토). 각 단계의 상세 규칙은 `.claude/skills/blog-idea-scout`, `blog-fact-checker`, `blog-writer`, `blog-seo-editor`, `blog-final-reviewer` 스킬을 따른다(경매 물건 글은 `naver-auction-blog-writer`, 인스타 캐러셀은 `image-carousel-designer`, 경쟁사 분석은 `brand-strategy-analyst`). 요약 규칙: 메타디스크립션 첫 줄 필수, 본문 1,500자 이상, 질문형 소제목 2개 이상, 핵심정리·FAQ·해시태그 5개 이상, "무조건/확실한 수익" 금지, 출처 원문 대조 필수, 최근 7일 소재와 60% 이상 달라야 함. 소재 없으면 0건으로 기록.
-- 도구 제약: WebFetch가 naver·chosun 도메인을 막는다. casenote.kr는 가끔 503(law.go.kr 대체). PlayMCP 세션이 자주 만료되니 ToolSearch로 다시 로드한다.
+- 도구 제약: WebFetch가 naver·chosun 도메인을 막는다(블로그 RSS 는 urllib·curl 로 우회한다). casenote.kr는 가끔 503(law.go.kr 대체). PlayMCP 세션이 자주 만료되니 ToolSearch로 다시 로드한다.
 
 ## 7. 최근 상태 메모 (2026-09-08)
 
