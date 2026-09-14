@@ -26,7 +26,8 @@
 | `auctionSync` | 운영 비서 | 매일 07:00 |
 | `blogVerify` | 운영 비서 | 매일 07:00 |
 | `ceoOrder` | 운영 비서 | 매일 07:00 |
-| `closingReport` | 운영 비서 | 매일 15:41 |
+| `closingReport` | 운영 비서 | 매일 15:48 |
+| `analysisCheck` | 운영 비서 | 매일 20:00 |
 | `blogPipeline` | 시장조사 담당 | 매일 08:00 |
 | `blogFactCheck` | 콘텐츠기획 담당 | 매일 08:00 |
 | `blogWrite` | 블로그제작 담당 | 매일 08:00 |
@@ -112,6 +113,7 @@
 
 - `trig_01BvA6VTCjaQVkN93pbwgDgM` 22:06 UTC(07시 KST) — 아침 점검 4단계. A. 경매 결과 자동 동기화(`scripts/auction_results_sync.py`). B. 네이버 블로그 발행 확인 — `scripts/blog_rss_fetch.py` 로 우리 블로그 3곳 RSS 를 받아 `scripts/blog_publish_match.py` 로 대조, `-verify` 청크(주소 채우기)와 `_blogbackfill` 청크(대시보드에 없던 글 등록)를 각각 업로드. C. 대표 지시 처리 — `ahj_ceo_order_*.json` 을 읽어 처리하고 `ahj_patch_chunk_..._ceo.json` 으로 `ceoOrders` 에 status·reply 를 되돌려준다. D. 세 가지 각각 `routineRuns` 기록(`ahj_patch_chunk_..._routine.json`).
 - `trig_017v14iuXGFcye7ijECz8PZK` 06:41 UTC(15:41 KST, **마감 15:50**): 업무마감보고 작성. `startedAt`·`finishedAt` 를 `routineRuns` 에 기록한다. 15:48까지 못 끝내면 축약해서라도 올린다. 업무일지 폴더(`1ZZysuh-...`)의 오늘 문서를 **읽기만** 해서 ①~⑥ 양식으로 정리하고 `ahj_patch_chunk_<날짜>_closing.json`(`workReports`, id `wr-<날짜>-closing`)으로 올린다. 각 건에 완료/진행/예정을 붙이고 **수치는 추정하지 않는다**(근거 없으면 "집계 예정"·"비교 자료 미확보"). 오늘 문서가 없으면 `hold` 로 기록하고 끝낸다.
+- `trig_012sR8svRraK3bQQ7vksLjud` 11:00 UTC(20시 KST): 권리분석 체크 자동 반영. `scripts/blog_rss_fetch.py` + `scripts/market_analysis_check.py` 로 블로그에 올라간 권리분석 글과 `marketAuctions` 를 **사건번호로** 맞춰 `analysisWritten` 을 켠다(`ahj_patch_chunk_<날짜>_analysis.json`). **켜기만 하고 이미 켜진 것을 끄지 않는다** — 대리님이 직접 끈 것을 되돌리면 안 되기 때문이다. 사건번호가 정확히 같을 때만 켜고, 글이 아직 없는 물건은 목록으로만 보고한다. `caseNumber` 에 `2025타경1245 물건1` 처럼 꼬리가 붙은 항목이 있어 통째로 비교하면 안 맞는다(사건번호만 뽑아 비교).
 - `trig_017apcdF32gc1UkJcRUGoU2f` 23:03 UTC(08시 KST): 블로그 제작 파이프라인(아이디어→정보검수→작성→SEO검수→최종검토). 각 단계의 상세 규칙은 `.claude/skills/blog-idea-scout`, `blog-fact-checker`, `blog-writer`, `blog-seo-editor`, `blog-final-reviewer` 스킬을 따른다(경매 물건 글은 `naver-auction-blog-writer`, 인스타 캐러셀은 `image-carousel-designer`, 경쟁사 분석은 `brand-strategy-analyst`). 요약 규칙: 메타디스크립션 첫 줄 필수, 본문 1,500자 이상, 질문형 소제목 2개 이상, 핵심정리·FAQ·해시태그 5개 이상, "무조건/확실한 수익" 금지, 출처 원문 대조 필수, 최근 7일 소재와 60% 이상 달라야 함. 소재 없으면 0건으로 기록.
 - 도구 제약: WebFetch가 naver·chosun 도메인을 막는다(블로그 RSS 는 urllib·curl 로 우회한다). casenote.kr는 가끔 503(law.go.kr 대체). PlayMCP 세션이 자주 만료되니 ToolSearch로 다시 로드한다.
 
