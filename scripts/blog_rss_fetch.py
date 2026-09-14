@@ -33,6 +33,17 @@ ITEM_RE = re.compile(r"<item>(.*?)</item>", re.S)
 TAG_RE = re.compile(r"<[^>]+>")
 
 
+DESC_LIMIT = 600
+TAIL_CASE_RE = re.compile(r"20\d\d\s*타\s*경\s*\d*$")
+
+
+def _clip(text, limit=DESC_LIMIT):
+    """요약을 자르되, 끝에 반쪽짜리 사건번호가 남지 않게 한다."""
+    if len(text) <= limit:
+        return text
+    return TAIL_CASE_RE.sub("", text[:limit]).rstrip()
+
+
 def _field(block, name):
     m = re.search(r"<%s>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</%s>" % (name, name), block, re.S)
     return m.group(1).strip() if m else ""
@@ -70,7 +81,9 @@ def parse(xml, blog_id):
         rows.append({
             "title": title,
             # 본문 요약에도 사건번호가 들어 있는 경우가 있어 태그만 벗겨 같이 넘긴다.
-            "description": TAG_RE.sub(" ", _field(block, "description"))[:600],
+            # 자를 때 사건번호 한가운데가 끊기면 '2025타경1154' 가 '2025타경11' 이 되어
+            # 엉뚱한 번호로 등록된다(실제로 그랬다). 끝에 걸린 조각은 떼어낸다.
+            "description": _clip(TAG_RE.sub(" ", _field(block, "description"))),
             "link": link,
             "bloggerlink": "https://blog.naver.com/" + blog_id,
             "postdate": postdate,

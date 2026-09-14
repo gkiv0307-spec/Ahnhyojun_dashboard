@@ -123,7 +123,9 @@ def match(snapshot, results):
             "title": r.get("title", ""),
             "postdate": str(r.get("postdate") or ""),
             "blogId": blog_id(r.get("bloggerlink")),
-            "case": sorted(rc)[0] if rc else "",
+            # 여러 개면 가장 긴 것을 쓴다. 사전순으로 고르면 잘린 조각('2025타경11')이
+            # 온전한 번호('2025타경1154')보다 앞서서 뽑힌다.
+            "case": max(rc, key=len) if rc else "",
         })
     backfill.sort(key=lambda x: x["postdate"], reverse=True)
     return verify, ambiguous, already, backfill
