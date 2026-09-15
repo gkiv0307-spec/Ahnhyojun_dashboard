@@ -93,6 +93,10 @@ def court_code(name):
         # '대구지법서부지원' 과 '대구서부지원' 을 같은 것으로 본다
         if cand.replace("지법", "") == want.replace("지법", ""):
             best = "B" + c["cortCd"]
+        # 현황판은 '경주지원'·'부천지원' 처럼 본원 이름을 떼고 보낸다. 지원 이름만으로도 맞춘다.
+        # (전국에서 지원 이름이 겹치는 곳은 없다 — 법원 목록으로 확인함)
+        if not best and want.endswith("지원") and cand.endswith(want):
+            best = "B" + c["cortCd"]
     return best
 
 
