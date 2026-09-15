@@ -5,7 +5,8 @@
 출력: ahj_market_chunk_*.json 에 넣을 배열(JSON) — caseNumber 기준 upsert 되므로 바꿀 필드만 담는다.
 
 규칙 (현황판 D 항목의 ld = 회차별 기록 [{d, amt, res}], final, resultDesc 사용):
-- 대시보드 물건 중 매각기일(saleDate)이 지났고 상태가 조사중/입찰예정 인 것만 본다.
+- 대시보드 물건 중 매각기일(saleDate)이 지났고 상태가 조사중/입찰예정/매각/유찰 인 것만 본다.
+  ("매각"·"유찰" 은 현황판이 결과만 적고 낙찰가·다음 회차를 안 채운 중간 상태다.)
 - 그 매각기일 회차의 res 가 '유찰' → status 유찰, failCount 갱신, 다음 회차가 있으면 saleDate·minSalePrice 를 다음 회차로 옮긴다.
 - res 가 '변경' → status 변경, 다음 회차로 옮긴다.
 - res 가 '매각(금액)' → status 매각종료, winningBid 에 금액. (대리님이 입찰했으면 대시보드에서 낙찰/패찰로 바꾼다)
@@ -49,7 +50,10 @@ def sync(snapshot, board_by, today):
     updates, waiting, missing = [], [], []
     for mm in snapshot.get("marketAuctions", []):
         sd = mm.get("saleDate") or ""
-        if not sd or sd >= today or mm.get("status") not in ("조사중", "입찰예정"):
+        # 현황판은 낙찰된 물건을 status "매각" 으로만 적고 낙찰가는 안 채운다.
+        # 그것도 결과가 덜 들어온 상태이므로 여기서 매각종료 + 낙찰가로 마무리한다.
+        # "유찰" 도 다음 회차가 잡히면 입찰예정으로 넘겨야 해서 함께 본다.
+        if not sd or sd >= today or mm.get("status") not in ("조사중", "입찰예정", "매각", "유찰"):
             continue
         ca = (mm.get("caseNumber") or "").split(" ")[0]
         ca = re.sub(r"\(\d+\)$", "", ca)

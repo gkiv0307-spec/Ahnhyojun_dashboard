@@ -12,7 +12,7 @@
 
 사용:
   python3 court_auction_fetch.py snapshot.json board_from_court.json [--all] [--chunks c1.json c2.json ...]
-  기본은 "결과가 필요한 물건"만 조회한다(매각기일이 지났고 상태가 조사중/입찰예정).
+  기본은 "결과가 필요한 물건"만 조회한다(매각기일이 지났고 상태가 조사중/입찰예정/매각/유찰).
   --all 을 주면 marketAuctions 전체를 조회한다(느리다).
   --chunks 로 스냅샷 이후 올라온 ahj_market_chunk_*.json 을 함께 주면 그것까지 합쳐서 본다
   (스냅샷은 대시보드를 열어야 갱신되므로, 그 사이 등록된 물건은 이걸 줘야 보인다).
@@ -194,7 +194,9 @@ def targets(snapshot, today, want_all):
     for mm in snapshot.get("marketAuctions", []):
         if not want_all:
             sd = mm.get("saleDate") or ""
-            if not sd or sd >= today or mm.get("status") not in ("조사중", "입찰예정"):
+            # sync 쪽과 같은 기준으로 고른다. "매각"·"유찰" 은 현황판이 결과만 적고
+            # 낙찰가·다음 회차를 안 채운 중간 상태라 여기서 마저 받아와야 한다.
+            if not sd or sd >= today or mm.get("status") not in ("조사중", "입찰예정", "매각", "유찰"):
                 continue
         out.append(mm)
     return out
