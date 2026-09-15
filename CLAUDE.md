@@ -97,7 +97,7 @@
 | `ahj_ceo_order_` | **대표 지시** — 대시보드가 올림 `{id,at,text}` (파일 1건 = 지시 1건). 아침 루틴이 읽어서 처리하고 `ahj_patch_chunk_..._ceo.json` 으로 `{op:"set", list:"ceoOrders", match:{id}, fields:{status,reply,repliedAt}}` 답변을 남긴다 |
 | `ahj_blog_chunk_` | 블로그 파이프라인 결과 `{runAt,status,addedCount,note,items:[…]}` / `-verify` 파일은 `[{id,status,url,publishedAt}]` |
 
-- 청크 파일명은 UTC 날짜. 같은 이름 파일이 있어도 id로 구분해 각각 한 번씩 처리된다.
+- 청크 파일명은 UTC 날짜. 같은 이름 파일이 있어도 id로 구분해 각각 한 번씩 처리된다. **받다가 실패한 파일은 처리됨으로 찍지 않는다**(2026-09-16, v73) — 예전에는 다운로드가 한 번만 실패해도 처리됨으로 못 박아 그 청크가 영영 사라졌다. Drive 가 간헐적으로 "service unavailable" 을 내므로 실제로 결과 청크가 조용히 빠졌다(2025타경9339 유찰 결과). 경매 청크는 같은 배치 안에서 카드를 만드는 줄을 먼저, 결과만 담긴 줄을 나중에 적용하고, 짝(카드)이 없는 결과 줄은 버리지 않고 `state.meta.pendingMarketPatches` 에 미뤄 뒀다가 다음 병합 때 다시 맞춘다(30일 지나면 놓아줌). 따라서 청크를 다시 올려야 할 때는 **새 파일(새 id)로** 올리면 된다.
 - 위 표에 없는 변경은 `ahj_patch_chunk_`로 처리한다. 정말 새 병합 로직이 필요할 때만 merge 함수를 추가하고 재발행한다(`mergeXxxChunksIfNeeded` 패턴, init·setInterval·visibilitychange 세 곳에 배선).
 - 데이터 변경 작업의 마무리 규칙: 파일을 올린 뒤 Drive에서 파일이 있는지 확인하고, 답변에 파일명을 적는다.
 
