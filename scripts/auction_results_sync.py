@@ -15,16 +15,31 @@
 """
 import json, re, sys, datetime
 
-def load_board_items(html_path):
-    html = open(html_path, encoding="utf-8").read()
-    m = re.search(r"^const D = (\[.*?\]);$", html, re.M)
-    if not m:
-        raise SystemExit("현황판 HTML에서 D 배열을 찾지 못함")
-    items = json.loads(m.group(1))
+def load_board_items(path):
+    """회차 기록을 읽는다. 두 가지 소스를 모두 받는다.
+
+    - 현황판 아티팩트 HTML (const D = [...])
+    - court_auction_fetch.py 가 법원경매정보에서 받아 저장한 JSON (같은 모양)
+
+    법원경매정보가 1차 자료라 그쪽을 우선 쓰고, 현황판은 보조로 남겨둔다.
+    """
+    raw = open(path, encoding="utf-8").read()
+    if path.endswith(".json"):
+        items = json.loads(raw)
+    else:
+        m = re.search(r"^const D = (\[.*?\]);$", raw, re.M)
+        if not m:
+            raise SystemExit("현황판 HTML에서 D 배열을 찾지 못함")
+        items = json.loads(m.group(1))
     by = {}
     for x in items:
         by.setdefault(x.get("caNo"), []).append(x)
     return by
+
+def src(x):
+    """이 기록을 어디서 받았는지 메모에 남긴다."""
+    return "법원경매정보" if x.get("csNo") else "현황판"
+
 
 def parse_amount(res):
     m = re.search(r"\(([\d,]+)원\)", res or "")
@@ -51,7 +66,7 @@ def sync(snapshot, board_by, today):
         upd = {"caseNumber": mm["caseNumber"], "updatedAt": datetime.datetime.utcnow().isoformat() + "Z"}
         memo_add = ""
         if final in ("취하", "기각", "각하"):
-            upd["status"] = "취하"; memo_add = f"현황판: 사건 {final} ({x.get('closedAt') or ''})"
+            upd["status"] = "취하"; memo_add = f"{src(x)}: 사건 {final} ({x.get('closedAt') or ''})"
         else:
             rnd = next((r for r in ld if r.get("d") == sd), None)
             if rnd is None:
@@ -64,16 +79,16 @@ def sync(snapshot, board_by, today):
             nxt = next((r for r in ld if (r.get("d") or "") > (rnd.get("d") or "")), None)
             if res.startswith("매각"):
                 upd["status"] = "매각종료"; upd["winningBid"] = parse_amount(res)
-                memo_add = f"현황판: {rnd['d']} {res} (타인 낙찰 — 직접 입찰했으면 낙찰/패찰로 바꿔주세요)"
+                memo_add = f"{src(x)}: {rnd['d']} {res} (타인 낙찰 — 직접 입찰했으면 낙찰/패찰로 바꿔주세요)"
             elif res.startswith("유찰") or res.startswith("변경"):
                 upd["status"] = "유찰" if res.startswith("유찰") else "변경"
                 upd["failCount"] = int(x.get("f") or sum(1 for r in ld if (r.get("res") or "").startswith("유찰")))
                 if nxt:
                     upd["saleDate"] = nxt["d"]; upd["minSalePrice"] = nxt.get("amt") or mm.get("minSalePrice")
                     upd["status"] = "입찰예정" if res.startswith("유찰") else "변경"
-                    memo_add = f"현황판: {rnd['d']} {res} → 다음 {nxt['d']} 최저 {nxt.get('amt'):,}원"
+                    memo_add = f"{src(x)}: {rnd['d']} {res} → 다음 {nxt['d']} 최저 {nxt.get('amt'):,}원"
                 else:
-                    memo_add = f"현황판: {rnd['d']} {res}"
+                    memo_add = f"{src(x)}: {rnd['d']} {res}"
             else:
                 waiting.append((mm, x)); continue
         if memo_add:
@@ -92,7 +107,7 @@ if __name__ == "__main__":
     snap = json.load(open(snap_path, encoding="utf-8"))
     updates, waiting, missing = sync(snap, load_board_items(board_path), today)
     json.dump(updates, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)
-    print(f"updates {len(updates)} | waiting {len(waiting)} | not in board {len(missing)}")
+    print(f"updates {len(updates)} | waiting {len(waiting)} | 소스에 없음 {len(missing)}")
     for u in updates: print("  UPD", u["caseNumber"], u.get("status"), u.get("saleDate", ""), u.get("winningBid", ""))
-    for mm, x in waiting: print("  WAIT", mm["caseNumber"], mm.get("saleDate"), "(현황판 결과 없음)")
+    for mm, x in waiting: print("  WAIT", mm["caseNumber"], mm.get("saleDate"), "(결과 아직 없음)")
     for mm in missing: print("  MISS", mm["caseNumber"], mm.get("saleDate"))
