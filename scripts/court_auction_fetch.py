@@ -11,9 +11,11 @@
   법원경매정보는 1차 자료라 매각 다음 날이면 결과가 확정돼 있다.
 
 사용:
-  python3 court_auction_fetch.py snapshot.json board_from_court.json [--all]
+  python3 court_auction_fetch.py snapshot.json board_from_court.json [--all] [--chunks c1.json c2.json ...]
   기본은 "결과가 필요한 물건"만 조회한다(매각기일이 지났고 상태가 조사중/입찰예정).
   --all 을 주면 marketAuctions 전체를 조회한다(느리다).
+  --chunks 로 스냅샷 이후 올라온 ahj_market_chunk_*.json 을 함께 주면 그것까지 합쳐서 본다
+  (스냅샷은 대시보드를 열어야 갱신되므로, 그 사이 등록된 물건은 이걸 줘야 보인다).
 
 출력 형식(현황판 D 와 동일):
   [{caNo, ino, court, cortOfcCd, csNo, f, final, ld:[{d, amt, res}]}]
@@ -154,6 +156,38 @@ def _fmt_ymd(v):
     return f"{s[:4]}-{s[4:6]}-{s[6:8]}" if len(s) == 8 and s.isdigit() else ""
 
 
+def apply_market_chunks(snapshot, paths):
+    """스냅샷 이후 올라온 ahj_market_chunk_*.json 을 얹어 '지금 대시보드' 상태를 만든다.
+
+    스냅샷은 대시보드가 열릴 때만 Drive 에 올라간다. 대리님이 며칠 안 열면
+    스냅샷이 그대로 멈춰 있고, 그 사이 현황판이 보낸 새 물건은 루틴 눈에 안 보인다.
+    실제로 2025타경9339(9/12 등록)가 그래서 9/14 매각기일이 지나도록 방치됐다.
+    대시보드가 하는 것과 같은 방식(caseNumber 기준 upsert)으로 여기서도 합친다.
+    """
+    lst = snapshot.setdefault("marketAuctions", [])
+    by = {}
+    for i, m in enumerate(lst):
+        by[(m.get("caseNumber") or "").strip()] = i
+    added = updated = 0
+    for path in paths:
+        try:
+            rows = json.load(open(path, encoding="utf-8"))
+        except Exception as e:
+            print(f"  청크 못 읽음 {path}: {e}")
+            continue
+        for r in rows if isinstance(rows, list) else []:
+            key = (r.get("caseNumber") or "").strip()
+            if not key:
+                continue
+            if key in by:
+                lst[by[key]].update(r); updated += 1
+            else:
+                by[key] = len(lst); lst.append(dict(r)); added += 1
+    if paths:
+        print(f"청크 반영: 새 물건 {added}건 · 갱신 {updated}건 (물건 총 {len(lst)}건)")
+    return snapshot
+
+
 def targets(snapshot, today, want_all):
     """조회할 물건을 고른다. 기본은 결과가 아직 없는 것만."""
     out = []
@@ -167,13 +201,21 @@ def targets(snapshot, today, want_all):
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    want_all = "--all" in sys.argv
+    argv = sys.argv[1:]
+    want_all = "--all" in argv
+    # --chunks 뒤에 오는 경로들은 스냅샷 위에 얹을 ahj_market_chunk_*.json 이다.
+    chunk_paths = []
+    if "--chunks" in argv:
+        i = argv.index("--chunks")
+        chunk_paths = [a for a in argv[i + 1:] if not a.startswith("--")]
+        argv = argv[:i]
+    args = [a for a in argv if not a.startswith("--")]
     snap_path, out_path = args[0], args[1]
     today = args[2] if len(args) > 2 else datetime.datetime.now(
         datetime.timezone(datetime.timedelta(hours=9))).date().isoformat()
 
     snap = json.load(open(snap_path, encoding="utf-8"))
+    apply_market_chunks(snap, chunk_paths)
     items, failed = [], []
     todo = targets(snap, today, want_all)
     print(f"조회 대상 {len(todo)}건 (기준일 {today})")
