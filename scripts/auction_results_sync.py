@@ -135,7 +135,9 @@ def sync(snapshot, board_by, today, check_all=False):
                 waiting.append((mm, x)); continue
         if memo_add:
             old = (mm.get("memo") or "").strip()
-            upd["memo"] = (old + " · " if old else "") + memo_add
+            # --all 로 매일 돌면 같은 결과를 매일 다시 보게 된다. 이미 적힌 문장은 또 붙이지 않는다.
+            if memo_add not in old:
+                upd["memo"] = (old + " · " if old else "") + memo_add
             upd["courtResult"] = memo_add.split(": ", 1)[-1].split(" (타인")[0]
             upd["courtCheckedAt"] = today
         updates.append(upd)
