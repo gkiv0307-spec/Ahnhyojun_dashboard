@@ -91,7 +91,7 @@
 | `ahj_student_tuition_patch_chunk_` | `[{studentId, tuition}]` tuition 0일 때만 |
 | `ahj_revenue_reconfirm_chunk_` | `[{kind:"student", studentId, txSig}]` 결제완료 + 입금일·카드 표시 |
 | `ahj_course_start_patch_chunk_` | `[{studentId, courseStartDate}]` 덮어씀 |
-| `ahj_market_chunk_` | 데일리 경매분석 upsert(caseNumber 기준). 현황판 연동도 이 형식 |
+| `ahj_market_chunk_` | 데일리 경매분석 upsert. **사건번호+물건번호로 맞춘다**(`marketCaseKey`) — 현황판은 `2026타경33 물건1` 처럼 꼬리를 붙여 보내고 손으로 만든 카드에는 꼬리가 없어서, 글자로만 맞추던 예전에는 같은 사건이 카드 두 장으로 갈라졌다(7건). 꼬리가 없으면 물건1로 본다. 얹을 때 `applyMarketChunkFields` 규칙: 메모는 덮어쓰지 않고 합치고, 0·빈 값으로 기존 값을 지우지 않으며(현황판은 낙찰가를 0으로 보낸다), 확정 상태(매각종료·낙찰·패찰·취하)를 중간 상태로 되돌리지 않고, `analysisWritten` 은 켜기만 한다. `caseNumber`·`id` 는 기존 표기를 지킨다 |
 | `ahj_kpi_log_chunk_` | `[{key:"analysis", date, count}]` 권리분석 건수 |
 | `ahj_patch_chunk_` | **범용 패치** `[{op:"set"|"push"|"delete", list, match, fields, upsert?, allowBulk?}]` — 허용 목록의 아무 항목이나 수정·추가·삭제. 새 종류의 데이터 변경은 이걸 먼저 쓴다(재발행 불필요). 118명 이관 학생은 allowBulk 없이는 건드리지 않음 |
 | `ahj_ceo_order_` | **대표 지시** — 대시보드가 올림 `{id,at,text}` (파일 1건 = 지시 1건). 아침 루틴이 읽어서 처리하고 `ahj_patch_chunk_..._ceo.json` 으로 `{op:"set", list:"ceoOrders", match:{id}, fields:{status,reply,repliedAt}}` 답변을 남긴다 |
