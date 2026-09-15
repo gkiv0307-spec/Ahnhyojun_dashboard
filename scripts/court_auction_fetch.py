@@ -131,6 +131,8 @@ def fetch_case(cort, csno, ino):
         res = re.sub(r"\s+", "", res)          # '매각 (88,999,999원)' → '매각(88,999,999원)'
         ld.append({"d": "-".join(dm.groups()), "amt": _amount(r.get("tsLwsDspslPrc")), "res": res})
     ld.sort(key=lambda x: x["d"])
+    # 감정가. 아래에서 대시보드 값과 대조해 엉뚱한 사건을 물어왔는지 확인한다.
+    aee = next((int(r["aeeEvlAmt"]) for r in rows if str(r.get("aeeEvlAmt") or "").isdigit()), 0)
 
     # 종국(취하·취소·기각·각하)은 기일내역에 안 나오므로 사건기본정보에서 따로 본다.
     cs = post("/pgj15A/selectAuctnCsSrchRslt.on",
@@ -140,7 +142,7 @@ def fetch_case(cort, csno, ino):
     if not final:
         final = PROG_CLOSED.get(str(bas.get("csProgStatCd") or ""), "")
     return {
-        "cortOfcCd": cort, "csNo": csno, "ino": ino, "ld": ld, "final": final,
+        "cortOfcCd": cort, "csNo": csno, "ino": ino, "ld": ld, "final": final, "aeeEvlAmt": aee,
         "f": sum(1 for x in ld if x["res"].startswith("유찰")),
         "closedAt": _fmt_ymd(bas.get("csUltmtYmd")),
         "courtName": bas.get("cortOfcNm") or "",
@@ -191,6 +193,14 @@ def main():
         time.sleep(REQ_GAP_SEC)
         if not rec["ld"] and not rec["final"]:
             failed.append((mm.get("caseNumber"), "법원경매정보에 기일내역 없음"))
+            continue
+        # 법원 매핑이나 사건번호 변환이 틀리면 "있긴 한 다른 사건"이 조용히 딸려온다.
+        # 감정가가 다르면 그 사건이 아니므로 쓰지 않고 사람이 보게 남긴다.
+        want_aee = mm.get("appraisalValue") or 0
+        if want_aee and rec["aeeEvlAmt"] and int(want_aee) != rec["aeeEvlAmt"]:
+            failed.append((mm.get("caseNumber"),
+                           f"감정가 불일치 — 대시보드 {int(want_aee):,}원 vs 법원 {rec['aeeEvlAmt']:,}원 "
+                           f"({rec['courtName']} {csno}). 다른 사건을 물어왔을 수 있어 건너뜀"))
             continue
         rec["caNo"] = ca
         rec["court"] = mm.get("court")
