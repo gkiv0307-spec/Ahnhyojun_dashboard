@@ -63,6 +63,56 @@ def is_ours(link):
     return blog_id(link) in OUR_BLOG_IDS
 
 
+
+# ── 제목 유사도 ────────────────────────────────────────────────
+# 글자 순서 유사도(SequenceMatcher)와 낱말 겹침 비율 중 큰 쪽을 쓴다. 대리님이 제목을
+# 다시 써도 핵심 낱말(단지명·수치·주제어)은 대개 남기 때문이다. 0.6 미만은 남으로 본다.
+import difflib
+TITLE_MIN = 0.6
+
+def _norm_title(t):
+    return re.sub(r"[^0-9a-z가-힣]", "", (t or "").lower())
+
+def _title_tokens(t):
+    return {w for w in re.split(r"[^0-9a-zA-Z가-힣]+", t or "") if len(w) >= 2}
+
+def title_score(a, b):
+    na, nb = _norm_title(a), _norm_title(b)
+    if not na or not nb:
+        return 0.0
+    seq = difflib.SequenceMatcher(None, na, nb).ratio()
+    ta, tb = _title_tokens(a), _title_tokens(b)
+    tok = len(ta & tb) / max(1, len(ta))
+    return max(seq, tok)
+
+def title_match(post, ours):
+    """유일한 후보면 그 RSS 행을, 둘 이상이면 'ambiguous', 없으면 None."""
+    created = str(post.get("createdAt") or post.get("date") or "")[:10].replace("-", "")
+    cands = []
+    for r in ours:
+        sc = title_score(post.get("title"), r.get("title"))
+        if sc < TITLE_MIN:
+            continue
+        # 글이 만들어지기 사흘 전보다 앞서 게시된 건 다른 글이다
+        pd = str(r.get("postdate") or "")
+        if created and pd and pd < _days_before(created, 3):
+            continue
+        cands.append((sc, r))
+    if not cands:
+        return None
+    cands.sort(key=lambda x: -x[0])
+    if len(cands) > 1 and cands[1][0] >= TITLE_MIN:
+        return "ambiguous"
+    return cands[0][1]
+
+def _days_before(ymd, n):
+    import datetime
+    try:
+        d = datetime.date(int(ymd[:4]), int(ymd[4:6]), int(ymd[6:8])) - datetime.timedelta(days=n)
+        return d.strftime("%Y%m%d")
+    except Exception:
+        return "00000000"
+
 def match(snapshot, results):
     posts = snapshot.get("blogPosts", [])
     # 사건번호 -> 우리 블로그 글
@@ -74,11 +124,29 @@ def match(snapshot, results):
             by_case.setdefault(c, []).append(r)
 
     verify, ambiguous, already = [], [], []
+    dedupe_ops = []   # 제목으로 맞춘 글과 겹치는 backfill 사본 삭제
+    ours = [r for r in results if is_ours(r.get("bloggerlink"))]
     for p in posts:
         if (p.get("url") or "").strip():
             continue  # 이미 주소가 채워진 글은 건드리지 않는다
         pc = cases_in(p.get("title"), p.get("memo"), p.get("body"))
         if not pc:
+            # 사건번호가 없는 정보성 글(파이프라인 글). 대리님이 제목을 고쳐 올리는 일이 많아
+            # 제목 유사도로 맞춘다 — 대표님 블로그(hjko0)에 올린 파이프라인 글이 영영 발행대기로
+            # 남던 구멍. 후보가 둘 이상이면 자동 채택하지 않는다.
+            hit = title_match(p, ours)
+            if hit == "ambiguous":
+                ambiguous.append((p, [r for r in ours if title_score(p.get("title"), r.get("title")) >= TITLE_MIN]))
+            elif hit:
+                d = str(hit.get("postdate") or "")
+                verify.append({"id": p["id"], "status": "발행완료", "url": hit.get("link", ""),
+                               "publishedAt": f"{d[:4]}-{d[4:6]}-{d[6:8]}" if len(d) == 8 else ""})
+                already.append((p, hit, ["제목유사"]))
+                # 같은 주소가 RSS backfill 로 이미 따로 등록돼 있으면 그 사본은 지운다(글 하나가 둘로 세어지지 않게)
+                link = (hit.get("link") or "").split("?")[0]
+                for q in posts:
+                    if q is not p and (q.get("url") or "").split("?")[0] == link and str(q.get("id", "")).startswith("blogrss-"):
+                        dedupe_ops.append({"op": "delete", "list": "blogPosts", "match": {"id": q["id"]}})
             continue
         hits = []
         for c in pc:
@@ -128,6 +196,7 @@ def match(snapshot, results):
             "case": max(rc, key=len) if rc else "",
         })
     backfill.sort(key=lambda x: x["postdate"], reverse=True)
+    match.dedupe_ops = dedupe_ops
     return verify, ambiguous, already, backfill
 
 
@@ -164,7 +233,8 @@ if __name__ == "__main__":
     json.dump(verify, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)
     now_iso = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     if bf_path:
-        json.dump(backfill_ops(backfill, now_iso), open(bf_path, "w", encoding="utf-8"),
+        # 제목으로 맞춘 글과 겹치는 backfill 사본 삭제도 같은 패치 파일에 넣는다 (형식이 같다)
+        json.dump(backfill_ops(backfill, now_iso) + list(getattr(match, "dedupe_ops", [])), open(bf_path, "w", encoding="utf-8"),
                   ensure_ascii=False)
     print(f"matched {len(verify)} | ambiguous {len(ambiguous)} | 대시보드에 없는 글 {len(backfill)}")
     for r in backfill:
