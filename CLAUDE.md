@@ -87,7 +87,7 @@
 
 | 청크 접두사 | 용도 · 형식 |
 |---|---|
-| `ahj_bank_addition_chunk_` | 은행 거래 추가 `[{sig,date,description,deposit,withdrawal,balance,studentId,category,installmentId,expenseCategory?}]`, sig = `날짜|적요|입금|출금|잔액`, sig 중복은 건너뜀 |
+| `ahj_bank_addition_chunk_` | 은행 거래 추가 `[{sig,date,description,deposit,withdrawal,balance,studentId,category,installmentId,expenseCategory?}]`, sig = `날짜|적요|입금|출금|잔액`, sig 중복은 건너뜀. category 는 `tuition`/`consulting`/`capital`/`general`/`reimburse`(대납 회수, 매출 제외), 지출 대납은 `expenseCategory:"edu_advance"` |
 | `ahj_bank_category_patch_chunk_` | `[{sig, category}]` 비어 있을 때만 채움 |
 | `ahj_student_add_chunk_` | 수강생·매출 명단에 학생 추가 `[{student:{…}, dbPatch?, txSig?}]` (마법사 없이 원격 등록) |
 | `ahj_student_tuition_patch_chunk_` | `[{studentId, tuition}]` tuition 0일 때만 |
@@ -131,4 +131,5 @@
 - 김종익 150,000(9/4) = 대리입찰 컨설팅비.
 - 권리분석 보고: 9/2 1건, 9/4 2건, 9/7 1건, 9/8 3건.
 - 은행 거래는 **2026-09-16 04:00(펄크럼 29,000 출금)까지 등록됨** — 9/7~9/12 는 `ahj_bank_addition_chunk_2026-09-14.json`, 9/14~9/16 은 `ahj_bank_addition_chunk_2026-09-16.json`. 다음 엑셀이 오면 그 이후만 추가.
-- 9/15 저녁 수강생 이름으로 들어온 소액 입금 12건(6,000~36,300원, 합계 265,038원)은 **회식비 정산**(산갈래닭갈비 168,000 결제 뒤 참가자 송금, 적요에 "파티"·"커피값")이라 수강료가 아니고 `general`(일반입금)로 넣었다. studentId 는 연결하지 않았다(수업중 인원·수강료 확정에 안 섞이게). KPI 매출은 입금 합계라 이 금액이 그대로 들어간다 — 대리님이 빼자고 하면 patch 로 빼면 된다.
+- **수강생 대납 정산 (v79, 2026-09-16)**: 임장·회식 때 회사카드로 긁고 수강생이 n분의 1 로 돌려준 돈은 매출도 비용도 아니다(회계상 입체금 → 회수). 입금은 분류 `reimburse`(정산입금, 미확정 입금 카드의 "정산입금" 버튼), 출금은 지출 분류 `edu_advance`(입체금)로 표시한다. `computeKpiValues` 의 매출·순이익, 홈 월별 순이익에서 둘 다 뺀다. 은행 화면 "🤝 수강생 대납 정산" 카드가 달별로 대납 → 회수 차액(미회수/초과)을 보여 준다. `edu_advance` 는 적요 자동학습에서 제외한다(같은 식당을 다음에 회사 돈으로 쓸 수 있으니). studentId 는 연결하지 않는다.
+  - 9/15 사례: 수강생 이름 소액 입금 12건 265,038원(적요 "파티"·"커피값") = 회식비 정산 → `reimburse`. 같은 날 범어동 카드 결제 5건 233,100원(산갈래닭갈비 168,000·공차 58,100·몬스터커피 4,000·케이엠파크 3,000) → `edu_advance`. 초과 회수 31,938원은 그 중 회사 몫이 섞였을 수 있으니 대리님이 출금 분류를 고칠 수 있다. `ahj_patch_chunk_2026-09-16_settlement.json`(sig 매칭 + upsert 라 은행 청크보다 먼저 와도 안전).
