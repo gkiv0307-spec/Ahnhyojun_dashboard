@@ -17,6 +17,16 @@
 """
 import json, re, sys, datetime
 
+def load_snapshot(path):
+    """스냅샷 파일을 읽는다. 2026-09-16 부터 대시보드가 gzip(.json.gz) 으로 올리므로
+    이름과 상관없이 첫 두 바이트(1f 8b)로 판단해 풀어서 읽는다. 평문 JSON 도 그대로 읽힌다."""
+    import gzip
+    raw = open(path, "rb").read()
+    if raw[:2] == b"\x1f\x8b":
+        raw = gzip.decompress(raw)
+    return json.loads(raw.decode("utf-8"))
+
+
 def load_board_items(path):
     """회차 기록을 읽는다. 두 가지 소스를 모두 받는다.
 
@@ -152,7 +162,7 @@ if __name__ == "__main__":
     # "결과 미입력"으로 남는다. 인자를 안 주면 KST(UTC+9) 오늘 날짜를 쓴다.
     today = sys.argv[4] if len(sys.argv) > 4 else (
         datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).date().isoformat())
-    snap = json.load(open(snap_path, encoding="utf-8"))
+    snap = load_snapshot(snap_path)
     updates, waiting, missing = sync(snap, load_board_items(board_path), today, check_all)
     json.dump(updates, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)
     print(f"updates {len(updates)} | waiting {len(waiting)} | 소스에 없음 {len(missing)}")

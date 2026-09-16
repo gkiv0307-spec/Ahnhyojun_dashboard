@@ -68,6 +68,16 @@ def is_ours(link):
 # 글자 순서 유사도(SequenceMatcher)와 낱말 겹침 비율 중 큰 쪽을 쓴다. 대리님이 제목을
 # 다시 써도 핵심 낱말(단지명·수치·주제어)은 대개 남기 때문이다. 0.6 미만은 남으로 본다.
 import difflib
+
+def load_snapshot(path):
+    """스냅샷 파일을 읽는다. 2026-09-16 부터 대시보드가 gzip(.json.gz) 으로 올리므로
+    이름과 상관없이 첫 두 바이트(1f 8b)로 판단해 풀어서 읽는다. 평문 JSON 도 그대로 읽힌다."""
+    import gzip
+    raw = open(path, "rb").read()
+    if raw[:2] == b"\x1f\x8b":
+        raw = gzip.decompress(raw)
+    return json.loads(raw.decode("utf-8"))
+
 TITLE_MIN = 0.6
 
 def _norm_title(t):
@@ -227,7 +237,7 @@ if __name__ == "__main__":
     import datetime
     snap_path, res_path, out_path = sys.argv[1:4]
     bf_path = sys.argv[4] if len(sys.argv) > 4 else None
-    snap = json.load(open(snap_path, encoding="utf-8"))
+    snap = load_snapshot(snap_path)
     results = json.load(open(res_path, encoding="utf-8"))
     verify, ambiguous, matched, backfill = match(snap, results)
     json.dump(verify, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)

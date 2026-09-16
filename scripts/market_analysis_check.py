@@ -20,6 +20,16 @@ import json
 import re
 import sys
 
+def load_snapshot(path):
+    """스냅샷 파일을 읽는다. 2026-09-16 부터 대시보드가 gzip(.json.gz) 으로 올리므로
+    이름과 상관없이 첫 두 바이트(1f 8b)로 판단해 풀어서 읽는다. 평문 JSON 도 그대로 읽힌다."""
+    import gzip
+    raw = open(path, "rb").read()
+    if raw[:2] == b"\x1f\x8b":
+        raw = gzip.decompress(raw)
+    return json.loads(raw.decode("utf-8"))
+
+
 CASE_RE = re.compile(r"20\d\d\s*타\s*경\s*\d+")
 TAG_RE = re.compile(r"<[^>]+>")
 BLOG_ID_RE = re.compile(
@@ -89,7 +99,7 @@ def build(snapshot, results):
 
 if __name__ == "__main__":
     snap_path, res_path, out_path = sys.argv[1:4]
-    snap = json.load(open(snap_path, encoding="utf-8"))
+    snap = load_snapshot(snap_path)
     results = json.load(open(res_path, encoding="utf-8"))
     ops, hit, already, nopost = build(snap, results)
     json.dump(ops, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)
