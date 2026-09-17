@@ -26,7 +26,14 @@ import sys
 import urllib.request
 
 OUR_BLOGS = ["ykphone_edu", "hjko0", "gkgk0307_"]
+# rhghwjd00 은 공식블로그(ykphone_edu)의 네이버 계정 id 다(2026-09-17 확인). RSS 는 계정 id 로는 403 이 나고
+# 블로그 주소 id(ykphone_edu)로만 열린다. 글 링크도 ykphone_edu 로 나오므로 목록엔 넣지 않는다.
 FEED = "https://rss.blog.naver.com/{}.xml"
+# RSS 는 최근 50건까지만 준다. 모바일 블로그 API 는 페이지를 넘기면 전체 글이 나와서(계정 id 로도 됨)
+# 같이 받아 링크 기준으로 합친다. 실패해도 RSS 결과만으로 진행한다.
+MOBILE_API = "https://m.blog.naver.com/api/blogs/{}/post-list?categoryNo=0&itemCount=30&page={}"
+MOBILE_PAGES = 4
+BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
 UA = "Mozilla/5.0 (compatible; ahj-dashboard/1.0)"
 
 ITEM_RE = re.compile(r"<item>(.*?)</item>", re.S)
@@ -91,19 +98,71 @@ def parse(xml, blog_id):
     return rows
 
 
+def fetch_mobile(blog_id, pages=MOBILE_PAGES, timeout=25):
+    """모바일 블로그 API 로 글 목록을 받는다(RSS 50건 한계 보완). 링크의 블로그 id 는 응답의 domainIdOrBlogId 를 쓴다."""
+    import json as _json
+    import datetime as _dt
+    rows = []
+    for page in range(1, pages + 1):
+        url = MOBILE_API.format(blog_id, page)
+        req = urllib.request.Request(url, headers={"User-Agent": BROWSER_UA, "Referer": "https://m.blog.naver.com/" + blog_id})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                data = _json.loads(r.read().decode("utf-8", "replace"))
+        except Exception:
+            try:
+                out = subprocess.run(["curl", "-sS", "--max-time", str(timeout), "-A", BROWSER_UA,
+                                      "-H", "Referer: https://m.blog.naver.com/" + blog_id, url], capture_output=True, text=True)
+                data = _json.loads(out.stdout)
+            except Exception:
+                break
+        items = ((data or {}).get("result") or {}).get("items") or []
+        if not items:
+            break
+        for x in items:
+            bid = x.get("domainIdOrBlogId") or blog_id
+            try:
+                postdate = _dt.datetime.utcfromtimestamp(int(x.get("addDate")) / 1000 + 9 * 3600).strftime("%Y%m%d")
+            except Exception:
+                postdate = ""
+            rows.append({
+                "title": (x.get("titleWithInspectMessage") or x.get("title") or "").strip(),
+                "description": _clip(TAG_RE.sub(" ", x.get("briefContents") or "")),
+                "link": "https://blog.naver.com/%s/%s" % (bid, x.get("logNo")),
+                "bloggerlink": "https://blog.naver.com/" + bid,
+                "postdate": postdate,
+            })
+        if len(items) < 30:
+            break
+    return rows
+
+
 def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "naver_results.json"
     blogs = sys.argv[2:] or OUR_BLOGS
     all_rows, failed = [], []
     for b in blogs:
+        rows = []
         try:
             rows = parse(fetch(FEED.format(b)), b)
-            all_rows.extend(rows)
             newest = max((r["postdate"] for r in rows), default="-")
-            print(f"  {b}: {len(rows)}건 (최신 {newest})")
+            print(f"  {b}: RSS {len(rows)}건 (최신 {newest})")
         except Exception as e:
+            print(f"  {b}: RSS 실패 — {e}")
+        # 모바일 API 로 50건 너머까지 보완. RSS 가 죽어도 이게 되면 그 블로그는 성공으로 친다.
+        try:
+            extra = fetch_mobile(b)
+            have = {r["link"] for r in rows}
+            added = [r for r in extra if r["link"] not in have]
+            rows.extend(added)
+            if extra:
+                print(f"  {b}: 모바일 목록 {len(extra)}건 (RSS 에 없던 {len(added)}건 추가)")
+        except Exception as e:
+            print(f"  {b}: 모바일 목록 실패 — {e}")
+        if rows:
+            all_rows.extend(rows)
+        else:
             failed.append(b)
-            print(f"  {b}: 실패 — {e}")
     all_rows.sort(key=lambda r: r["postdate"], reverse=True)
     json.dump(all_rows, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)
     print(f"총 {len(all_rows)}건 -> {out_path}" + (f" (실패: {', '.join(failed)})" if failed else ""))

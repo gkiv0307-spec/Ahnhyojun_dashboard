@@ -52,7 +52,9 @@
 - **우리 블로그는 셋이다.** 발행 확인(`-verify` 청크)에서 아래 셋은 모두 "발행완료"로 채택한다. 예전에는 공식블로그만 인정해서, 대표님 블로그에 올라간 글이 계속 발행대기로 남아 적체를 키웠다.
   - `ykphone_edu` — 공식블로그. **권리분석 물건 분석글을 올리는 곳이다.**
   - `hjko0` — 대표님 블로그. 학원 모집·정보성 글 위주.
-  - `gkgk0307_` — 서브블로그. 비중이 낮으니 여기 글이 안 잡혀도 따로 파고들지 않는다.
+  - `gkgk0307_` — 서브블로그. 비중이 낮으니 여기 글이 안 잡혀도 따로 파고들지 않는다. 모바일 목록으로 보면 120건이 넘지만 대부분 `[공유]` 재공유 글이라 발행으로 세지 않는다.
+  - **`rhghwjd00` 은 공식블로그(ykphone_edu)의 네이버 계정 id 다**(2026-09-17 확인). RSS 는 이 id 로 403 이 나고 글 링크도 전부 `ykphone_edu` 로 나온다. 대리님이 "rhghwjd00 블로그" 라고 하면 공식블로그 얘기다.
+  - **RSS 50건 한계 보완 (2026-09-17)**: `scripts/blog_rss_fetch.py` 가 RSS 와 함께 모바일 블로그 API `https://m.blog.naver.com/api/blogs/<id>/post-list?categoryNo=0&itemCount=30&page=N` 을 4쪽까지 받아 링크 기준으로 합친다(브라우저 UA·Referer 필요, 계정 id 로도 됨). 그래서 옛 글까지 다 나오는데, `blog_publish_match.py` 의 `BACKFILL_SINCE="20260801"` 이 2026-08 이전 글과 `[공유]` 글을 backfill 에서 거른다(대리님 "그냥 두기" 결정을 코드로 고정). 공식블로그 7/15~8/7 권리분석 글 7건은 대리님 지시로 `ahj_patch_chunk_2026-09-17_blogbackfill_official.json` 으로 등록했다.
   주소 형태가 `blog.naver.com/<id>` · `m.blog.naver.com/<id>` · `PostList.naver?blogId=<id>` 로 제각각이라 전체 URL 이 아니라 **블로그 아이디**로 비교한다(`scripts/blog_publish_match.py` 의 `OUR_BLOG_IDS`).
 - **발행 확인은 검색이 아니라 RSS 로 한다** (2026-09-14 변경). 네이버 검색 API 는 블로그 주인으로 거르지 못하고 검색어로만 찾는다. 그래서 본문에 브랜드명이 없는 글은 아무리 검색해도 안 걸렸고, 그 구멍으로 **공식블로그 글 90여 건이 대시보드 집계에서 통째로 빠져 있었다**(9/7~9/11 권리분석 글 13건 포함). 아침 루틴은 매일 "매칭 0건"만 보고하고 있었다.
   `https://rss.blog.naver.com/<블로그id>.xml` 은 검색어 없이 그 블로그의 **최근 50건**을 게시일까지 정확히 준다. WebFetch 는 naver 를 막지만 urllib·curl 로는 받아진다.

@@ -34,7 +34,7 @@ CASE_RE = re.compile(r"20\d\d\s*타\s*경\s*\d+")
 TAG_RE = re.compile(r"<[^>]+>")
 BLOG_ID_RE = re.compile(
     r"(?:m\.)?blog\.naver\.com/(?:PostList\.naver\?blogId=)?([A-Za-z0-9_-]+)")
-OUR_BLOG_IDS = {"ykphone_edu", "hjko0", "gkgk0307_"}
+OUR_BLOG_IDS = {"ykphone_edu", "rhghwjd00", "hjko0", "gkgk0307_"}  # rhghwjd00 = 공식블로그 계정 id
 
 
 def norm_case(x):

@@ -27,6 +27,7 @@ import sys
 # 블로그 아이디만 뽑아서 비교한다.
 OUR_BLOG_IDS = {
     "ykphone_edu",   # 공식블로그 — 권리분석 물건 분석글을 올리는 곳
+    "rhghwjd00",     # 공식블로그의 네이버 계정 id (글 링크는 ykphone_edu 로 나오지만 혹시 몰라)
     "hjko0",         # 대표님 블로그 — 학원 모집·정보성 글
     "gkgk0307_",
 }
@@ -210,11 +211,21 @@ def match(snapshot, results):
     return verify, ambiguous, already, backfill
 
 
-def backfill_ops(rows, now_iso):
+# backfill 로 새로 등록하는 글의 하한. 2026-08 이전 글 45건은 대리님이 "그냥 두기"로 정했다(2026-09-14).
+# 모바일 목록(blog_rss_fetch.py)이 RSS 50건 너머 옛 글까지 다 주기 때문에 여기서 걸러야 한다.
+# "[공유]" 로 시작하는 글은 남의 글을 공유한 것이라 우리 발행으로 세지 않는다.
+BACKFILL_SINCE = "20260801"
+
+
+def backfill_ops(rows, now_iso, since=BACKFILL_SINCE):
     """backfill 행을 ahj_patch_chunk_ 형식(blogPosts upsert)으로 바꾼다."""
     ops = []
     for r in rows:
         d = r["postdate"]
+        if since and d and d < since:
+            continue
+        if (r.get("title") or "").lstrip().startswith("[공유]"):
+            continue
         date = f"{d[:4]}-{d[4:6]}-{d[6:8]}" if len(d) == 8 else ""
         ops.append({
             "op": "set", "list": "blogPosts", "match": {"url": r["link"]}, "upsert": True,
