@@ -112,7 +112,11 @@ def sync(snapshot, board_by, today, check_all=False):
                 if past_due:
                     waiting.append((mm, x)); continue
                 # 기일이 아직 안 왔다 — 법원 기록으로 "진행 중" 을 확인하고 다음 회차를 맞춘다.
-                nxt = next((r for r in ld if (r.get("d") or "") >= today), None)
+                # 법원은 미래 날짜 회차에 미리 "변경" 을 적어 두기도 한다(9/22 변경 → 9/29 새 회차).
+                # 결과가 이미 적힌 회차는 다음 기일이 아니므로 결과가 비어 있는 첫 회차를 고른다.
+                # (2026-09-17: 이걸 안 가려서 8824·8801·1098 기일을 9/29 에서 9/22 로 되돌릴 뻔했다)
+                nxt = next((r for r in ld if (r.get("d") or "") >= today and not r.get("res")), None) \
+                    or next((r for r in ld if (r.get("d") or "") >= today), None)
                 if nxt:
                     label = f"진행중 · 매각기일 {fmt_md(nxt['d'])} 최저 {int(nxt.get('amt') or 0):,}원"
                     if nxt["d"] != sd:
