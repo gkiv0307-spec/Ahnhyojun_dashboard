@@ -4303,6 +4303,28 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
   var MARKET_STATUS_RANK = { "조사중": 0, "입찰예정": 1, "변경": 1, "유찰": 1, "매각": 2, "매각종료": 3, "취하": 3, "낙찰": 4, "패찰": 4 };
   function marketStatusRank(st) { return MARKET_STATUS_RANK[st] === undefined ? 0 : MARKET_STATUS_RANK[st]; }
 
+  /* v85 (2026-09-22 대리님 지시): 현황판이 자동으로 골라 보내는 물건(⭐ 대장 단지 자동 등록)은
+     매각기일이 오늘부터 2주 안에 드는 것만 데일리 경매분석에 새 카드로 올린다.
+     그 밖의 것은 state.meta.pendingMarketAdds 에 넣어 두었다가, 날짜가 2주 안으로 들어오면
+     그때 자동으로 올린다. 기일이 이미 지난 것은 올리지 않는다. 기일이 비어 있으면(미정) 대기.
+     대리님이 현황판에서 "권리분석보내기"를 체크한 물건과 손으로 만든 청크는 이 제한을 받지 않는다.
+     이미 대시보드에 있는 카드의 갱신(결과·기일 변경)도 제한하지 않는다. */
+  var MARKET_AUTO_ADD_WINDOW_DAYS = 14;
+  function isBoardAutoRegistration(m) {
+    var memo = String((m && m.memo) || "");
+    if (memo.indexOf("권리분석보내기") !== -1) return false;
+    return memo.indexOf("자동 등록") !== -1;
+  }
+  // "add"(지금 올림) / "wait"(아직 2주 밖·기일 미정) / "drop"(기일이 지났음)
+  function marketAutoAddDecision(m, today) {
+    var sd = String((m && m.saleDate) || "").slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(sd)) return "wait";
+    var t = parseYMD(today || todayStr()), d = parseYMD(sd);
+    var diff = Math.round((d.getTime() - t.getTime()) / 86400000);
+    if (diff < 0) return "drop";
+    return diff <= MARKET_AUTO_ADD_WINDOW_DAYS ? "add" : "wait";
+  }
+
   function mergeMarketMemo(oldMemo, newMemo) {
     var a = String(oldMemo || "").trim(), b = String(newMemo || "").trim();
     if (!b) return a;
@@ -4373,21 +4395,37 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
       // 지난번에 짝(카드)을 못 찾아 미뤄 둔 결과 줄을 앞에 붙인다. 카드보다 결과가 먼저 도착하면
       // 결과가 버려지는 일이 있었다(2025타경9339 — 유찰 결과가 카드 생성 청크와 같은 배치에 오면 빈 껍데기 방지에 걸려 사라짐).
       items = (state.meta.pendingMarketPatches || []).concat(items);
+      // v85: 2주 밖이라 기다리던 자동 등록 물건도 다시 판정한다(기일이 2주 안으로 들어왔는지).
+      items = (state.meta.pendingMarketAdds || []).concat(items);
       // 카드를 만드는 줄(date·단지명·주소가 있는 것)을 먼저 적용하고, 결과만 담긴 줄은 그 뒤에 적용한다.
       // Drive 검색 순서는 날짜순이 아니라서 같은 배치 안에서도 순서를 믿을 수 없다.
       var isFull = function (m) { return !!(m.date || m.buildingName || m.address); };
       var ordered = items.filter(isFull).concat(items.filter(function (m) { return !isFull(m); }));
-      var added = 0, updated = 0, deferred = [];
+      var added = 0, updated = 0, deferred = [], waiting = [], waitingNew = 0, dropped = 0;
+      var today = todayStr();
       ordered.forEach(function (m) {
         var key = m.caseNumber && marketCaseKey(m.caseNumber);
         var existing = key && state.marketAuctions.find(function (x) { return marketCaseKey(x.caseNumber) === key; });
         if (existing) {
           applyMarketChunkFields(existing, m);
           updated++;
+        } else if (isFull(m) && isBoardAutoRegistration(m) && marketAutoAddDecision(m, today) !== "add") {
+          // 현황판 자동 등록인데 매각기일이 2주 밖(또는 미정)이다 — 지금은 올리지 않고 기다린다.
+          if (marketAutoAddDecision(m, today) === "drop") { dropped++; return; }
+          var w = key && waiting.find(function (x) { return marketCaseKey(x.caseNumber) === key; });
+          if (w) { applyMarketChunkFields(w, m); }
+          else {
+            if (!m.waitingSince) { m.waitingSince = today; waitingNew++; }
+            waiting.push(m);
+          }
         } else if (isFull(m)) {
           if (!m.id) m.id = uid();
+          delete m.waitingSince;
           state.marketAuctions.push(m);
           added++;
+        } else if (key && waiting.some(function (x) { return marketCaseKey(x.caseNumber) === key; })) {
+          // v85: 2주 밖이라 기다리는 물건의 결과(기일 변경·유찰 등)는 대기 항목에 얹어 둔다 — 올라올 때 최신 상태로 올라오게.
+          applyMarketChunkFields(waiting.find(function (x) { return marketCaseKey(x.caseNumber) === key; }), m);
         } else if (key) {
           // 결과만 있는데 카드가 아직 없다 — 버리지 말고 다음 병합 때 다시 맞춰 본다.
           // 너무 오래 묵은 것(30일)은 대시보드에서 지운 물건일 테니 그때 놓아준다.
@@ -4396,16 +4434,22 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
         }
       });
       state.meta.pendingMarketPatches = deferred;
+      // 대기 목록: 기다린 지 90일이 넘은 것은 놓아준다(기일이 계속 미정이거나 현황판에서 빠진 물건).
+      state.meta.pendingMarketAdds = waiting.filter(function (m) {
+        var since = parseYMD(m.waitingSince || today);
+        return (Date.now() - since.getTime()) < 90 * 86400000;
+      });
       state.meta.processedMarketChunkIds = processed;
       persistLocal();
-      if (added || updated) {
-        var msg = "☁ 경매 물건 ";
-        if (added) msg += added + "건 추가";
-        if (added && updated) msg += " · ";
-        if (updated) msg += updated + "건 갱신";
-        notifySync(msg + "되었습니다.");
+      if (added || updated || waitingNew || dropped) {
+        var parts = [];
+        if (added) parts.push(added + "건 추가");
+        if (updated) parts.push(updated + "건 갱신");
+        if (waitingNew) parts.push(waitingNew + "건은 매각기일 2주 밖이라 대기");
+        if (dropped) parts.push(dropped + "건은 기일이 지나 제외");
+        notifySync("☁ 경매 물건 " + parts.join(" · ") + (added || updated ? "되었습니다." : "."));
         render();
-        driveSaveSnapshot(null, true);
+        if (added || updated) driveSaveSnapshot(null, true);
       }
     }).catch(syncChunkFailure("경매 물건")).then(finish);
   }
@@ -6752,6 +6796,13 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
       '<button class="btn btn-danger-ghost btn-sm" id="resetMarketBtn">물건 전체 삭제</button></div>';
 
     html += '<div class="backup-note">📌 대법원경매정보(courtauction.go.kr)에 자동 연동 API가 없어, 사이트에서 직접 조사한 물건을 여기에 입력해서 정리하는 방식입니다.</div>';
+    // v85: 현황판 자동 등록은 매각기일 2주 안 물건만 올린다. 기다리는 물건이 있으면 몇 건인지만 보여 준다.
+    var waitingAdds = (state.meta.pendingMarketAdds || []);
+    if (waitingAdds.length) {
+      var soon = waitingAdds.slice().sort(function (a, b) { return String(a.saleDate || "9999").localeCompare(String(b.saleDate || "9999")); }).slice(0, 3)
+        .map(function (m) { return esc((m.buildingName || m.caseNumber || "") + (m.saleDate ? " " + String(m.saleDate).slice(5).replace("-", "/") : " 기일미정")); }).join(", ");
+      html += '<div class="backup-note">⏳ 현황판 자동 등록 대기 ' + waitingAdds.length + '건 — 매각기일이 2주 안으로 들어오면 자동으로 올라옵니다. (' + soon + (waitingAdds.length > 3 ? " 외" : "") + ')</div>';
+    }
 
     html += '<div class="mstat-grid">';
     html += mstat("오늘 등록", stats.todayCount, "건");
