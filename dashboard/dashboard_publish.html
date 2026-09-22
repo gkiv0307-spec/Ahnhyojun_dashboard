@@ -3500,6 +3500,7 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
       list.push(m); stats.push++;
     } else if (it.op === "delete") {
       if (!match || !found.length) { stats.skipped++; return; }
+      if (it.list === "marketAuctions") found.forEach(function (x) { rememberMarketDeleted(x.caseNumber); });
       state[it.list] = list.filter(function (x) { return found.indexOf(x) === -1; });
       stats.del += found.length;
     } else stats.skipped++;
@@ -4315,8 +4316,39 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
     if (memo.indexOf("권리분석보내기") !== -1) return false;
     return memo.indexOf("자동 등록") !== -1;
   }
-  // "add"(지금 올림) / "wait"(아직 2주 밖·기일 미정) / "drop"(기일이 지났음)
+  // 국민평형 기준 (2026-09-22 대리님 지시): 전용 84㎡·34~36평형이 투자자 수요의 중심이고 대형평형은 인기가 없다.
+  // 전용면적을 알 수 있을 때만 판정한다 — 현황판 청크의 exclusiveArea(㎡) 또는 메모의 "전용 NN㎡". 모르면 통과.
+  var MARKET_AUTO_MAX_AREA = 95;
+  // 대리님이 지운(또는 대형평형이라 뺀) 현황판 자동 등록 물건은 현황판이 다시 보내도 되살리지 않는다.
+  // state.meta.marketDeletedKeys = { "<사건키>": "YYYY-MM-DD" }. 120일 지나면 잊는다.
+  // 2026-09-22 정리분(대형평형 4건)은 코드에도 적어 둔다 — 삭제 패치보다 현황판 재전송이 먼저 와도 되살아나지 않게.
+  var MARKET_AUTO_EXCLUDED_SEED = { "2025타경7975#1": "포스코더샵 전용 151㎡", "2026타경600574#1": "반석마을2단지 전용 150㎡", "2026타경132#1": "금성백조예미지 전용 101㎡", "2025타경1124#1": "동탄파크자이 전용 99.7㎡" };
+  function rememberMarketDeleted(caseNumber) {
+    var key = caseNumber && marketCaseKey(caseNumber);
+    if (!key) return;
+    if (!state.meta.marketDeletedKeys) state.meta.marketDeletedKeys = {};
+    state.meta.marketDeletedKeys[key] = todayStr();
+  }
+  function isMarketKeyExcluded(key) {
+    if (!key) return false;
+    if (MARKET_AUTO_EXCLUDED_SEED[key]) return true;
+    var d = state.meta.marketDeletedKeys && state.meta.marketDeletedKeys[key];
+    if (!d) return false;
+    if ((Date.now() - parseYMD(d).getTime()) > 120 * 86400000) { delete state.meta.marketDeletedKeys[key]; return false; }
+    return true;
+  }   // 전용 ㎡. 84형(공급 34평)~36평형(전용 약 90)까지 포함, 40평대(전용 100 이상)는 대형으로 본다
+  function marketExclusiveArea(m) {
+    if (!m) return 0;
+    var a = Number(m.exclusiveArea || m.area || 0);
+    if (a > 0) return a;
+    var t = String(m.memo || "") + " " + String(m.address || "");
+    var c = t.match(/전용\s*(\d+(?:\.\d+)?)\s*㎡/) || t.match(/(\d+(?:\.\d+)?)\s*㎡/);
+    return c ? Number(c[1]) : 0;
+  }
+  // "add"(지금 올림) / "wait"(아직 2주 밖·기일 미정) / "drop"(기일이 지났음) / "large"(대형평형)
   function marketAutoAddDecision(m, today) {
+    var ar = marketExclusiveArea(m);
+    if (ar > MARKET_AUTO_MAX_AREA) return "large";
     var sd = String((m && m.saleDate) || "").slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(sd)) return "wait";
     var t = parseYMD(today || todayStr()), d = parseYMD(sd);
@@ -4401,7 +4433,7 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
       // Drive 검색 순서는 날짜순이 아니라서 같은 배치 안에서도 순서를 믿을 수 없다.
       var isFull = function (m) { return !!(m.date || m.buildingName || m.address); };
       var ordered = items.filter(isFull).concat(items.filter(function (m) { return !isFull(m); }));
-      var added = 0, updated = 0, deferred = [], waiting = [], waitingNew = 0, dropped = 0;
+      var added = 0, updated = 0, deferred = [], waiting = [], waitingNew = 0, dropped = 0, large = 0, excluded = 0;
       var today = todayStr();
       ordered.forEach(function (m) {
         var key = m.caseNumber && marketCaseKey(m.caseNumber);
@@ -4409,9 +4441,13 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
         if (existing) {
           applyMarketChunkFields(existing, m);
           updated++;
+        } else if (isFull(m) && isMarketKeyExcluded(key) && isBoardAutoRegistration(m)) {
+          excluded++;   // 대리님이 지운 물건 — 현황판이 다시 보내도 올리지 않는다
         } else if (isFull(m) && isBoardAutoRegistration(m) && marketAutoAddDecision(m, today) !== "add") {
           // 현황판 자동 등록인데 매각기일이 2주 밖(또는 미정)이다 — 지금은 올리지 않고 기다린다.
-          if (marketAutoAddDecision(m, today) === "drop") { dropped++; return; }
+          var dec = marketAutoAddDecision(m, today);
+          if (dec === "drop") { dropped++; return; }
+          if (dec === "large") { large++; return; }   // 대형평형 — 올리지 않고 기다리지도 않는다
           var w = key && waiting.find(function (x) { return marketCaseKey(x.caseNumber) === key; });
           if (w) { applyMarketChunkFields(w, m); }
           else {
@@ -4421,6 +4457,7 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
         } else if (isFull(m)) {
           if (!m.id) m.id = uid();
           delete m.waitingSince;
+          if (key && state.meta.marketDeletedKeys) delete state.meta.marketDeletedKeys[key];   // 권리분석보내기·수동 등록은 대리님 뜻이니 차단을 푼다
           state.marketAuctions.push(m);
           added++;
         } else if (key && waiting.some(function (x) { return marketCaseKey(x.caseNumber) === key; })) {
@@ -4436,17 +4473,20 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
       state.meta.pendingMarketPatches = deferred;
       // 대기 목록: 기다린 지 90일이 넘은 것은 놓아준다(기일이 계속 미정이거나 현황판에서 빠진 물건).
       state.meta.pendingMarketAdds = waiting.filter(function (m) {
+        if (marketExclusiveArea(m) > MARKET_AUTO_MAX_AREA) return false;   // 기다리는 사이 면적이 들어와 대형으로 판명
         var since = parseYMD(m.waitingSince || today);
         return (Date.now() - since.getTime()) < 90 * 86400000;
       });
       state.meta.processedMarketChunkIds = processed;
       persistLocal();
-      if (added || updated || waitingNew || dropped) {
+      if (added || updated || waitingNew || dropped || large || excluded) {
         var parts = [];
         if (added) parts.push(added + "건 추가");
         if (updated) parts.push(updated + "건 갱신");
         if (waitingNew) parts.push(waitingNew + "건은 매각기일 2주 밖이라 대기");
         if (dropped) parts.push(dropped + "건은 기일이 지나 제외");
+        if (large) parts.push(large + "건은 대형평형(전용 " + MARKET_AUTO_MAX_AREA + "㎡ 초과)이라 제외");
+        if (excluded) parts.push(excluded + "건은 지운 물건이라 제외");
         notifySync("☁ 경매 물건 " + parts.join(" · ") + (added || updated ? "되었습니다." : "."));
         render();
         if (added || updated) driveSaveSnapshot(null, true);
@@ -6930,7 +6970,8 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
 "</div>";
         html += '<div class="stage-card-address">' + ([m.region, m.address].filter(Boolean).join(" · ") || '<span class="meta">지역·소재지 미입력</span>') + "</div>";
         html += '<div class="stage-card-price">' + (m.minSalePrice ? won(m.minSalePrice) : '<span class="meta" style="font-weight:400">최저매각가 미입력</span>') +
-          (discount !== null ? " " + pill(discount.toFixed(1) + "%", discount >= 50 ? "danger" : discount >= 30 ? "warn" : "neutral") : "") + "</div>";
+          (discount !== null ? " " + pill(discount.toFixed(1) + "%", discount >= 50 ? "danger" : discount >= 30 ? "warn" : "neutral") : "") +
+          (marketExclusiveArea(m) ? " " + pill("전용 " + marketExclusiveArea(m) + "㎡", marketExclusiveArea(m) > MARKET_AUTO_MAX_AREA ? "warn" : "neutral") : "") + "</div>";
         if (m.memo) html += '<div class="stage-card-memo">' + esc(m.memo) + "</div>";
         // 대리님은 "이 물건이 아직 진행 중인지 끝났는지" 를 카드에서 바로 보고 싶어 한다.
         // 07시 루틴이 법원경매정보를 매일 대조해 courtResult 에 '진행중 · …' 또는 결과를 적고, 언제 확인했는지 남긴다.
@@ -12200,6 +12241,10 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
           }
         }
         customConfirm(confirmMsg, function () {
+          if (entity === "market") {
+            var delMarket = state.marketAuctions.find(function (x) { return x.id === delId; });
+            if (delMarket) rememberMarketDeleted(delMarket.caseNumber);   // 현황판이 다시 보내도 되살아나지 않게
+          }
           if (entity === "student") {
             var deleted = state.students.find(function (x) { return x.id === delId; });
             if (deleted && deleted.studentDbId) {
