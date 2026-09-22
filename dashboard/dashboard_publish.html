@@ -1351,7 +1351,11 @@
   .office-wrap { position: relative; overflow: auto; width: max-content; max-width: 100%; margin: 0 auto; border: 2px solid var(--agink); border-radius: 14px;
     background: radial-gradient(circle at 30% 20%, rgba(255,143,192,.22), transparent 60%), radial-gradient(circle at 80% 80%, rgba(201,184,255,.18), transparent 55%), #23161f;
     box-shadow: 6px 6px 0 rgba(255,95,168,.25); padding: 10px; }
-  .office-stage { position: relative; }
+  /* v83: 직원 스프라이트는 깊이 순서를 위해 z-index 200+y 를 받는다. 무대(stage)가 자기 쌓임 맥락을
+     만들지 않으면 그 값이 문서 전체로 새어 나가 메뉴 서랍(z-index 80)·모달(120) 위로 직원이 걸어 나왔다.
+     isolation:isolate 로 스프라이트 z-index 를 무대 안에 가둔다. */
+  .office-stage { position: relative; isolation: isolate; }
+  .office-wrap { isolation: isolate; }
   .office-floor { position: absolute; inset: 0; border-radius: 6px; background-color: #e9cfdd;
     background-image: radial-gradient(circle at 50% 30%, rgba(255,255,255,.5), transparent 65%),
       linear-gradient(rgba(255,255,255,.30) 1px, transparent 1px),
