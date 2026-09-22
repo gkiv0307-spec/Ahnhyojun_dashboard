@@ -1,7 +1,7 @@
 # 안효준 대리 업무 대시보드 — 프로젝트 안내 (CLAUDE.md)
 
 > 새 대화가 시작될 때 이 파일을 먼저 읽는다. 여기 적힌 것이 대리님 업무의 기본 맥락과 규칙이다.
-> 여기 없는 사실은 지어내지 말고 대리님께 묻는다. 마지막 갱신: 2026-09-11.
+> 여기 없는 사실은 지어내지 말고 대리님께 묻는다. 마지막 갱신: 2026-09-22.
 
 ## 1. 누구를 위한 작업인가
 
@@ -82,6 +82,9 @@
 ## 4. 기술 구조 (대시보드)
 
 - 단일 HTML 아티팩트. 데이터는 브라우저 localStorage(`ahj_realestate_dashboard_v1`) + Google Drive 백업.
+- **라이브 오피스 스프라이트 z-index (v83)**: 직원 `.ag` 는 깊이 순서를 위해 JS 가 `z-index 200+y` 를 준다. `.office-stage`/`.office-wrap` 에 `isolation: isolate` 가 없으면 그 값이 문서 전체로 새어 메뉴 서랍(z 80)·모달(120) 위로 직원이 걸어 나온다(2026-09-22 발견). 사무실 CSS 를 손대도 이 격리는 지킨다.
+- **블로그 GPT 교환 폴더 (2026-09-22)**: Drive 폴더 "블로그 GPT 교환" id `1FiETh0OJuly14r6GQ0tgh5nXp-Lkc_pd`. 08시 루틴 7단계가 발행대기 글을 `<글id>.md` 로 내보내고(`scripts/blog_gpt_export.py`), 대리님이 ChatGPT 로 다듬어 `<글id>_GPT최종.md` 로 저장하면 20시 루틴 5단계가 읽어 `ahj_patch_chunk_<날짜>_blog_gptfinal.json` 으로 body·title 을 갱신한다(`scripts/blog_gpt_import.py`, 스냅샷 body 와 같으면·글ID 불일치면·발행대기가 아니면 건너뜀). 상태는 발행대기 그대로, 네이버 게시와 "발행 완료" 버튼은 사람 몫. 네이버 블로그 글쓰기 API 는 없고 브라우저 자동 로그인은 계정 정지 위험이라 게시 자동화는 하지 않는다.
+- **아티팩트 링크가 안 열리는 이유**: Drive 연결(mcp) 페이지라 비공개다. 대리님 claude.ai 계정으로 로그인된 브라우저에서만 열리고, 카톡·메일 앱 안 미니 브라우저나 다른 계정에서는 로그인 화면·빈 화면이 나온다. 짧은 주소 https://claude.ai/artifact/4WQE1xaYz5PQShTMgGxpta 와 긴 주소는 같은 아티팩트다.
 - Drive 폴더 "안효준 대시보드 백업" id `1ZkIT6DPRGBg8DYu9ezNTEjo6ekUJMvZ4`. 스냅샷은 **`ahj_dashboard_snapshot.json.gz`(gzip, v81 2026-09-16 부터, 정상 150~400KB)** — 최신 파일이 현재 상태. 예전 평문 `ahj_dashboard_snapshot.json`(약 900KB~1MB)도 같이 검색해 modifiedTime 최신 것을 쓴다. **검색은 정확한 제목(`title = …`)으로만** — 폴더에 `ahj_dashboard_snapshot_이전전보관_2026-09-11.json` 처럼 이름을 바꿔 둔 옛 파일이 있어서 `title contains` 로 찾으면 이름 바꾼 시각(2026-09-17 22:10Z)이 최신으로 잡혀 9/11 자료를 쓰게 된다(2026-09-18 발견, 루틴 프롬프트 3개 수정).
 - **1MB 한계 사고 (2026-09-11~16)**: 스냅샷이 9/11 에 이미 1,017KB 였고 그 뒤 블로그 backfill 49건·업무일지·법원 확인 기록이 붙어 1MB 를 넘자 아티팩트→Drive `create_file` 호출이 전부 실패했다(9/11 이후 스냅샷 0건, 폰·PC 모두). 아티팩트의 커넥터 호출은 1MB 근처가 상한이다. v81 부터 `CompressionStream` 으로 gzip 압축해 `base64Content` 로 올린다(1,017KB → 198KB). 받을 때는 파일 이름과 상관없이 첫 두 바이트 `1f 8b` 로 gzip 을 판단해 `DecompressionStream` 으로 푼다. 압축을 지원하지 않는 브라우저는 예전처럼 평문으로 올린다. **루틴 스크립트(`scripts/*.py`)의 `load_snapshot()` 도 같은 규칙**이라 압축본을 그대로 넘겨도 된다. 루틴 프롬프트(07시·20시·08시)도 `.json.gz` 우선으로 고쳤다. 백업 화면 "마지막 저장 크기" 로 확인한다.
 - **휴대폰(Safari)에서는 스냅샷 저장이 응답 없이 멈추는 일이 있다**(2026-09-16 확인 — 07:14 부터 "동기화 중…" 에 11분 넘게 걸림). 예전 코드는 그 호출이 끝나기를 영영 기다리며 `driveSyncBusy` 를 잡고 있어 이후 저장이 전부 조용히 버려졌다. v75 부터 저장에 90초 제한을 두고, 넘기면 오류로 돌려 30초 뒤 다시 시도하며, 백업 화면에 "마지막 저장 오류" 로 사유를 보여 준다. 그래도 휴대폰에서 1MB 저장이 계속 실패하면 **PC 크롬으로 한 번 열어 저장**하는 것이 확실하다. `마지막 클라우드 동기화` 시각은 **내려받기(pull)에도 갱신되므로** 저장 성공의 증거가 아니다 — Drive 폴더에 새 `ahj_dashboard_snapshot.json` 이 생겼는지로 판단한다.
@@ -96,7 +99,7 @@
 | `ahj_student_tuition_patch_chunk_` | `[{studentId, tuition}]` tuition 0일 때만 |
 | `ahj_revenue_reconfirm_chunk_` | `[{kind:"student", studentId, txSig}]` 결제완료 + 입금일·카드 표시 |
 | `ahj_course_start_patch_chunk_` | `[{studentId, courseStartDate}]` 덮어씀 |
-| `ahj_market_chunk_` | 데일리 경매분석 upsert. **사건번호+물건번호로 맞춘다**(`marketCaseKey`) — 현황판은 `2026타경33 물건1` 처럼 꼬리를 붙여 보내고 손으로 만든 카드에는 꼬리가 없어서, 글자로만 맞추던 예전에는 같은 사건이 카드 두 장으로 갈라졌다(7건). 꼬리가 없으면 물건1로 본다. 얹을 때 `applyMarketChunkFields` 규칙: 메모는 덮어쓰지 않고 합치고, 0·빈 값으로 기존 값을 지우지 않으며(현황판은 낙찰가를 0으로 보낸다), 확정 상태(매각종료·낙찰·패찰·취하)를 중간 상태로 되돌리지 않고, `analysisWritten` 은 켜기만 한다. `caseNumber`·`id` 는 기존 표기를 지킨다 |
+| `ahj_market_chunk_` | 데일리 경매분석 upsert. **사건번호+물건번호로 맞춘다**(`marketCaseKey`) — 현황판은 `2026타경33 물건1` 처럼 꼬리를 붙여 보내고 손으로 만든 카드에는 꼬리가 없어서, 글자로만 맞추던 예전에는 같은 사건이 카드 두 장으로 갈라졌다(7건). 꼬리가 없으면 물건1로 본다. 얹을 때 `applyMarketChunkFields` 규칙: 메모는 덮어쓰지 않고 합치고, 0·빈 값으로 기존 값을 지우지 않으며(현황판은 낙찰가를 0으로 보낸다), **상태는 덜 진행된 값으로 되돌리지 않는다**(v84 `MARKET_STATUS_RANK`: 조사중 < 입찰예정·변경·유찰 < 매각 < 매각종료·취하 < 낙찰·패찰. 2026-09-21 현황판이 8824·8801·1098·3134 를 `물건1` 꼬리로 다시 보내면서 status 조사중으로 변경·입찰예정을 되돌린 사고 뒤 추가. 낙찰·패찰은 대리님이 정하는 값이라 청크가 못 덮는다), `failCount` 는 늘어날 때만 받고, `analysisWritten` 은 켜기만 한다. `caseNumber`·`id` 는 기존 표기를 지킨다 |
 | `ahj_kpi_log_chunk_` | `[{key:"analysis", date, count}]` 권리분석 건수 |
 | `ahj_patch_chunk_` | **범용 패치** `[{op:"set"|"push"|"delete", list, match, fields, upsert?, allowBulk?}]` — 허용 목록의 아무 항목이나 수정·추가·삭제. 새 종류의 데이터 변경은 이걸 먼저 쓴다(재발행 불필요). 118명 이관 학생은 allowBulk 없이는 건드리지 않음 |
 | `ahj_ceo_order_` | **대표 지시** — 대시보드가 올림 `{id,at,text}` (파일 1건 = 지시 1건). 아침 루틴이 읽어서 처리하고 `ahj_patch_chunk_..._ceo.json` 으로 `{op:"set", list:"ceoOrders", match:{id}, fields:{status,reply,repliedAt}}` 답변을 남긴다 |
