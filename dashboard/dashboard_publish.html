@@ -4295,6 +4295,12 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
 
   // 결과가 확정된 상태. 이걸 중간 상태(매각·유찰·조사중)로 되돌리면 안 된다.
   var MARKET_STATUS_FINAL = { "매각종료": true, "낙찰": true, "패찰": true, "취하": true };
+  // v84: 상태의 "진행 정도". 현황판이 같은 사건을 '물건1' 꼬리로 다시 보내면서 status 를 조사중으로 보내
+  // 대시보드의 변경·입찰예정을 되돌린 사고(2026-09-21, 8824·8801·1098·3134)를 막는다.
+  // 들어온 상태가 기존보다 덜 진행된 것이면 무시한다. 같은 단계끼리(변경↔입찰예정↔유찰)는 바꿔도 된다 —
+  // 법원 대조 결과가 그 사이를 오가기 때문이다. 확정 상태(FINAL)는 그 위 단계다.
+  var MARKET_STATUS_RANK = { "조사중": 0, "입찰예정": 1, "변경": 1, "유찰": 1, "매각": 2, "매각종료": 3, "낙찰": 3, "패찰": 3, "취하": 3 };
+  function marketStatusRank(st) { return MARKET_STATUS_RANK[st] === undefined ? 0 : MARKET_STATUS_RANK[st]; }
 
   function mergeMarketMemo(oldMemo, newMemo) {
     var a = String(oldMemo || "").trim(), b = String(newMemo || "").trim();
@@ -4313,8 +4319,16 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
       var v = incoming[k];
       if (k === "memo") { existing.memo = mergeMarketMemo(existing.memo, v); return; }
       if (k === "status") {
+        if (!v) return;
         if (MARKET_STATUS_FINAL[existing.status] && !MARKET_STATUS_FINAL[v]) return;
-        if (v) existing.status = v;
+        if (marketStatusRank(v) < marketStatusRank(existing.status)) return;   // 덜 진행된 상태로 되돌리지 않는다
+        existing.status = v;
+        return;
+      }
+      // 유찰 횟수는 줄어들지 않는다 — 재등록 카드가 낮은 값을 들고 와도 기존 값을 지킨다
+      if (k === "failCount") {
+        var fc = Number(v) || 0;
+        if (fc > (Number(existing.failCount) || 0)) existing.failCount = fc;
         return;
       }
       if (k === "analysisWritten") { if (v) existing.analysisWritten = true; return; }
