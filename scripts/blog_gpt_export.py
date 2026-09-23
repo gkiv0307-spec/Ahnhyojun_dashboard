@@ -29,14 +29,26 @@ HEADER = """# {title}
 - 작성일: {date}
 - 상태: {status}
 - 출처 메모: {memo}
+- 브랜드(사용 승인): 옆커폰부동산에듀
+- 연락처(사용 승인): 053-281-0759
+- 이미지 폴더: 블로그 이미지/{id}/
+- 이미지 파일명(고정): 01_thumbnail.png · 02_body.png · 03_body.png · 04_body.png · 05_closing.png(핵심 정리 뒤) · 06_cta.png(글 끝)
+- 소제목(after_heading 에 그대로 쓸 것): {headings}
 
-> GPT 작업 규칙: 다듬은 완성본을 같은 폴더에 `{id}_GPT최종.md` 로 저장하세요.
-> 완성본은 첫 줄 `# 제목`(45자 이내), 둘째 줄부터 본문. 본문 첫 줄은 `메타디스크립션: ` 으로 시작(160자 이내),
-> 질문형 소제목 2개 이상, 마지막에 `## 핵심 정리`·`## 자주 묻는 질문`·해시태그 5개 이상. 공백 포함 1,500~2,500자.
-> 출처 메모에 없는 새 숫자·통계는 넣지 마세요. "무조건/확실한 수익" 같은 단정 표현 금지.
+> 이미지 제작 규칙(GPT): 위 폴더에 6장을 순서대로 올리고, 6장이 다 올라간 뒤 image_map.json 을 마지막에 올리세요.
+> image_map.json 은 {{"thumbnail":"01_thumbnail.png","images":[{{"file":"02_body.png","after_heading":"<소제목>"}},…,{{"file":"05_closing.png","after_heading":"핵심 정리"}},{{"file":"06_cta.png","position":"end"}}]}} 형식.
+> 브랜드명·연락처는 05_closing.png·06_cta.png 에만 넣고, 여기 적히지 않은 값(다른 전화번호·주소·통계)은 넣지 마세요.
+> 원고 다듬기(선택): 완성본은 같은 폴더에 `{id}_GPT최종.md` 로 저장. 첫 줄 `# 제목`(45자 이내), 본문 첫 줄 `메타디스크립션: `(160자 이내),
+> 질문형 소제목 2개 이상, 마지막에 `## 핵심 정리`·`## 자주 묻는 질문`·해시태그 5개 이상, 공백 포함 1,500~2,500자.
+> 출처 메모에 없는 새 숫자·통계 금지. "무조건/확실한 수익" 같은 단정 표현 금지.
 
 ---
 """
+
+def headings_of(body):
+    hs = [l[3:].strip() for l in (body or "").replace("\r\n", "\n").split("\n") if l.startswith("## ")]
+    hs = [h for h in hs if h.replace(" ", "") not in ("핵심정리", "자주묻는질문", "FAQ")]
+    return " / ".join(hs) if hs else "(소제목 없음 — 02~05 는 position:\"end\" 로)"
 
 def main():
     ap = argparse.ArgumentParser()
@@ -55,7 +67,8 @@ def main():
             continue
         text = HEADER.format(title=p.get("title",""), id=pid, topic=p.get("topic",""),
                              date=p.get("date",""), status=p.get("status",""),
-                             memo=(p.get("memo") or "").replace("\n"," ")) + (p.get("body") or "").rstrip() + "\n"
+                             memo=(p.get("memo") or "").replace("\n"," "),
+                             headings=headings_of(p.get("body"))) + (p.get("body") or "").rstrip() + "\n"
         fn = os.path.join(a.outdir, f"{pid}.md")
         open(fn, "w", encoding="utf-8").write(text)
         made.append((pid, p.get("title",""), len(text)))
