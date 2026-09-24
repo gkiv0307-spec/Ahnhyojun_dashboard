@@ -328,6 +328,24 @@
     margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border);
   }
   .blog-post-owner { font-size: 11.5px; color: var(--ink-faint); margin-top: 8px; }
+  /* v86 발행 콘텐츠 성과 카드 */
+  .blog-perf-card { margin-bottom: 16px; }
+  .blog-perf-note { font-size: 11.5px; color: var(--ink-faint); line-height: 1.55; margin: -4px 0 12px; }
+  .blog-perf-months { margin-bottom: 12px; }
+  .blog-perf-months .stage-row .name { width: 64px; font-variant-numeric: tabular-nums; }
+  .blog-perf-months .stage-row .n { width: 40px; }
+  .blog-perf-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .blog-perf-actions .meta { font-size: 11.5px; color: var(--ink-soft); }
+  .blog-perf-table td.blog-perf-title { max-width: 360px; white-space: normal; line-height: 1.4; }
+  .blog-perf-table td.blog-perf-title a { color: var(--brand); text-decoration: none; font-weight: 700; }
+  .blog-perf-table td.blog-perf-title a:hover { text-decoration: underline; }
+  .blog-kw-input { width: 100%; min-width: 180px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; font-size: 12.5px; color: var(--ink); }
+  .blog-kw-input.is-auto { color: var(--ink-soft); }
+  .blog-kw-input:focus { border-color: var(--brand); outline: none; color: var(--ink); }
+  .blog-rank { font-size: 14px; font-variant-numeric: tabular-nums; }
+  .blog-rank.top { color: var(--good); }
+  .blog-rank-none { color: var(--ink-faint); font-size: 12px; }
+  @media (max-width: 760px) { .blog-perf-table td.blog-perf-title { max-width: 220px; } .blog-kw-input { min-width: 140px; } }
   .blog-publish-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; padding: 10px 12px; background: var(--good-bg); border: 1px solid var(--good); border-radius: 9px; }
   .blog-publish-row .meta { font-size: 11.5px; color: var(--ink-soft); }
   .blog-publish-row input { flex: 1; min-width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; }
@@ -10458,6 +10476,250 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
     });
   }
 
+  /* v86 (2026-09-24 대리님 지시): 블로그 탭 맨 위에 "📈 발행 콘텐츠 성과" 카드.
+     ① 월별 게시 건수 막대(발행완료, 게시일 기준) ② 글별 표 — 제목·발행일·메인 키워드·현재 순위·전일 순위·상태.
+     순위는 네이버 블로그 검색 공개 API(PlayMCP 커넥터 NaverSearch-search_blog, 유사도순 100건)에서
+     우리 글 주소(logNo)가 몇 번째에 나오는지다. 100위 안에 없으면 "100위 밖". 조회수·유입수는 수집 수단이 없다.
+     확인은 대시보드가 직접 한다(세션 토큰을 안 쓰려고): 블로그 탭을 연 날 처음 한 번 자동으로, 그 뒤엔 버튼으로.
+     메인 키워드는 기본값을 제목에서 뽑고(blogAutoKeyword) 표에서 바로 고칠 수 있다(p.mainKeyword).
+     글에 남는 필드: mainKeyword · rank(null=100위 밖) · rankPrev · rankCheckedAt · rankPrevAt · rankHistory[{date,rank}]. */
+  var NAVER_SERVER = "PlayMCP";
+  var NAVER_SEARCH_TOOL = "NaverSearch-search_blog";
+  var BLOG_RANK_DISPLAY = 100;
+  var BLOG_RANK_WINDOW_DAYS = 60;   // 자동 확인 대상: 최근 60일 안에 게시된 글
+  var BLOG_RANK_MAX_AUTO = 40;      // 하루 자동 확인 상한(네이버 API 호출 수)
+  var BLOG_RANK_GAP_MS = 350;
+  var BLOG_PERF_RECENT_DAYS = 14;   // 표 기본 표시 범위
+  var blogRankRunning = false;
+  var blogRankAutoDate = "";        // 오늘 자동 확인을 이미 시도했는지
+  var blogRankLastError = "";
+  var blogPerfShowAll = false;
+
+  function blogPublishedDate(p) {
+    return String(p.publishedAt || p.date || (p.createdAt || "").slice(0, 10) || "").slice(0, 10);
+  }
+  // 제목에서 검색어 후보를 뽑는다. 사건번호·숫자·기호를 떼고 앞쪽 낱말 4개(권리분석 글은 "경매"까지).
+  function blogAutoKeyword(p) {
+    var t = String(p.title || "");
+    t = t.replace(/20\d\d타경\d+/g, " ").replace(/[\[\]()|,:·…?!'"“”‘’~\-–—]/g, " ");
+    var stop = { "왜": 1, "반드시": 1, "정말": 1, "그런데": 1, "지금": 1, "이제": 1, "무엇": 1, "어떻게": 1, "하나": 1, "대비": 1, "그리고": 1, "그래서": 1, "이유": 1, "이유는": 1, "때": 1, "vs": 1 };
+    var words = t.split(/\s+/).filter(function (w) {
+      return w && w.length >= 2 && !/\d/.test(w) && !stop[w];
+    });
+    var out = [];
+    for (var i = 0; i < words.length && out.length < 5; i++) {
+      out.push(words[i]);
+      if (words[i] === "경매" && out.length >= 3) break;
+    }
+    return out.join(" ");
+  }
+  function blogMainKeyword(p) {
+    var k = String(p.mainKeyword || "").trim();
+    return k || blogAutoKeyword(p);
+  }
+  function naverLogNo(url) {
+    var s = String(url || "");
+    var m = /logNo=(\d{9,})/.exec(s) || /blog\.naver\.com\/[^\/?#]+\/(\d{9,})/.exec(s);
+    return m ? m[1] : "";
+  }
+  function blogRankParsePayload(payload) {
+    // PlayMCP 는 JSON 문자열을 돌려주기도 하고, 런타임이 객체로 풀어 주기도 한다. 둘 다 받는다.
+    var p = payload;
+    if (p && p.content && Array.isArray(p.content) && !p.items) {
+      var txt = p.content.map(function (c) { return c && c.text ? c.text : ""; }).join("");
+      p = txt;
+    }
+    if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) { p = null; } }
+    return p && Array.isArray(p.items) ? p.items : [];
+  }
+  function blogRankCheckOne(p) {
+    var kw = blogMainKeyword(p);
+    var log = naverLogNo(p.url);
+    if (!kw || !log) return Promise.resolve(undefined);
+    return window.claude.mcp.callTool(NAVER_SERVER, NAVER_SEARCH_TOOL, { query: kw, display: BLOG_RANK_DISPLAY, sort: "sim" }).then(function (result) {
+      var items = blogRankParsePayload(result && result.payload);
+      for (var i = 0; i < items.length; i++) {
+        if (naverLogNo(items[i] && items[i].link) === log) return i + 1;
+      }
+      return null;
+    });
+  }
+  function blogRankApply(p, rank, today) {
+    // 날짜가 바뀐 첫 확인에서만 "전일 순위"를 밀어 둔다(같은 날 다시 눌러도 전일 값이 안 움직이게).
+    if (p.rankCheckedAt && p.rankCheckedAt !== today) {
+      p.rankPrev = (p.rank == null ? null : p.rank);
+      p.rankPrevAt = p.rankCheckedAt;
+    }
+    p.rank = (rank == null ? null : rank);
+    p.rankCheckedAt = today;
+    p.rankKeyword = blogMainKeyword(p);
+    var hist = (p.rankHistory || []).filter(function (h) { return h && h.date !== today; });
+    hist.push({ date: today, rank: p.rank });
+    if (hist.length > 60) hist = hist.slice(-60);
+    p.rankHistory = hist;
+  }
+  function blogRankTargets() {
+    var today = todayStr();
+    return state.blogPosts.filter(function (p) {
+      if (p.status !== "발행완료" || !naverLogNo(p.url)) return false;
+      var d = blogPublishedDate(p);
+      return d && daysBetween(d, today) <= BLOG_RANK_WINDOW_DAYS;
+    }).sort(function (a, b) { return blogPublishedDate(b).localeCompare(blogPublishedDate(a)); }).slice(0, BLOG_RANK_MAX_AUTO);
+  }
+  function blogRankSetProgress(text) {
+    var el = document.getElementById("blogRankProgress");
+    if (el) el.textContent = text || "";
+  }
+  function runBlogRankCheck(mode) {
+    // mode: "auto"(오늘 아직 안 본 글만, 조용히) · "today"(버튼, 오늘 안 본 글만) · "all"(전부 다시)
+    if (blogRankRunning) { if (mode !== "auto") toast("이미 순위를 확인하는 중이에요."); return; }
+    if (!window.claude || !window.claude.mcp) {
+      if (mode !== "auto") toast("이 화면에서는 네이버 검색 연결을 쓸 수 없어요. claude.ai 에서 연 대시보드에서 눌러 주세요.");
+      return;
+    }
+    var today = todayStr();
+    var targets = blogRankTargets();
+    if (mode !== "all") targets = targets.filter(function (p) { return p.rankCheckedAt !== today; });
+    if (!targets.length) { if (mode !== "auto") toast("오늘 확인할 글이 없어요(최근 " + BLOG_RANK_WINDOW_DAYS + "일 게시 글은 모두 확인됨)."); return; }
+    blogRankRunning = true;
+    blogRankLastError = "";
+    var i = 0, ok = 0, fail = 0;
+    blogRankSetProgress("순위 확인 중 0/" + targets.length);
+    function finish() {
+      blogRankRunning = false;
+      state.meta.blogRankLastRun = new Date().toISOString();
+      state.meta.blogRankLastNote = "확인 " + ok + "건" + (fail ? " · 실패 " + fail + "건(" + blogRankLastError + ")" : "");
+      saveState();
+      if (currentView === "blog") render();
+      if (mode !== "auto" || ok) toast("네이버 순위 확인 " + ok + "건 완료" + (fail ? ", 실패 " + fail + "건" : ""));
+    }
+    function next() {
+      if (i >= targets.length) { finish(); return; }
+      var p = targets[i++];
+      blogRankCheckOne(p).then(function (rank) {
+        if (rank !== undefined) { blogRankApply(p, rank, today); ok++; }
+      }).catch(function (err) {
+        fail++;
+        blogRankLastError = String((err && (err.message || err.code)) || err).slice(0, 80);
+      }).then(function () {
+        blogRankSetProgress("순위 확인 중 " + i + "/" + targets.length);
+        if (i % 5 === 0) persistLocal();
+        return driveWait(BLOG_RANK_GAP_MS).then(next);
+      });
+    }
+    next();
+  }
+  function blogRankStatusPill(p) {
+    var dash = '<span class="blog-rank-none">-</span>';
+    if (!p.rankCheckedAt) return dash;
+    var cur = p.rank, prev = p.rankPrev, hasPrev = !!p.rankPrevAt;
+    if (!hasPrev) return dash;
+    if (cur == null && prev == null) return dash;
+    if (cur != null && prev == null) return pill("진입", "good");
+    if (cur == null && prev != null) return pill("이탈", "danger");
+    if (cur < prev) return pill("상승", "good");
+    if (cur > prev) return pill("하락", "danger");
+    return pill("유지", "neutral");
+  }
+  function blogRankText(rank, checked, noUrl) {
+    if (noUrl) return '<span class="blog-rank-none" title="게시 주소가 없어 순위를 잴 수 없어요. 카드에서 주소를 저장하면 다음 확인 때 잡힙니다">주소 없음</span>';
+    if (!checked) return '<span class="blog-rank-none">미확인</span>';
+    if (rank == null) return '<span class="blog-rank-none">' + BLOG_RANK_DISPLAY + '위 밖</span>';
+    return '<b class="blog-rank' + (rank <= 10 ? " top" : "") + '">' + rank + "위</b>";
+  }
+  function renderBlogPerfCard() {
+    var today = todayStr();
+    var published = state.blogPosts.filter(function (p) { return p.status === "발행완료"; });
+    // 월별 막대: 이번 달 포함 최근 4개월
+    var months = [];
+    var d0 = parseYMD(today);
+    for (var k = 3; k >= 0; k--) {
+      var d = new Date(d0.getFullYear(), d0.getMonth() - k, 1);
+      months.push(d.getFullYear() + "-" + pad2(d.getMonth() + 1));
+    }
+    var byMonth = {};
+    published.forEach(function (p) { var m = blogPublishedDate(p).slice(0, 7); if (m) byMonth[m] = (byMonth[m] || 0) + 1; });
+    var maxN = Math.max(1, months.reduce(function (m, ym) { return Math.max(m, byMonth[ym] || 0); }, 0));
+    var rows = published.slice().sort(function (a, b) { return blogPublishedDate(b).localeCompare(blogPublishedDate(a)); });
+    var recent = rows.filter(function (p) { var d = blogPublishedDate(p); return d && daysBetween(d, today) <= BLOG_PERF_RECENT_DAYS; });
+    var shown = blogPerfShowAll ? rows : (recent.length >= 5 ? recent : rows.slice(0, 8));
+    var checkedCount = published.filter(function (p) { return p.rankCheckedAt; }).length;
+    var lastRun = state.meta.blogRankLastRun ? new Date(state.meta.blogRankLastRun) : null;
+
+    var html = '<div class="card blog-perf-card"><h3>📈 발행 콘텐츠 성과 <span class="count">발행완료 ' + published.length + "건 · 순위 확인 " + checkedCount + "건</span></h3>";
+    html += '<div class="blog-perf-note">순위는 네이버 블로그 검색(공개 API·유사도순) ' + BLOG_RANK_DISPLAY + '위 안 기준 · 조회수·유입수는 수집 수단 없음 · 블로그 탭을 연 날 처음 한 번 자동 확인(최근 ' + BLOG_RANK_WINDOW_DAYS + '일 글)' +
+      (lastRun ? " · 마지막 확인 " + lastRun.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (state.meta.blogRankLastNote ? " (" + esc(state.meta.blogRankLastNote) + ")" : "") : "") + "</div>";
+    html += '<div class="blog-perf-months">';
+    months.forEach(function (ym) {
+      var n = byMonth[ym] || 0;
+      html += '<div class="stage-row"><span class="name">' + ym + '</span><div class="bar-track"><div class="bar-fill" style="width:' + Math.round(n / maxN * 100) + '%"></div></div><span class="n">' + n + "건</span></div>";
+    });
+    html += "</div>";
+    html += '<div class="blog-perf-actions"><button type="button" class="btn btn-ghost btn-sm" id="blogRankTodayBtn"' + (blogRankRunning ? " disabled" : "") + '>🔄 순위 확인 (오늘 미확인 글)</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="blogRankAllBtn"' + (blogRankRunning ? " disabled" : "") + '>전체 다시 확인</button>' +
+      '<span class="meta" id="blogRankProgress">' + (blogRankRunning ? "순위 확인 중…" : "") + "</span></div>";
+    if (!rows.length) {
+      html += '<div class="empty-state">발행완료 글이 아직 없습니다.</div>';
+    } else {
+      html += '<div class="table-wrap"><table class="data-table blog-perf-table"><thead><tr><th>제목</th><th>발행일</th><th>메인 키워드</th><th>현재 순위</th><th>전일 순위</th><th>상태</th></tr></thead><tbody>';
+      shown.forEach(function (p) {
+        var kw = blogMainKeyword(p);
+        var isAuto = !String(p.mainKeyword || "").trim();
+        var d = blogPublishedDate(p);
+        html += "<tr>";
+        html += '<td class="blog-perf-title">' + (p.url ? '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.title) + "</a>" : esc(p.title)) + "</td>";
+        html += '<td>' + (d ? (d.slice(5, 7) + "-" + d.slice(8, 10)) : "-") + "</td>";
+        html += '<td><input type="text" class="blog-kw-input' + (isAuto ? " is-auto" : "") + '" data-blog-kw="' + p.id + '" value="' + esc(kw) + '" title="' + (isAuto ? "제목에서 자동으로 뽑은 검색어 — 고치면 그 검색어로 순위를 잽니다" : "직접 지정한 검색어") + '"></td>';
+        html += '<td>' + blogRankText(p.rank, !!p.rankCheckedAt, !naverLogNo(p.url)) + "</td>";
+        html += '<td>' + (p.rankPrevAt ? blogRankText(p.rankPrev, true) : '<span class="blog-rank-none">-</span>') + "</td>";
+        html += "<td>" + blogRankStatusPill(p) + "</td>";
+        html += "</tr>";
+      });
+      html += "</tbody></table></div>";
+      if (rows.length > shown.length || blogPerfShowAll) {
+        html += '<div style="margin-top:8px"><button type="button" class="btn btn-ghost btn-sm" id="blogPerfToggleAll">' + (blogPerfShowAll ? "최근 " + BLOG_PERF_RECENT_DAYS + "일만 보기" : "전체 " + rows.length + "건 보기") + "</button></div>";
+      }
+    }
+    html += "</div>";
+    return html;
+  }
+  function bindBlogPerfCard() {
+    var tBtn = document.getElementById("blogRankTodayBtn");
+    if (tBtn) tBtn.addEventListener("click", function () { runBlogRankCheck("today"); });
+    var aBtn = document.getElementById("blogRankAllBtn");
+    if (aBtn) aBtn.addEventListener("click", function () {
+      if (!confirm("최근 " + BLOG_RANK_WINDOW_DAYS + "일 게시 글(최대 " + BLOG_RANK_MAX_AUTO + "건)의 순위를 전부 다시 확인할까요? 네이버 검색을 글 수만큼 부릅니다.")) return;
+      runBlogRankCheck("all");
+    });
+    var tog = document.getElementById("blogPerfToggleAll");
+    if (tog) tog.addEventListener("click", function () { blogPerfShowAll = !blogPerfShowAll; render(); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-blog-kw]"), function (inp) {
+      var commit = function () {
+        var id = inp.getAttribute("data-blog-kw");
+        var p = state.blogPosts.find(function (x) { return x.id === id; });
+        if (!p) return;
+        var v = inp.value.trim();
+        var before = blogMainKeyword(p);
+        if (v === before) return;
+        p.mainKeyword = v;
+        // 검색어가 바뀌면 지금 순위는 다른 잣대라 지운다. 다음 확인 때 새 검색어로 잰다.
+        p.rank = null; p.rankPrev = null; p.rankPrevAt = ""; p.rankCheckedAt = ""; p.rankKeyword = "";
+        saveState();
+        toast("메인 키워드를 바꿨어요. '순위 확인'을 누르면 새 검색어로 다시 잽니다.");
+        render();
+      };
+      inp.addEventListener("change", commit);
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); inp.blur(); } });
+    });
+    // 오늘 처음 블로그 탭을 열었으면 조용히 한 번 확인한다.
+    var today = todayStr();
+    if (blogRankAutoDate !== today && !blogRankRunning && window.claude && window.claude.mcp) {
+      var last = String(state.meta.blogRankLastRun || "").slice(0, 10);
+      blogRankAutoDate = today;
+      if (last !== today) setTimeout(function () { runBlogRankCheck("auto"); }, 1500);
+    }
+  }
+
   function renderBlog() {
     var html = "";
     html += '<div class="page-head"><div><h1>블로그 업무</h1><div class="sub">부동산경매 · 부동산뉴스 관련 블로그 글 발행 현황을 하루 ' + BLOG_DAILY_GOAL + '회 목표로 관리합니다. 파이프라인 실행 현황·발행 KPI는 효제이 AI직원팀 화면에서 볼 수 있습니다.</div></div></div>';
@@ -10466,6 +10728,8 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
     html += '<button type="button" class="btn btn-ghost" id="blogAddToggleBtn">' + (blogAddFormOpen ? "− 새 글 작성 닫기" : "+ 새 블로그 아이디어/글 추가") + "</button>";
     html += '<button type="button" class="btn btn-ghost" id="blogTrashToggleBtn">' + (blogTrashOpen ? "− 휴지통 닫기" : "🗑 휴지통 (" + state.blogPostsTrash.length + ")") + "</button>";
     html += "</div>";
+
+    html += renderBlogPerfCard();
 
     if (blogTrashOpen) {
       html += '<div class="card section-gap"><h3>🗑 휴지통<span class="count">' + state.blogPostsTrash.length + "건</span></h3>";
@@ -10736,6 +11000,7 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
       });
     }
 
+    bindBlogPerfCard();
     bindTableCommon("blog");
   }
 
@@ -12432,5 +12697,4 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
   render();
   initCloudSync();
 })();
-
 </script>

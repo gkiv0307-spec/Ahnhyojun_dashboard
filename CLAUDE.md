@@ -1,7 +1,7 @@
 # 안효준 대리 업무 대시보드 — 프로젝트 안내 (CLAUDE.md)
 
 > 새 대화가 시작될 때 이 파일을 먼저 읽는다. 여기 적힌 것이 대리님 업무의 기본 맥락과 규칙이다.
-> 여기 없는 사실은 지어내지 말고 대리님께 묻는다. 마지막 갱신: 2026-09-22 (v85).
+> 여기 없는 사실은 지어내지 말고 대리님께 묻는다. 마지막 갱신: 2026-09-24 (v86).
 
 ## 1. 누구를 위한 작업인가
 
@@ -83,6 +83,7 @@
 
 - 단일 HTML 아티팩트. 데이터는 브라우저 localStorage(`ahj_realestate_dashboard_v1`) + Google Drive 백업.
 - **라이브 오피스 스프라이트 z-index (v83)**: 직원 `.ag` 는 깊이 순서를 위해 JS 가 `z-index 200+y` 를 준다. `.office-stage`/`.office-wrap` 에 `isolation: isolate` 가 없으면 그 값이 문서 전체로 새어 메뉴 서랍(z 80)·모달(120) 위로 직원이 걸어 나온다(2026-09-22 발견). 사무실 CSS 를 손대도 이 격리는 지킨다.
+- **발행 콘텐츠 성과 카드 (v86, 2026-09-24 대리님 지시)**: 블로그 탭 맨 위 "📈 발행 콘텐츠 성과". 월별 게시 건수(발행완료·게시일 기준, 최근 4개월 막대)와 글별 표(제목·발행일·메인 키워드·현재 순위·전일 순위·상태). 순위 = 네이버 블로그 검색 공개 API(**PlayMCP 커넥터 `NaverSearch-search_blog`**, 유사도순 100건)에서 우리 글 주소(logNo)가 몇 번째인지. 100위 안에 없으면 "100위 밖", 주소 없는 발행완료 글은 "주소 없음". 조회수·유입수는 수집 수단 없음. **대시보드가 직접 확인한다**(세션 토큰 절약): 블로그 탭을 연 날 처음 한 번 자동(최근 60일 게시 글, 최대 40건, 350ms 간격), 그 뒤엔 "🔄 순위 확인" 버튼. 전일 순위는 날짜가 바뀐 첫 확인 때만 밀린다. 메인 키워드는 제목에서 자동 추출(`blogAutoKeyword`, 사건번호·숫자 낱말 제거, "경매" 까지 최대 5낱말)하고 표에서 바로 고치면 `mainKeyword` 로 저장되며 그 글의 순위 기록은 지워진다. 글 필드: `mainKeyword`·`rank`·`rankPrev`·`rankPrevAt`·`rankCheckedAt`·`rankKeyword`·`rankHistory`, `state.meta.blogRankLastRun`. 아티팩트 커넥터 선언에 **PlayMCP 가 추가**됐으므로 재발행 때 capabilities 를 넘기면 `{downloads:true, mcp:{servers:[Google Drive(search_files·create_file·download_file_content), PlayMCP(NaverSearch-search_blog)]}}` 전체를 다시 적어야 한다(생략하면 저장된 선언 유지). 첫 실행 때 대리님이 PlayMCP 사용을 허용해야 순위가 나온다.
 - **블로그 자동화 담당 분리 (2026-09-23 대리님 지시)**: 네이버 임시저장 스크립트(`scripts/naver_autopost/`, Drive 폴더 "네이버 자동발행 스크립트"), Drive 폴더 "블로그 이미지"(GPT 이미지·image_map.json 규칙), 관련 루틴·문서(`STATUS-dashboard.md` 포함)는 **blog-auto 세션이 맡는다.** 이 세션(대시보드 세션)은 여기에 손대지 않는다 — 파일·스크립트·루틴을 만들거나 고치지 않고, 질문이 오면 blog-auto 세션으로 안내한다. 이 세션이 계속 하는 것: 08시 원고 생성(블로그 파이프라인 + GPT 교환 폴더 내보내기), 07시·12시·20시 발행 확인·권리분석 체크, 그 외 대시보드·경매·은행·업무일지 업무 전부.
 - **블로그 GPT 교환 폴더 (2026-09-22)**: Drive 폴더 "블로그 GPT 교환" id `1FiETh0OJuly14r6GQ0tgh5nXp-Lkc_pd`. 08시 루틴 7단계가 발행대기 글을 `<글id>.md` 로 내보내고(`scripts/blog_gpt_export.py`), 대리님이 ChatGPT 로 다듬어 `<글id>_GPT최종.md` 로 저장하면 20시 루틴 5단계가 읽어 `ahj_patch_chunk_<날짜>_blog_gptfinal.json` 으로 body·title 을 갱신한다(`scripts/blog_gpt_import.py`, 스냅샷 body 와 같으면·글ID 불일치면·발행대기가 아니면 건너뜀). 상태는 발행대기 그대로, 네이버 게시와 "발행 완료" 버튼은 사람 몫. 네이버 블로그 글쓰기 API 는 없고 브라우저 자동 로그인은 계정 정지 위험이라 게시 자동화는 하지 않는다.
 - **아티팩트 링크가 안 열리는 이유**: Drive 연결(mcp) 페이지라 비공개다. 대리님 claude.ai 계정으로 로그인된 브라우저에서만 열리고, 카톡·메일 앱 안 미니 브라우저나 다른 계정에서는 로그인 화면·빈 화면이 나온다. 짧은 주소 https://claude.ai/artifact/4WQE1xaYz5PQShTMgGxpta 와 긴 주소는 같은 아티팩트다.
