@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""블로그 글의 네이버 블로그 검색 순위 확인 (네이버 검색 Open API, 유사도순 100건).
+"""블로그 글의 네이버 블로그 검색 순위 확인 (NAVER API HUB 블로그 검색, 유사도순 100건).
+
+2026-06 부터 네이버 검색 API 는 개발자센터(openapi.naver.com)가 아니라 네이버 클라우드 NAVER API HUB 로 옮겨졌다.
+엔드포인트 https://naverapihub.apigw.ntruss.com/search/v1/blog, 헤더 X-NCP-APIGW-API-KEY-ID / X-NCP-APIGW-API-KEY.
+환경 변수 NAVER_APIHUB_KEY_ID / NAVER_APIHUB_KEY 를 우선 쓰고, 없으면 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 를 같은 뜻으로 읽는다.
+(개발자센터 옛 키가 있으면 NAVER_LEGACY=1 로 openapi.naver.com 호출.)
 
 사용법:
   python3 blog_rank_check.py snapshot.json out_patch.json            # 스냅샷에서 대상 글을 뽑아 확인
   python3 blog_rank_check.py --targets targets.json out_patch.json   # 미리 뽑아 둔 대상 목록으로 확인
-환경 변수 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 가 필요하다.
 
 대상 = 발행완료 + 주소(logNo) 있음 + 게시일이 최근 60일 안, 최신순 최대 40건 (대시보드 blogRankTargets 와 같은 기준).
 키워드 = mainKeyword 가 있으면 그것, 없으면 제목에서 자동 추출(대시보드 blogAutoKeyword 와 같은 규칙).
@@ -75,8 +79,15 @@ def targets_from_snapshot(snap, today):
 
 
 def search_rank(kw, logno, cid, secret):
-    url = "https://openapi.naver.com/v1/search/blog.json?" + urllib.parse.urlencode({"query": kw, "display": DISPLAY, "sort": "sim"})
-    req = urllib.request.Request(url, headers={"X-Naver-Client-Id": cid, "X-Naver-Client-Secret": secret, "User-Agent": "ahj-dashboard/1.0"})
+    q = urllib.parse.urlencode({"query": kw, "display": DISPLAY, "sort": "sim"})
+    if os.environ.get("NAVER_LEGACY"):
+        url = "https://openapi.naver.com/v1/search/blog.json?" + q
+        headers = {"X-Naver-Client-Id": cid, "X-Naver-Client-Secret": secret}
+    else:
+        url = "https://naverapihub.apigw.ntruss.com/search/v1/blog?" + q
+        headers = {"X-NCP-APIGW-API-KEY-ID": cid, "X-NCP-APIGW-API-KEY": secret}
+    headers["User-Agent"] = "ahj-dashboard/1.0"
+    req = urllib.request.Request(url, headers=headers)
     last = None
     for attempt in range(3):
         try:
@@ -97,9 +108,10 @@ def main():
     args = sys.argv[1:]
     if len(args) < 2:
         print(__doc__); sys.exit(2)
-    cid, secret = os.environ.get("NAVER_CLIENT_ID", ""), os.environ.get("NAVER_CLIENT_SECRET", "")
+    cid = os.environ.get("NAVER_APIHUB_KEY_ID") or os.environ.get("NAVER_CLIENT_ID", "")
+    secret = os.environ.get("NAVER_APIHUB_KEY") or os.environ.get("NAVER_CLIENT_SECRET", "")
     if not cid or not secret:
-        print("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 환경 변수가 없습니다."); sys.exit(3)
+        print("NAVER_APIHUB_KEY_ID / NAVER_APIHUB_KEY (또는 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET) 환경 변수가 없습니다."); sys.exit(3)
     today = (datetime.datetime.utcnow() + datetime.timedelta(hours=9)).strftime("%Y-%m-%d")
     if args[0] == "--targets":
         targets = load_json(args[1]); out_path = args[2]
