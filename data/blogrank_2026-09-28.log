@@ -1,0 +1,48 @@
+대상 40건 (기준일 2026-09-28)
+  FAIL blogauto-20260903-3 잘못 써서 낙찰 입찰표 작성 :: HTTP Error 401: Unauthorized
+  FAIL blog-2026-09-04-01 전국 경매 육박 상가 토지로 :: HTTP Error 401: Unauthorized
+  FAIL blogauto-20260908-2 아파트 경매 낙찰가율 연속 하락 :: HTTP Error 401: Unauthorized
+  FAIL blog-2026-09-06-02 낙찰받았는데 경매가 취하된다고 낙찰자 동의권 :: HTTP Error 401: Unauthorized
+  FAIL blogauto-20260919-1 경락잔금대출 믿고 입찰해도 될까 보증금 :: HTTP Error 401: Unauthorized
+  FAIL blog-2026-08-29-01 대구 아파트값 하락 전국은 상승 :: HTTP Error 401: Unauthorized
+  FAIL blogauto-20260923-1 월세 면제 각서 경매로 주인 :: HTTP Error 401: Unauthorized
+  FAIL blog-2026-09-04-02 매각물건명세서 전에 확인해야 할까 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224419593665 대구 달서구 진천역계룡리슈빌 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blog-2026-09-05-01 배당요구 종기 임차인이 놓치면 보증금은 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224416088907 강원 원주 원주롯데캐슬더퍼스트 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224415785934 천안 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224415737420 경북 칠곡 왜관 태왕아너스센텀 아파트 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224414724944 경산 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224414686287 포항 남구 대잠센트럴하이츠 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogauto-20260908-1 대구 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224413531156 포항 북구 두산위브더제니스 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224411105374 부산 수영구 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224411038049 대구 수성구 범물서한화성아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224411023865 부산 해운대 래미안해운대 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224408393978 대구 달서구 대곡역화성파크드림 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224408216683 대구 수성구 캐슬골드파크 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224407099383 대구 동구 동대구동화아이위시 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224407130790 대구 민들레아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224407209717 대구 북구 강북이진캐스빌 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224407232702 대구 북구 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224407173955 영천 청호아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blog-2026-09-06-01 수도권 지식산업센터 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224406025989 대구 북구 브라운스톤강북 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224404689364 대구 대구역에스디아이프라임 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224404603762 대구 북구 복현블루밍브라운스톤 명문세가 아파트 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224404852233 대구 북구 유성청구아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224404624109 대구 북구 이편한세상대구금호 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224403324517 대구 수성구 상동청구타운 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224400923505 대구 북구 이편한세상대구금호 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224400593854 대구 달성군 대구국가산단영무예다음 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogauto-20260903-1 강제경매 신청 급증 이렇게 늘었을까 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224398405069 대구 달성군 대구테크노폴리스반도유보라아이비파크 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224397355155 부산 해운대 해운대중동두산위브 아파트 경매 :: HTTP Error 401: Unauthorized
+  FAIL blogrss-224397327324 부산 송도혜성비치타운 아파트 경매 :: HTTP Error 401: Unauthorized
+확인 0건 · 실패 40건 → data/blogrank_2026-09-28.json (0 patches, 2026-09-28T04:59:42Z)
+
+--- 진단 (2026-09-28 05:00Z) ---
+스크립트 종료코드: 1 (확인 0건)
+curl 직접 호출 결과 http=401, 응답 본문:
+{"errorMessage":"NID AUTH Result Invalid (1000) : Authentication failed. (인증에 실패했습니다.)","errorCode":"024"}
+환경 변수는 둘 다 채워져 있음(영숫자만, 공백 없음, id 30자 / secret 24자). 프록시 상태 정상(bundleCoversEveryHost=true). 네이버 API 가 인증 실패(errorCode 024)를 반환하므로 키 값 자체가 잘못됐거나 만료된 것으로 보임. 네이버 개발자센터 애플리케이션의 Client ID/Secret 을 다시 확인해 환경 변수를 갱신해야 함.
