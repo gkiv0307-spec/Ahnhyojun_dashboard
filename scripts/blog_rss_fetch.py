@@ -39,6 +39,18 @@ UA = "Mozilla/5.0 (compatible; ahj-dashboard/1.0)"
 ITEM_RE = re.compile(r"<item>(.*?)</item>", re.S)
 TAG_RE = re.compile(r"<[^>]+>")
 
+# 본문 대조 (2026-09-30 대리님 지시): 대표님이 공식블로그에 올리는 물건 글은 제목·요약에 사건번호가 없고
+# 본문에만 있는 경우가 많다(9/29 물건 글 10건 중 8건). 그러면 사건번호로 맞추는 권리분석 체크·backfill 이
+# 그 글을 못 본다. 최근 BODY_DAYS 일 안의 글 가운데 제목·요약에 사건번호가 없는 것은 글 페이지를 직접 열어
+# 본문에서 사건번호를 뽑아 description 끝에 "[본문 사건번호: …]" 로 덧붙인다. 실패해도 그냥 넘어간다.
+BODY_DAYS = 14
+BODY_MAX_FETCH = 40
+BODY_BLOGS = ["ykphone_edu", "hjko0"]
+CASE_RE = re.compile(r"20\d\d\s*타\s*경\s*\d{1,6}")
+POST_VIEW = "https://m.blog.naver.com/PostView.naver?blogId={}&logNo={}"
+POST_VIEW_PC = "https://blog.naver.com/PostView.naver?blogId={}&logNo={}"
+MOBILE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+
 
 DESC_LIMIT = 600
 TAIL_CASE_RE = re.compile(r"20\d\d\s*타\s*경\s*\d*$")
@@ -137,6 +149,61 @@ def fetch_mobile(blog_id, pages=MOBILE_PAGES, timeout=25):
     return rows
 
 
+def _cases(text):
+    return sorted({re.sub(r"\s", "", c) for c in CASE_RE.findall(text or "")})
+
+
+def fetch_body_cases(blog_id, logno, timeout=25):
+    """글 페이지를 열어 본문의 사건번호 목록을 돌려준다. 모바일 → PC 순서로 시도하고 못 열면 빈 목록."""
+    import html as _html
+    for url, ua in ((POST_VIEW.format(blog_id, logno), MOBILE_UA), (POST_VIEW_PC.format(blog_id, logno), BROWSER_UA)):
+        req = urllib.request.Request(url, headers={"User-Agent": ua, "Referer": "https://m.blog.naver.com/" + blog_id})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                page = r.read().decode("utf-8", "replace")
+        except Exception:
+            try:
+                out = subprocess.run(["curl", "-sS", "--max-time", str(timeout), "-A", ua,
+                                      "-H", "Referer: https://m.blog.naver.com/" + blog_id, url], capture_output=True, text=True)
+                page = out.stdout if out.returncode == 0 else ""
+            except Exception:
+                page = ""
+        if not page:
+            continue
+        found = _cases(_html.unescape(TAG_RE.sub(" ", page)))
+        if found:
+            return found
+    return []
+
+
+def scan_bodies(rows, days=BODY_DAYS, max_fetch=BODY_MAX_FETCH):
+    """최근 글 중 제목·요약에 사건번호가 없는 것만 본문을 열어 사건번호를 덧붙인다."""
+    import datetime as _dt
+    import time as _time
+    since = (_dt.datetime.utcnow() + _dt.timedelta(hours=9) - _dt.timedelta(days=days)).strftime("%Y%m%d")
+    targets = []
+    for r in rows:
+        m = re.search(r"blog\.naver\.com/([^/]+)/(\d+)$", r.get("link") or "")
+        if not m or m.group(1) not in BODY_BLOGS:
+            continue
+        if (r.get("postdate") or "") < since:
+            continue
+        if _cases((r.get("title") or "") + " " + (r.get("description") or "")):
+            continue
+        targets.append((r, m.group(1), m.group(2)))
+    targets.sort(key=lambda t: t[0].get("postdate") or "", reverse=True)
+    hit = 0
+    for r, bid, logno in targets[:max_fetch]:
+        found = fetch_body_cases(bid, logno)
+        if found:
+            r["description"] = ((r.get("description") or "").rstrip() + " [본문 사건번호: " + " ".join(found) + "]").strip()
+            r["bodyCases"] = found
+            hit += 1
+        _time.sleep(0.3)
+    print(f"  본문 대조: 최근 {days}일 사건번호 없는 글 {len(targets)}건 중 {min(len(targets), max_fetch)}건 열어 {hit}건에서 사건번호 찾음")
+    return hit
+
+
 def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "naver_results.json"
     blogs = sys.argv[2:] or OUR_BLOGS
@@ -164,6 +231,10 @@ def main():
         else:
             failed.append(b)
     all_rows.sort(key=lambda r: r["postdate"], reverse=True)
+    try:
+        scan_bodies(all_rows)
+    except Exception as e:
+        print(f"  본문 대조 실패 — {e}")
     json.dump(all_rows, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)
     print(f"총 {len(all_rows)}건 -> {out_path}" + (f" (실패: {', '.join(failed)})" if failed else ""))
     # 전부 실패했으면 루틴이 그대로 넘어가지 않도록 오류로 끝낸다.
