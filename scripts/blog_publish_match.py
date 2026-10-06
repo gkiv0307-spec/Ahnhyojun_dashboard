@@ -124,6 +124,13 @@ def _days_before(ymd, n):
     except Exception:
         return "00000000"
 
+def _days_before(yyyymmdd, n):
+    import datetime as _dt
+    try:
+        return (_dt.datetime.strptime(yyyymmdd, "%Y%m%d") - _dt.timedelta(days=n)).strftime("%Y%m%d")
+    except Exception:
+        return "00000000"
+
 def match(snapshot, results):
     posts = snapshot.get("blogPosts", [])
     # 사건번호 -> 우리 블로그 글
@@ -172,6 +179,11 @@ def match(snapshot, results):
             continue
         r = hits[0]
         d = str(r.get("postdate") or "")
+        # 2026-10-06: 파이프라인 글(blogauto-…)의 memo 에 적힌 사건번호가 그 사건의 옛 물건 글과 맞아
+        # 8/20 글을 10/5 글로 잘못 채운 사고. 글이 만들어진 날보다 사흘 넘게 먼저 올라간 게시물은 그 글일 수 없다.
+        made = str(p.get("createdAt") or p.get("date") or "")[:10].replace("-", "")
+        if len(d) == 8 and len(made) == 8 and d < _days_before(made, 3):
+            continue
         verify.append({
             "id": p["id"],
             "status": "발행완료",
