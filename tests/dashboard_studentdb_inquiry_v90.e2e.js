@@ -39,7 +39,7 @@ const transactions = [ { sig: '2026-10-06|거래F|330000|0|1', date: '2026-10-06
   console.log('CHIPS', JSON.stringify(chips));
   const kpi = await page.evaluate(() => Array.from(document.querySelectorAll('.kpi-card')).map(c => c.textContent.replace(/\s+/g, ' ')).filter(t => t.includes('문의만')));
   console.log('KPI', JSON.stringify(kpi));
-  ck('문의만 칩 = 2 (A·G) — 카드결제 예정 I 는 제외', chips.some(t => t.includes('문의만') && t.includes('(2)')));
+  ck('문의만 칩 = 2 (A·G) — 매출연동 I·F·C·H 는 제외', chips.some(t => t.includes('문의만') && t.includes('(2)')));
   ck('KPI 카드 문의만 2명', kpi.length === 1 && /2/.test(kpi[0]));
   await page.evaluate(() => document.querySelector('[data-studentdb-course-filter="inquiry"]').click()); await page.waitForTimeout(400);
   const rows = async () => page.evaluate(() => Array.from(document.querySelectorAll('.data-table tbody tr td:nth-child(2) b')).map(e => e.textContent));
