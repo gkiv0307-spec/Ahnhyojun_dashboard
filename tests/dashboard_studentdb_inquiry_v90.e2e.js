@@ -38,10 +38,12 @@ const transactions = [ { sig: '2026-10-06|거래F|330000|0|1', date: '2026-10-06
   const nav = await page.$('[data-view="studentDb"], [data-rail-view="studentDb"], [data-goto="studentDb"]');
   await page.evaluate(el => el.click(), nav); await page.waitForTimeout(600);
   let fail = 0; const ck = (n, c) => { if (!c) fail++; console.log((c ? 'PASS' : 'FAIL') + '  ' + n); };
+  const stageCard = await page.evaluate(() => Array.from(document.querySelectorAll('#main .card h3')).some(h => h.textContent.indexOf('과정별 인원') === 0));
   const chips = await page.evaluate(() => Array.from(document.querySelectorAll('[data-studentdb-course-filter]')).map(b => b.textContent));
   console.log('CHIPS', JSON.stringify(chips));
   const kpi = await page.evaluate(() => Array.from(document.querySelectorAll('.kpi-card')).map(c => c.textContent.replace(/\s+/g, ' ')).filter(t => t.includes('문의·미결제')));
   console.log('KPI', JSON.stringify(kpi));
+  ck('과정별 인원 카드 없음', !stageCard);
   ck('문의·미결제 칩 = 4 (A·G·I·Y2)', chips.some(t => t.includes('문의·미결제') && t.includes('(4)')));
   ck('KPI 카드 문의·미결제 4명', kpi.length === 1 && /4/.test(kpi[0]));
   await page.evaluate(() => document.querySelector('[data-studentdb-course-filter="inquiry"]').click()); await page.waitForTimeout(400);
