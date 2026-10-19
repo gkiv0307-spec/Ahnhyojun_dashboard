@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
-const path = process.env.DASH_DIR || '/tmp/claude-0/-home-user-yeopkerphone-auction-site/7eab6cea-debf-5c8b-aa10-1319f64a3bc8/scratchpad/v95/';
-const file = process.env.DASH_FILE || 'dashboard_v95.html';
+const path = process.env.DASH_DIR || '/tmp/claude-0/-home-user-yeopkerphone-auction-site/7eab6cea-debf-5c8b-aa10-1319f64a3bc8/scratchpad/v102/';
+const file = process.env.DASH_FILE || 'dashboard_v102.html';   // v102 빌드가 기본, DASH_DIR/DASH_FILE 로 바꿔 옛 빌드도 돌릴 수 있다
 const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const mk = (id, o) => Object.assign({ id, date: day(-3), caseNumber: '2026타경' + id, court: '대구지방법원', region: '대구 수성구', propertyType: '아파트', buildingName: '단지' + id, address: '대구 수성구 ' + id, appraisalValue: 300000000, minSalePrice: 300000000, saleDate: day(10), failCount: 0, status: '조사중', winningBid: 0, analysisWritten: false, memo: '', isStar: false }, o);
 const cards = [
@@ -27,28 +27,34 @@ const cards = [
   const d = await page.$('#navDrawerBtn'); if (d) { await page.evaluate(el => el.click(), d); await page.waitForTimeout(400); }
   const nav = await page.evaluateHandle(() => Array.from(document.querySelectorAll('[data-rail-view],[data-view]')).find(b => /경매분석/.test(b.textContent)));
   await page.evaluate(el => el.click(), nav); await page.waitForTimeout(800);
+  // v102: 기본 섹션이 "오늘 확인"이라 전체 물건 섹션으로 먼저 간다(v101 이하 빌드에는 버튼이 없어 건너뜀)
+  const goList = async () => { const s = await page.$('[data-market-section="list"]'); if (s) { await page.evaluate(el => el.click(), s); await page.waitForTimeout(500); } };
+  await goList();
   let fail = 0; const ck = (n, c) => { if (!c) fail++; console.log((c ? 'PASS' : 'FAIL') + '  ' + n); };
-  const txt = () => page.evaluate(() => (document.getElementById('main') || document.body).innerText);
+  const txt = () => page.evaluate(() => (document.getElementById('marketListArea') || document.getElementById('main') || document.body).innerText); // v96: 오늘 확인 섹션(기일 지남 포함)은 빼고 목록만
   const has = (t, ids) => ids.every(i => t.includes('단지' + i));
   const not = (t, ids) => ids.every(i => !t.includes('단지' + i));
   let t = await txt(); const btn0 = await page.evaluate(() => document.getElementById('marketFocusBtn').textContent + '|' + document.getElementById('marketFocusBtn').getAttribute('aria-pressed'));
   console.log('BTN', btn0);
-  ck('기본 집중 보기 켜짐 · 버튼 "(3/8)"', btn0.includes('켜짐') && btn0.includes('(3/8)') && btn0.endsWith('|true'));
+  ck('기본 집중 보기 켜짐(aria-pressed) · 버튼 "(3/8)"', btn0.includes('(3/8)') && btn0.endsWith('|true'));   // v102: 켜진 상태는 라벨 대신 aria-pressed·색으로 표시
   ck('보임: A(유찰 10일) · C(⭐ 신건) · H(딱 21일)', has(t, ['A', 'C', 'H']));
   ck('숨김: B 신건 · D 30일 · E 오피스텔 · F ⭐ 25일 · G 기일지남', not(t, ['B', 'D', 'E', 'F', 'G']));
-  ck('미작성 타일: 집중 3건', /권리분석 미작성 · 집중\s*3/.test(t.replace(/\n/g, ' ')));
+  // v102: 요약 카운트는 숫자만(라벨 "권리검토 대기") — v96~v101 의 "권리분석 미작성 · 집중 N건" 타일도 같이 읽는다
+  const missingTile = () => page.evaluate(() => { const v = document.querySelector('[data-market-quick="missing"] .mkpi-v, [data-market-quick="missing"] .mstat-v, [data-mstat-filter="missing"] .mstat-v'); return v ? Number((v.textContent.match(/\d+/) || [NaN])[0]) : null; });
+  ck('권리검토 대기(미작성) 카운트: 집중 3건', (await missingTile()) === 3);
   // 끄기
   await page.evaluate(() => document.getElementById('marketFocusBtn').click()); await page.waitForTimeout(600);
   t = await txt();
   console.log('OFF missing', ['A','B','C','D','E','F','G','H'].filter(i => !t.includes('단지' + i)), '| 표시중', (t.match(/\d+건 표시중/) || [])[0]);
   // E(오피스텔)는 기존 접이식 필터 기본값 '아파트' 때문에 안 보이는 게 정상
   ck('끄면 진행 전부(아파트 필터 제외 7건) · 버튼 꺼짐', has(t, ['A', 'B', 'C', 'D', 'F', 'G', 'H']) && !t.includes('단지E') && t.includes('집중 보기 꺼짐'));
-  ck('미작성 타일: 진행 8건', /권리분석 미작성 · 진행\s*8/.test(t.replace(/\n/g, ' ')));
+  ck('권리검토 대기(미작성) 카운트: 진행 8건', (await missingTile()) === 8);
   // 새로고침 후에도 꺼짐 유지
   await page.reload(); await page.waitForTimeout(1500);
   const d2 = await page.$('#navDrawerBtn'); if (d2) { await page.evaluate(el => el.click(), d2); await page.waitForTimeout(400); }
   const nav2 = await page.evaluateHandle(() => Array.from(document.querySelectorAll('[data-rail-view],[data-view]')).find(b => /경매분석/.test(b.textContent)));
   await page.evaluate(el => el.click(), nav2); await page.waitForTimeout(800);
+  await goList();
   t = await txt(); ck('새로고침 뒤에도 꺼짐 기억', t.includes('집중 보기 꺼짐') && has(t, ['B']));
   await page.evaluate(() => document.getElementById('marketFocusBtn').click()); await page.waitForTimeout(600);
   // 종료 탭엔 영향 없음

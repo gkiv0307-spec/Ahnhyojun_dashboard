@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
-const path = process.env.DASH_DIR || '/tmp/claude-0/-home-user-yeopkerphone-auction-site/7eab6cea-debf-5c8b-aa10-1319f64a3bc8/scratchpad/v94/';
-const file = process.env.DASH_FILE || 'dashboard_v94.html';
+const path = process.env.DASH_DIR || '/tmp/claude-0/-home-user-yeopkerphone-auction-site/7eab6cea-debf-5c8b-aa10-1319f64a3bc8/scratchpad/v102/';
+const file = process.env.DASH_FILE || 'dashboard_v102.html';   // v102 빌드가 기본, DASH_DIR/DASH_FILE 로 바꿔 옛 빌드도 돌릴 수 있다
 const mk = (id, o) => Object.assign({ id, date: '2026-10-10', caseNumber: '2026타경' + id, court: '대구지방법원', region: '대구 수성구', propertyType: '아파트', buildingName: '단지' + id, address: '', appraisalValue: 300000000, minSalePrice: 300000000, saleDate: '2026-10-30', failCount: 0, status: '조사중', winningBid: 0, analysisWritten: false, memo: '', isStar: false }, o);
 const cards = [
   mk('1', { region: '대구 수성구', address: '대구광역시 수성구 범어동 1', isStar: true }),
@@ -21,17 +21,20 @@ const cards = [
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript((cards) => {
     window.claude = { mcp: { callTool: function (s, t) { if (t === 'search_files') return Promise.resolve({ payload: { files: [] } }); return Promise.resolve({ payload: {} }); } } };
-    const seed = { students: [], auctions: [], loans: [], tasks: [], transactions: [], blogPosts: [], blogPostsTrash: [], blogAutomationLog: [], studentDb: [], loanConsultants: [], marketResearch: [], contentIdeas: [], schedule: [], workReports: [], resources: [], carouselDrafts: [], brandStrategyReports: [], routineRuns: [], ceoOrders: [], marketAuctions: cards, meta: { cloudPulledOnce: true, marketAuctionsClearedV1: true, marketStarNormalizedV88: true, studentDbMergedV1: true, studentDbBackfillV1: true, consultingCourseFlagBackfillV1: true, paidDateBackfillV1: true, julyRosterAddedV1: true, aug5BulkImportExclusionV1: true } };
+    const seed = { students: [], auctions: [], loans: [], tasks: [], transactions: [], blogPosts: [], blogPostsTrash: [], blogAutomationLog: [], studentDb: [], loanConsultants: [], marketResearch: [], contentIdeas: [], schedule: [], workReports: [], resources: [], carouselDrafts: [], brandStrategyReports: [], routineRuns: [], ceoOrders: [], marketAuctions: cards, meta: { cloudPulledOnce: true, marketAuctionsClearedV1: true, marketStarNormalizedV88: true, marketFocusOff: true, /* v95 집중 보기 기본값과 무관하게 지역 칩만 검증 */ studentDbMergedV1: true, studentDbBackfillV1: true, consultingCourseFlagBackfillV1: true, paidDateBackfillV1: true, julyRosterAddedV1: true, aug5BulkImportExclusionV1: true } };
     localStorage.setItem('ahj_realestate_dashboard_v1', JSON.stringify(seed));
   }, cards);
   await page.goto('file://' + path + file); await page.waitForTimeout(1500);
   const d = await page.$('#navDrawerBtn'); if (d) { await page.evaluate(el => el.click(), d); await page.waitForTimeout(400); }
   const nav = await page.evaluateHandle(() => Array.from(document.querySelectorAll('[data-rail-view],[data-view]')).find(b => /경매분석/.test(b.textContent)));
   await page.evaluate(el => el.click(), nav); await page.waitForTimeout(800);
+  // v102: 기본 섹션이 "오늘 확인"이라 전체 물건 섹션으로 먼저 간다(v101 이하 빌드에는 버튼이 없어 건너뜀)
+  const goList = async () => { const s = await page.$('[data-market-section="list"]'); if (s) { await page.evaluate(el => el.click(), s); await page.waitForTimeout(500); } };
+  await goList();
   let fail = 0; const ck = (n, c) => { if (!c) fail++; console.log((c ? 'PASS' : 'FAIL') + '  ' + n); };
   const chips = () => page.evaluate(() => Array.from(document.querySelectorAll('[data-market-area]')).map(b => b.getAttribute('data-market-area') + '=' + b.textContent.match(/\((\d+)\)/)[1] + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')));
   const shown = () => page.evaluate(() => Array.from(document.querySelectorAll('.market-card, [data-market-id], [data-market-detail]')).map(e => e.getAttribute('data-market-id') || e.getAttribute('data-market-detail') || '').filter(Boolean));
-  const names = () => page.evaluate(() => (document.getElementById('main') || document.body).innerText);
+  const names = () => page.evaluate(() => (document.getElementById('marketListArea') || document.getElementById('main') || document.body).innerText); // v96: 오늘 확인 섹션은 빼고 목록만
   let c = await chips(); console.log('CHIPS active', JSON.stringify(c));
   ck('진행 탭 칩 건수: 전체 9 · ⭐ 3 · 대구권 3 · 부산 2 · 경남권 2 · 그 밖 2', c.includes('all=9*') && c.includes('star=3') && c.includes('daegu=3') && c.includes('busan=2') && c.includes('gyeongnam=2') && c.includes('other=2'));
   await page.evaluate(() => document.querySelector('[data-market-area="busan"]').click()); await page.waitForTimeout(500);
