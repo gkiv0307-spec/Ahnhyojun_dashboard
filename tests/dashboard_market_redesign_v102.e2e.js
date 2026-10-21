@@ -99,7 +99,8 @@ const cards = [
   ids = await page.evaluate(() => Array.from(document.querySelectorAll('#marketListArea .mcard')).length);
   ck('촬영 후보 재클릭 → 해제(전체 진행 물건)', ids === 9);
   await page.evaluate(() => document.querySelector('[data-market-quick="due14"]').click()); await page.waitForTimeout(400);
-  ck('14일 이내 클릭 → 기일 칩 14 선택', await page.evaluate(() => document.querySelector('[data-market-due="14"]').getAttribute('aria-pressed') === 'true'));
+  // v103: 타일은 오늘~14일 누적 빠른 필터(marketQuick due14)로 걸고, 기일 칩은 구간별이라 "전체" 선택을 유지한다
+  ck('14일 이내 클릭 → 타일 눌림 · 목록 4건(오늘~14일) · 기일 칩은 전체 유지', await page.evaluate(() => document.querySelector('[data-market-quick="due14"]').getAttribute('aria-pressed') === 'true' && document.querySelectorAll('#marketListArea .mcard').length === 4 && document.querySelector('[data-market-due="all"]').getAttribute('aria-pressed') === 'true'));
   await page.evaluate(() => document.querySelector('[data-market-quick="due14"]').click()); await page.waitForTimeout(300);
   await page.evaluate(() => document.querySelector('[data-market-quick="missing"]').click()); await page.waitForTimeout(400);
   ids = await page.evaluate(() => Array.from(document.querySelectorAll('#marketListArea .mcard')).map(c => c.getAttribute('data-market-card')));
