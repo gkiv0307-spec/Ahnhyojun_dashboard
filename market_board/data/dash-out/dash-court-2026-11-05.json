@@ -1,0 +1,87 @@
+[
+ {
+  "caseNumber": "2023타경10177",
+  "courtCheckedAt": "2026-11-05",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-05T00:41:57.567235Z",
+  "winningBid": 808483630,
+  "courtResult": "2026-11-04 매각(808,483,630원)",
+  "courtStatusRaw": "2026-11-04 매각기일 매각 (808,483,630원)",
+  "status": "매각종료",
+  "memo": "결과 입력 (2026-11-05) — 11/04 매각(808,483,630원) — 직접 입찰했으면 낙찰/패찰로 바꿔주세요 · 법원경매정보 화면 확인(크롬·2026-11-05)"
+ },
+ {
+  "caseNumber": "2025타경1262 물건1",
+  "courtCheckedAt": "2026-11-05",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-05T00:41:57.568764Z",
+  "status": "취하",
+  "courtResult": "2026-10-30 취하",
+  "courtStatusRaw": "종국결과 취하 2026-10-30",
+  "memo": "결과 입력 (2026-11-05) — 사건 종국 취하(2026-10-30) · 법원경매정보 화면 확인(크롬·2026-11-05)"
+ },
+ {
+  "caseNumber": "2026타경100466",
+  "courtCheckedAt": "2026-11-05",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-05T00:41:57.568801Z",
+  "status": "유찰",
+  "failCount": 2,
+  "saleDate": "2026-12-02",
+  "minSalePrice": 37240000,
+  "courtResult": "진행중 · 매각기일 12/02 최저 37,240,000원",
+  "courtStatusRaw": "2026-11-04 매각기일 유찰 → 2026-12-02 매각기일 최저 37,240,000원",
+  "memo": "결과 입력 (2026-11-05) — 11/04 유찰(2회) → 다음 기일 12/02 최저가 37,240,000원 · 법원경매정보 화면 확인(크롬·2026-11-05)"
+ },
+ {
+  "caseNumber": "2026타경100729",
+  "courtCheckedAt": "2026-11-05",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-05T00:41:57.568836Z",
+  "winningBid": 163778950,
+  "courtResult": "2026-11-04 매각(163,778,950원)",
+  "courtStatusRaw": "2026-11-04 매각기일 매각 (163,778,950원)",
+  "status": "매각종료",
+  "memo": "결과 입력 (2026-11-05) — 11/04 매각(163,778,950원) — 직접 입찰했으면 낙찰/패찰로 바꿔주세요 · 법원경매정보 화면 확인(크롬·2026-11-05)"
+ },
+ {
+  "caseNumber": "2026타경100756",
+  "courtCheckedAt": "2026-11-05",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-05T00:41:57.568857Z",
+  "winningBid": 99500000,
+  "courtResult": "2026-11-04 매각(99,500,000원)",
+  "courtStatusRaw": "2026-11-04 매각기일 매각 (99,500,000원)",
+  "status": "매각종료",
+  "memo": "결과 입력 (2026-11-05) — 11/04 매각(99,500,000원) — 직접 입찰했으면 낙찰/패찰로 바꿔주세요 · 법원경매정보 화면 확인(크롬·2026-11-05)"
+ },
+ {
+  "caseNumber": "2026타경1101",
+  "courtCheckedAt": "2026-11-05",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-05T00:41:57.568878Z",
+  "winningBid": 51000000,
+  "courtResult": "2026-11-04 매각(51,000,000원)",
+  "courtStatusRaw": "2026-11-04 매각기일 매각 (51,000,000원)",
+  "status": "매각종료",
+  "memo": "결과 입력 (2026-11-05) — 11/04 매각(51,000,000원) — 직접 입찰했으면 낙찰/패찰로 바꿔주세요 · 법원경매정보 화면 확인(크롬·2026-11-05)"
+ },
+ {
+  "caseNumber": "2026타경1153",
+  "courtCheckedAt": "2026-11-05",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-05T00:41:57.568898Z",
+  "winningBid": 261000000,
+  "courtResult": "2026-11-04 매각(261,000,000원)",
+  "courtStatusRaw": "2026-11-04 매각기일 매각 (261,000,000원)",
+  "status": "매각종료",
+  "memo": "결과 입력 (2026-11-05) — 11/04 매각(261,000,000원) — 직접 입찰했으면 낙찰/패찰로 바꿔주세요 · 법원경매정보 화면 확인(크롬·2026-11-05)"
+ }
+]
