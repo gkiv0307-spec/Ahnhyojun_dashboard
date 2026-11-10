@@ -116,3 +116,15 @@ ArtifactData action:"list" url:<옛 아티팩트 URL> collection:"state" query:{
 ## 참고
 
 `index.html` 에는 비밀값(토큰·API 키)이 없지만, 기본값으로 들어간 업무용 전화번호(문자 발신·상담·대표)와 위의 Google 파일 ID 가 포함되어 있습니다.
+
+## 7. 이관 진행 상태 (2026-11-10)
+
+| 항목 | 상태 |
+|---|---|
+| 새 아티팩트 | 새 Claude 계정에 발행 — Version 3 (contract 0.2.41). 이 폴더의 `index.html` 은 **옛 계정 발행본 보관용**이다 |
+| 원본 소스 | GitHub `hyojun127/-` 브랜치 `claude/blissful-hypatia-ffk2d3` (기존 `claude/housing-management-program-ckwl77` 의 `c2dbc1a` 에서 이어짐). `dist/zipkeeper-artifact.html` = 새 발행본 |
+| 데이터 | 옛 대시보드 브라우저 백업(2026-11-10 13:07 UTC)을 새 대시보드에 복원. 새 db `state` 64개 문서 — 16개 항목 모두 백업과 일치 확인 (예전 형식 `agents_1..12` 12개는 앱이 쓰지 않아 제외) |
+| 자동 백업 | Apps Script 방식은 아티팩트에서 `Failed to fetch` 로 막혀 **Google Drive 커넥터 방식으로 교체**: 내 드라이브에 `옆커폰_주택관리_자동백업_YYYY-MM-DD_HHmm.json.gz` (gzip). 바뀐 날만 · 최근 30회분 유지 · 한도 초과 시 조각 저장. 첫 백업 파일 생성 확인 (282,709 바이트) |
+| capabilities (v3) | `db`, `downloads`, Google Drive `read_file_content · search_files · download_file_content · create_file · trash_file`, Google Sheets `get_spreadsheet · get_values · update_values · update_spreadsheet` |
+| 구글 파일 접근 | 대시보드가 쓰는 시트 · 파일 10개 모두 새 계정 커넥터로 열림 확인 (쓰기 대상인 자금일보 · 이체관리는 편집 권한 있음) |
+| 남은 일 | 새 대시보드 공유(필요한 사람), 옛 대시보드는 입력 중지 후 보관, Apps Script 웹앱 배포 중지 |
