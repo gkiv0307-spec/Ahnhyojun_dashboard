@@ -1,0 +1,1177 @@
+<title>전국 경매 물건 현황판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=Montserrat:wght@600;700;800;900&display=swap">
+
+<style>
+/* auct.kr 의 토큰 체계(shadcn/Tailwind v4). Pretendard 는 jsdelivr CDN 이라
+   아티팩트 CSP 에서 막히므로, 로컬에 있으면 쓰고 없으면 Noto Sans KR 로 떨어진다. */
+:root{
+  --background:#fff; --foreground:#090910;
+  --card:#fff; --card-2:#f8fafc;
+  --primary:#155dfc; --primary-fg:#fafafa;
+  --secondary:#f2f4f9; --secondary-fg:#1c398e;
+  --muted:#f2f4f9; --muted-fg:#72727b;
+  --border:#e3e5ea; --input:#e3e5ea; --ring:#155dfc;
+  --destructive:#e40014; --destructive-soft:#fff1f2;
+  --amber:#b75000; --amber-soft:#fffbeb; --amber-line:#fee685;
+  --green:#4b7d00; --green-soft:#f2f9ea;
+  --purple:#7c3aed; --purple-soft:#f5f2ff;
+  --navy-a:#0b1220; --navy-b:#1c398e;
+  --radius:.625rem;
+  --sh1:0 1px 2px rgba(9,9,16,.05);
+  --sh2:0 1px 3px rgba(9,9,16,.06), 0 8px 24px -18px rgba(9,9,16,.25);
+  --v-live:#00856B; --v-sold:#B77A12; --v-done:#77838C; --v-unk:#B3BCC4; --v-track:#e3e5ea;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --background:#090910; --foreground:#fafafa;
+    --card:#16161d; --card-2:#101017;
+    --primary:#3f7dff; --primary-fg:#fafafa;
+    --secondary:#25252d; --secondary-fg:#fafafa;
+    --muted:#25252d; --muted-fg:#a0a0a9;
+    --border:#ffffff1a; --input:#ffffff26; --ring:#3f7dff;
+    --destructive:#ff6568; --destructive-soft:#2a1214;
+    --amber:#e3aa00; --amber-soft:#2a2110; --amber-line:#4a3a14;
+    --green:#55b74f; --green-soft:#12220f;
+    --purple:#a78bfa; --purple-soft:#1c1630;
+    --navy-a:#05050a; --navy-b:#14264a;
+    --sh1:0 1px 2px rgba(0,0,0,.4);
+    --sh2:0 1px 3px rgba(0,0,0,.5), 0 8px 24px -18px rgba(0,0,0,.9);
+    --v-live:#14997C; --v-sold:#BE8720; --v-done:#8A97A2; --v-unk:#59646E; --v-track:#25252d;
+  }
+}
+:root[data-theme="dark"]{
+  --background:#090910; --foreground:#fafafa;
+  --card:#16161d; --card-2:#101017;
+  --primary:#3f7dff; --primary-fg:#fafafa;
+  --secondary:#25252d; --secondary-fg:#fafafa;
+  --muted:#25252d; --muted-fg:#a0a0a9;
+  --border:#ffffff1a; --input:#ffffff26; --ring:#3f7dff;
+  --destructive:#ff6568; --destructive-soft:#2a1214;
+  --amber:#e3aa00; --amber-soft:#2a2110; --amber-line:#4a3a14;
+  --green:#55b74f; --green-soft:#12220f;
+  --purple:#a78bfa; --purple-soft:#1c1630;
+  --navy-a:#05050a; --navy-b:#14264a;
+  --sh1:0 1px 2px rgba(0,0,0,.4);
+  --sh2:0 1px 3px rgba(0,0,0,.5), 0 8px 24px -18px rgba(0,0,0,.9);
+  --v-live:#14997C; --v-sold:#BE8720; --v-done:#8A97A2; --v-unk:#59646E; --v-track:#25252d;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--background);color:var(--foreground);
+  font-family:"Pretendard Variable",Pretendard,"Noto Sans KR",-apple-system,BlinkMacSystemFont,
+    system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+.mono{font-family:Montserrat,ui-sans-serif,system-ui,sans-serif;font-variant-numeric:tabular-nums;
+  font-weight:700;letter-spacing:-.02em}
+button{font:inherit;color:inherit;cursor:pointer;font-family:inherit}
+select,input{font:inherit;color:inherit;font-family:inherit}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px 90px}
+
+/* ── 상단 네비 ── */
+.nav{position:sticky;top:0;z-index:40;background:var(--card);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1240px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:16px}
+.brand{display:flex;align-items:baseline;gap:6px;font-weight:900;font-size:19px;
+  letter-spacing:-.04em;white-space:nowrap;padding:12px 0}
+.brand .b1{color:var(--primary)}
+.brand .b2{font-size:11px;font-weight:700;color:var(--muted-fg);letter-spacing:0}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:none;padding:9px 13px;border-radius:8px;font-size:13.5px;font-weight:600;
+  color:var(--muted-fg);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tab .ic{width:15px;height:15px;flex:none}
+.tab.on{background:var(--primary);color:var(--primary-fg)}
+.tab:not(.on):hover{background:var(--muted);color:var(--foreground)}
+
+/* ── 공통 ── */
+.phead{padding:34px 0 20px}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;
+  color:var(--secondary-fg);background:var(--secondary);border-radius:99px;padding:5px 13px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--primary);flex:none}
+h1{margin:14px 0 0;font-size:clamp(25px,3.3vw,33px);font-weight:800;letter-spacing:-.035em;
+  line-height:1.2;text-wrap:balance}
+.dek{margin:8px 0 0;color:var(--muted-fg);font-size:14.5px;max-width:64ch}
+h2.sec{margin:34px 0 0;font-size:19px;font-weight:800;letter-spacing:-.03em}
+h2.sec + .sub{margin:4px 0 0;font-size:12.5px;color:var(--muted-fg)}
+/* 본문 속 링크형 단추. a 를 쓰면 href 가 없어 포커스가 안 잡힌다. */
+.lnk{border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--primary)}
+.lnk:hover{text-decoration:underline}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--sh1);margin-top:12px}
+.panel-h{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 18px;
+  border-bottom:1px solid var(--border)}
+.panel-h h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-.02em}
+.panel-h .sp{flex:1}
+.panel-b{padding:16px 18px 18px}
+.chip{font-size:11.5px;font-weight:700;border-radius:99px;padding:3px 10px;
+  background:var(--secondary);color:var(--secondary-fg)}
+.chip.g{background:var(--green-soft);color:var(--green)}
+.chip.r{background:var(--destructive-soft);color:var(--destructive)}
+/* 본문은 반드시 p 로 감싼다. flex 컨테이너라 b·텍스트가 각각 항목이 되어
+   글이 세로로 쪼개진다. min-width:0 이 없으면 긴 문장이 칸을 밀어낸다. */
+.notice{margin-top:12px;border:1px solid var(--amber-line);background:var(--amber-soft);
+  border-radius:var(--radius);padding:12px 16px;display:flex;gap:12px;align-items:flex-start}
+.notice>p,.notice>.nbody{min-width:0;flex:1}
+.notice .pk{font-size:11px;font-weight:800;color:var(--amber);white-space:nowrap;padding-top:2px}
+.notice p{margin:0;font-size:12.5px;color:var(--muted-fg);line-height:1.7}
+.notice b{color:var(--foreground);font-weight:700}
+.b-unk{background:var(--muted);color:var(--muted-fg);border:1px solid var(--border)}
+.unk-mark{margin:9px 0 0;padding:7px 10px;border-radius:8px;font-size:11.5px;line-height:1.55;
+  background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber-line)}
+.empty{text-align:center;padding:50px 20px;color:var(--muted-fg);font-size:13.5px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-top:12px}
+.seg{display:flex;background:var(--muted);border-radius:9px;padding:3px;gap:2px}
+.seg button{border:0;background:none;border-radius:7px;padding:6px 13px;font-size:12.5px;
+  font-weight:600;color:var(--muted-fg)}
+.seg button.on{background:var(--card);color:var(--foreground);box-shadow:var(--sh1)}
+.seg .lb{font-size:11.5px;color:var(--muted-fg);font-weight:700;padding:6px 3px 6px 10px}
+.fsel{border:1px solid var(--border);background:var(--card);border-radius:9px;padding:7px 11px;
+  font-size:12.5px;font-weight:600;outline:0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px;margin-top:12px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;box-shadow:var(--sh1)}
+.stat-k{font-size:12px;color:var(--muted-fg);font-weight:600}
+.stat-v{margin-top:4px;display:flex;align-items:baseline;gap:4px}
+.stat-v .n{font-size:27px}
+.stat-v .u{font-size:13px;color:var(--muted-fg);font-weight:600}
+.stat.hl .n{color:var(--primary)}
+/* 상세 화면은 통계가 6칸이고 값이 '3억 6,100만' 처럼 길다.
+   기본 폭·글자크기 그대로면 금액이 줄바꿈돼 읽기 나쁘다. */
+.stats.wide{grid-template-columns:repeat(auto-fit,minmax(186px,1fr))}
+.stats.wide .n{font-size:22px;white-space:nowrap}
+.stat.as-btn{text-align:left;width:100%}
+.stat.as-btn:hover{border-color:var(--input);background:var(--muted)}
+.stat.as-btn.on{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.meter{height:5px;border-radius:3px;background:var(--v-track);margin-top:8px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:3px;background:var(--v-live)}
+
+/* ── 권역 집계 지도 ── */
+.map-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;
+  max-width:560px;margin:0 auto}
+.map-cell{min-width:0;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px;padding:3px;border:1px solid var(--border);
+  border-radius:9px;overflow:hidden}
+.map-cell.dg{border:2px solid var(--green)}
+.map-cell .mc-r{font-size:11px;font-weight:700;white-space:nowrap;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis}
+.map-cell .mc-n{font-size:13.5px}
+@media (max-width:520px){
+  .map-grid{gap:4px}
+  .map-cell{padding:2px;border-radius:7px}
+  .map-cell .mc-r{font-size:9px} .map-cell .mc-n{font-size:11px}
+}
+
+/* ── 매각기일 달력 ──
+   격자 항목은 기본이 min-width:auto 라 글자 폭 아래로 못 줄어든다.
+   minmax(0,1fr) + min-width:0 이 없으면 390px 에서 7칸이 가로로 넘친다.
+   (경매지도 격자에서 이미 한 번 밟은 함정이다) */
+.cal-head,.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal-head{margin-bottom:8px}
+.cal-head span{text-align:center;font-size:11.5px;font-weight:700;
+  color:var(--muted-fg);padding:4px 0}
+.cal-head .sun{color:var(--destructive)}
+.cal-head .sat{color:var(--primary)}
+.day{min-width:0;position:relative;border:1px solid var(--border);background:var(--card);
+  border-radius:9px;min-height:78px;padding:7px 8px;text-align:left;display:flex;
+  flex-direction:column;gap:4px;cursor:pointer;overflow:hidden;
+  transition:border-color .12s,background .12s}
+.day:hover{background:var(--card-2);border-color:var(--input)}
+.day.pad{opacity:.34;pointer-events:none}
+.day .dn{font-size:13px;font-weight:700;font-family:Montserrat,sans-serif;
+  font-variant-numeric:tabular-nums;color:var(--foreground)}
+.day.sun .dn{color:var(--destructive)}
+.day.sat .dn{color:var(--primary)}
+.day.today{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.day.today .dn::after{content:"오늘";font-family:inherit;font-size:9.5px;font-weight:700;
+  color:var(--primary);margin-left:5px;vertical-align:1px}
+.day.sel{background:var(--primary);border-color:var(--primary)}
+.day .cnt{align-self:flex-start;font-size:11px;font-weight:700;border-radius:99px;
+  padding:2px 8px;background:var(--secondary);color:var(--secondary-fg);
+  font-family:Montserrat,sans-serif}
+.day.has .cnt{background:var(--primary);color:var(--primary-fg)}
+.day .dg{align-self:flex-start;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 7px;
+  background:var(--green-soft);color:var(--green);border:1px solid currentColor}
+/* 선택일 규칙은 반드시 위 기본값보다 뒤에 온다 — 명시도가 같아 순서로 이긴다.
+   앞에 두면 .day.has .cnt 가 이겨서 파랑 위 파랑이 된다. */
+.day.sel .dn,.day.sel .dn::after{color:var(--primary-fg)}
+.day.sel .cnt{background:#fff;color:var(--primary)}
+.day.sel .dg{background:#fff;color:var(--primary);border-color:#fff}
+@media (max-width:560px){
+  .cal-head,.cal-grid{gap:3px}
+  .cal-head span{font-size:10px}
+  .day{min-height:56px;padding:3px 2px;border-radius:7px;gap:2px;align-items:center}
+  .day .dn{font-size:11px;align-self:flex-start;margin-left:2px}
+  .day.today .dn::after{content:none}
+  .day .cnt{font-size:10px;padding:1px 5px;align-self:center}
+  /* 여기서 잘리면 '대…' 가 되어 건수를 잃는다. 여백을 줄여 숫자를 살린다. */
+  .day .dg{font-size:8px;padding:0 2px;align-self:center;letter-spacing:-.3px}
+}
+
+/* ── 물건 상세 ("경매지") ── */
+.card[data-det]{cursor:pointer}
+.card[data-det]:hover{border-color:var(--primary);box-shadow:var(--sh2)}
+.card[data-det]:focus-visible,tr[data-det]:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+tr[data-det]{cursor:pointer}
+tr[data-det]:hover{background:var(--card-2)}
+.dtop{display:flex;align-items:center;gap:10px;margin-top:18px}
+.dhead{margin-top:14px}
+.dmeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.dhead h1{font-size:clamp(19px,3.4vw,27px);line-height:1.35;word-break:keep-all}
+.dd{font-family:Montserrat,sans-serif;font-weight:800;color:var(--destructive)}
+.dpts{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:9px}
+.dpts li{font-size:13.5px;line-height:1.65;color:var(--foreground)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.dcell{min-width:0;border:1px solid var(--border);border-radius:9px;padding:9px 11px;background:var(--card-2)}
+.dcell .k{font-size:11px;font-weight:700;color:var(--muted-fg)}
+/* 9px 은 한글 굵은 글씨로 읽기에 너무 작다. 출처 표시라도 읽혀야 뜻이 있다. */
+.src-b{font-size:10.5px;font-weight:800;color:var(--green);border:1px solid currentColor;
+  border-radius:4px;padding:0 4px;vertical-align:1px;white-space:nowrap}
+
+/* ── 블로그컨텐츠 ── */
+.bcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;margin-top:12px;box-shadow:var(--sh1)}
+.bhead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.bhead>div:first-child{flex:1;min-width:0}
+.bhead h3{margin:7px 0 0;font-size:16.5px;line-height:1.4;word-break:keep-all}
+.bact{display:flex;gap:7px;flex:none}
+.bact .tab{padding:8px 14px;font-size:12.5px}
+.bdraft{margin:12px 0 0;padding:13px 15px;background:var(--card-2);border:1px solid var(--border);
+  border-radius:9px;font-size:12.5px;line-height:1.75;white-space:pre-wrap;word-break:break-all;
+  font-family:inherit;color:var(--foreground);overflow-x:auto}
+@media (max-width:560px){ .bact{width:100%} .bact .tab,.bact .fsel{flex:1} }
+
+/* 권리분석을 끝낸 물건. 지우지 않고 흐리게만 둔다 — 무엇을 이미 봤는지가
+   목록에 남아 있어야 다음에 다시 열었을 때 이어서 볼 수 있다. */
+.bdone-c{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  color:var(--muted-fg);white-space:nowrap;cursor:pointer;user-select:none;
+  border:1px solid var(--border);border-radius:8px;padding:7px 11px;background:var(--card)}
+.bdone-c:hover{border-color:var(--input);color:var(--foreground)}
+.bdone-c input{width:15px;height:15px;margin:0;accent-color:var(--primary);cursor:pointer}
+.bcard.bdone{opacity:.42}
+.lm-star{font-style:normal;font-size:.92em;margin-right:1px;cursor:help}
+.bcard.bdone:hover,.bcard.bdone:focus-within{opacity:1}
+/* 체크박스만은 흐려지지 않아야 다시 풀 수 있다 */
+.bcard.bdone .bdone-c{opacity:1;color:var(--green);border-color:var(--green)}
+.bcard.bdone .bdraft{filter:grayscale(1)}
+.dash-st{font-size:11.5px;font-weight:600;color:var(--muted-fg);align-self:center;white-space:nowrap}
+.dash-st.ok{color:var(--green)}
+.dash-st.err{color:var(--destructive)}
+.dash-st.busy{color:var(--primary)}
+
+/* 공매(온비드)는 법원경매와 절차도 위험도 달라서 한눈에 갈라 보여야 한다. */
+
+/* ── 실거래가 시세 ────────────────────────────────────────────
+   금액 단위가 만원이라 반드시 mono 로 세로 자릿수를 맞춘다. */
+.mkbox{margin-top:10px;border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--muted);padding:10px 12px}
+.mk-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin-bottom:8px}
+.mk-h b{font-size:12.5px}
+.mk-h .sub{font-size:11.5px;color:var(--muted-fg);min-width:0}
+.mk-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:6px 14px;min-width:0}
+.mk-g>div{display:flex;justify-content:space-between;gap:8px;min-width:0;
+  font-size:12px;padding:3px 0;border-bottom:1px dashed var(--border)}
+.mk-g .k{color:var(--muted-fg);white-space:nowrap}
+.mk-g .v{font-weight:700;text-align:right;min-width:0;overflow-wrap:anywhere}
+.mk-g .v i{font-style:normal;font-weight:400;color:var(--muted-fg)}
+.mk-r{margin-top:6px}
+/* 전역 table 규칙에 min-width:760px 이 걸려 있다. 3칸짜리 이 표는
+   그게 필요 없고, 그대로 두면 390px 화면에서 카드가 가로로 터진다. */
+.mk-t{width:100%;border-collapse:collapse;margin-top:8px;font-size:11.5px;min-width:0}
+.mk-t th,.mk-t td{padding:3px 6px;border-bottom:1px solid var(--border);text-align:left}
+.mk-t th{color:var(--muted-fg);font-weight:600}
+.mk-t .r{text-align:right}
+.mk-n{margin:8px 0 0;font-size:11px;color:var(--muted-fg);line-height:1.6}
+.mkchip{display:inline-block;font-size:11px;font-weight:800;padding:1px 7px;
+  border-radius:999px;border:1px solid;white-space:nowrap}
+.mk-good{color:var(--green);border-color:var(--green);background:var(--green-soft)}
+.mk-mid{color:var(--muted-fg);border-color:var(--border);background:var(--card)}
+.mk-warn{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
+.mk-warn-t{color:var(--amber)}
+.mk-q{font-style:normal;color:var(--amber);font-weight:700}
+/* 공매 카드는 보라 바탕이라 회색 상자가 묻힌다. */
+.bcard.gm .mkbox{background:var(--card);border-color:var(--purple)}
+.bcard.gm{border:2px solid var(--purple);background:var(--purple-soft)}
+.bcard.gm .bdraft{background:var(--card);border-color:var(--purple)}
+.bcard.gm .bact .tab.on{background:var(--purple)}
+.gm-t{color:var(--purple)}
+.gm-i{background:var(--purple);color:#fff;border-radius:5px;padding:0 6px;
+  font-size:10.5px;font-weight:800}
+.notice.gm-n{border-color:var(--purple);background:var(--purple-soft)}
+.notice.gm-n .pk{color:var(--purple)}
+tr.gm-r td:first-child{border-left:3px solid var(--purple)}
+.dcell .v{font-size:14px;font-weight:600;margin-top:3px;word-break:break-all}
+.dlog{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:1px;
+  counter-reset:none;max-height:none}
+.dlog li{display:flex;gap:10px;font-size:13px;line-height:1.6;padding:5px 8px;border-radius:6px;
+  color:var(--muted-fg);word-break:break-all}
+.dlog li.hot{background:var(--amber-soft);color:var(--foreground);font-weight:600}
+.dlog .dt{flex:0 0 84px;color:var(--muted-fg);font-size:12px;font-variant-numeric:tabular-nums}
+.dfold{margin-top:10px;border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--card);padding:10px 14px}
+.dfold summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--primary)}
+.dfold .dlog{margin-top:10px}
+.dnote{margin:0;font-size:13.5px;line-height:1.75;white-space:pre-wrap;word-break:keep-all}
+tr.now{background:var(--secondary)}
+tr.now td{font-weight:700}
+@media (max-width:560px){
+  .dlog li{flex-direction:column;gap:1px}
+  .dlog .dt{flex:none}
+}
+
+/* ── 모아보기 줄 ── */
+/* 카드로 다 깔면 홈이 스크롤 마라톤이 된다. 머리기사만 카드로 두고
+   나머지는 한 줄짜리로 눕힌다. 한 줄에 기일·소재지·금액·비율까지 들어간다. */
+.dl{margin-top:10px;border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--card);box-shadow:var(--sh1);overflow:hidden}
+.dl-row{display:grid;grid-template-columns:74px minmax(0,1fr) auto;gap:10px;align-items:center;
+  width:100%;text-align:left;padding:9px 13px;border:0;border-top:1px solid var(--border);
+  background:none;font:inherit}
+.dl-row:first-child{border-top:0}
+.dl-row:hover{background:var(--muted)}
+.dl-d{font-size:11px;font-weight:800;color:var(--primary);white-space:nowrap;
+  font-family:Montserrat,sans-serif}
+.dl-d.none{color:var(--muted-fg)}
+.dl-t{min-width:0}
+.dl-t b{display:block;font-size:12.5px;font-weight:700;line-height:1.45;
+  word-break:keep-all;overflow-wrap:break-word}
+.dl-t span{display:block;font-size:11px;color:var(--muted-fg);margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-n{text-align:right;white-space:nowrap}
+.dl-n b{display:block;font-size:12.5px;font-weight:800;letter-spacing:-.02em}
+.dl-n span{display:block;font-size:11px;font-weight:700;color:var(--muted-fg)}
+.dl-more{display:block;width:100%;border:0;border-top:1px solid var(--border);
+  background:var(--card-2);padding:9px;font-size:12px;font-weight:700;color:var(--primary)}
+.dl-more:hover{background:var(--muted)}
+/* 앞으로 2주 기일 띠 */
+.strip{display:flex;gap:5px;margin-top:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.strip button{flex:none;width:56px;border:1px solid var(--border);background:var(--card);
+  border-radius:9px;padding:7px 0;text-align:center}
+.strip button:hover{border-color:var(--input);background:var(--muted)}
+.strip .sd{font-size:10.5px;font-weight:700;color:var(--muted-fg)}
+.strip .sn{font-size:15px;font-weight:800;font-family:Montserrat,sans-serif;line-height:1.2}
+.strip .sg{font-size:10px;font-weight:700;color:var(--green)}
+.strip .z .sn{color:var(--muted-fg);opacity:.45}
+.strip .today{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+/* 오늘 할 일 칩 */
+.todo{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.todo button{display:flex;align-items:baseline;gap:7px;border:1px solid var(--border);
+  background:var(--card);border-radius:10px;padding:9px 13px;box-shadow:var(--sh1)}
+.todo button:hover{border-color:var(--input);background:var(--muted)}
+.todo .k{font-size:11.5px;font-weight:700;color:var(--muted-fg);white-space:nowrap}
+.todo .v{font-size:17px;font-weight:800;font-family:Montserrat,sans-serif;letter-spacing:-.02em}
+.todo .u{font-size:11px;color:var(--muted-fg);font-weight:700}
+.todo .hot .v{color:var(--destructive)}
+.todo .warm .v{color:var(--amber)}
+
+/* ── 사용법 ── */
+.helpbtn{display:flex;align-items:center;gap:6px;flex:none;border:1px solid var(--border);
+  background:var(--card);border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:700;
+  color:var(--muted-fg);white-space:nowrap}
+.helpbtn:hover{border-color:var(--input);color:var(--foreground);background:var(--muted)}
+.helpbtn .ic{width:15px;height:15px;flex:none}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(9,9,16,.55);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+/* display:flex 가 [hidden] 의 display:none 을 이긴다. 그러면 안 보이는 채로
+   화면 전체를 덮어 클릭을 통째로 삼킨다 — 실제로 그랬다. 직접 되돌린다.
+   아티팩트 껍데기의 [hidden]{display:none!important} 에 기대면 안 된다. */
+.modal[hidden]{display:none}
+.sheet{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  box-shadow:var(--sh2);width:min(720px,100%);max-height:calc(100vh - 40px);
+  display:flex;flex-direction:column;overflow:hidden}
+.sheet-h{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.sheet-h h2{margin:0;font-size:18px;font-weight:800;letter-spacing:-.03em;flex:1}
+.sheet-x{border:0;background:none;color:var(--muted-fg);font-size:16px;padding:4px 8px;border-radius:8px}
+.sheet-x:hover{background:var(--muted);color:var(--foreground)}
+.sheet-b{overflow-y:auto;padding:4px 20px 18px}
+.sheet-f{display:flex;align-items:center;gap:12px;padding:12px 20px;
+  border-top:1px solid var(--border);background:var(--card-2)}
+.sheet-f .sub{flex:1;font-size:11.5px;color:var(--muted-fg);min-width:0}
+.g-sec{padding:16px 0 0;border-top:1px solid var(--border)}
+.g-sec:first-child{border-top:0}
+.g-sec h3{margin:0 0 6px;font-size:14px;font-weight:800;letter-spacing:-.02em}
+.g-sec p{margin:0;font-size:12.5px;line-height:1.75;color:var(--muted-fg)}
+.g-sec p + p{margin-top:6px}
+.g-sec b{color:var(--foreground)}
+/* 배지 설명은 실제 카드에 쓰는 클래스를 그대로 써서 화면과 어긋나지 않게 한다. */
+.g-list{margin:8px 0 0;display:grid;grid-template-columns:auto 1fr;gap:7px 11px;align-items:baseline}
+.g-list dt{justify-self:start;white-space:nowrap}
+.g-list dd{margin:0;font-size:12px;line-height:1.6;color:var(--muted-fg)}
+.g-list dd b{color:var(--foreground)}
+.g-kbd{font-size:11.5px;font-weight:700;background:var(--muted);border:1px solid var(--border);
+  border-radius:6px;padding:1px 7px;color:var(--foreground);white-space:nowrap}
+@media (max-width:560px){
+  .modal{padding:0}
+  .sheet{border-radius:0;border:0;max-height:100vh;height:100vh;width:100%}
+  .helpbtn span{display:none}
+}
+
+/* ── 좌측 검색필터 ── */
+/* 상용 경매사이트 배치를 따랐다 — 법원 / 사건번호 / 매각기일 / 소재지 /
+   경매결과·유찰 / 감정가 / 최저가 / 부동산구분 / 특이사항.
+   다만 우리 데이터에 없는 칸은 만들지 않았다. 빈 칸을 걸어 두면
+   사용자는 그 조건이 먹는 줄 안다. */
+.slay{display:grid;grid-template-columns:262px minmax(0,1fr);gap:16px;align-items:start;margin-top:14px}
+.smain{min-width:0}
+.fbar{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--sh1);position:sticky;top:66px;max-height:calc(100vh - 84px);
+  display:flex;flex-direction:column;overflow:hidden}
+.fbar-h{display:flex;align-items:center;gap:7px;padding:11px 13px;flex:none;
+  border-bottom:1px solid var(--border);font-size:14px;letter-spacing:-.02em}
+.fbar-h .chip{padding:2px 8px;font-size:11px}
+.fbar-h .fsel{padding:4px 9px;font-size:11.5px;color:var(--muted-fg)}
+.fbar-h .fsel[disabled]{opacity:.45;cursor:default}
+.fbar-t{display:none}
+.fbar-b{overflow-y:auto;overscroll-behavior:contain;padding:0 13px 14px;
+  display:flex;flex-direction:column}
+.fgrp{padding:11px 0 0;border-top:1px solid var(--border)}
+.fgrp:first-child{border-top:0}
+.flab{font-size:11.5px;font-weight:800;color:var(--muted-fg);letter-spacing:.02em;margin-bottom:6px}
+.fhint{margin-top:5px;font-size:10.5px;line-height:1.5;color:var(--muted-fg)}
+.fbar .fsel{padding:7px 9px;font-size:12.5px;font-weight:600}
+.fsel.w{width:100%}
+.frow{display:flex;align-items:center;gap:6px}
+.frow .fsel{min-width:0}
+.fmid{font-size:11.5px;font-weight:700;color:var(--muted-fg);flex:none}
+.fdate{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px 8px}
+.fchips{display:flex;flex-wrap:wrap;gap:5px}
+.fchip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);
+  background:var(--card);border-radius:8px;padding:5px 8px;font-size:11.5px;
+  font-weight:700;color:var(--muted-fg)}
+.fchip i{font-style:normal;font-size:10px;font-weight:800;opacity:.72}
+.fchip:hover{border-color:var(--input);background:var(--muted)}
+.fchip.on{background:var(--primary);border-color:var(--primary);color:var(--primary-fg)}
+/* 적용된 조건을 결과 위에 한 줄로 다시 보여준다. 사이드바를 스크롤해
+   내려가면 무엇이 걸려 있는지 안 보이기 때문이다. */
+.fpills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fpill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);
+  background:var(--secondary);color:var(--secondary-fg);border-radius:99px;
+  padding:4px 10px;font-size:11.5px;font-weight:700}
+.fpill em{font-style:normal;opacity:.7;font-weight:800}
+.fpill span{font-size:13px;line-height:1;opacity:.55;font-weight:700}
+.fpill:hover span{opacity:1}
+@media (max-width:959px){
+  .slay{grid-template-columns:1fr}
+  .fbar{position:static;max-height:none}
+  .fbar-t{display:inline-block}
+  .fbar-b{display:none}
+  .fbar.open .fbar-b{display:flex}
+}
+
+/* ── 물건 카드 ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(266px,1fr));gap:12px;margin-top:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--sh1);
+  transition:box-shadow .13s,border-color .13s}
+.card:hover{box-shadow:var(--sh2);border-color:var(--input)}
+.card.closed{opacity:.5;filter:saturate(.4)}
+.card.closed:hover,.card.closed:focus-within{opacity:1;filter:none}
+/* 썸네일을 없앴다. 사진이 없는데 94px 짜리 회색 상자에 '기타' 를 크게 찍어
+   두니, 카드 넉 장이 나란히 서면 빈 상자 벽이 됐다. 대신 카드 맨 위에
+   3px 상태 띠를 두고 배지는 본문 첫 줄로 내렸다 — 훑을 때 먼저 읽어야 하는
+   것은 용도가 아니라 진행 상태다. 색은 검증기를 통과한 --v-* 를 쓴다. */
+.card{position:relative}
+.card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--v-unk);border-radius:var(--radius) var(--radius) 0 0}
+.card.s-live::before{background:var(--v-live)}
+.card.s-sold::before{background:var(--v-sold)}
+.card.s-done::before{background:var(--v-done)}
+/* 카드 글자 크기는 네 단으로만 쓴다. 재 보니 9~14px 이 열네 가지로 갈려
+   있었고, 그러면 무엇이 더 중요한지가 크기로 읽히지 않는다. 9·9.5px 은
+   한글 굵은 글씨로 읽기에 작아서 아예 없앴다. */
+:root{ --cs1:11px;   /* 라벨·주석 */
+       --cs2:12.5px; /* 보조 정보 */
+       --cs3:14.5px; /* 소재지 — 카드의 주인공 */
+       --cs4:15px;   /* 금액 */ }
+.chead{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-bottom:7px}
+.chead .vchip{position:static}
+.use-tag{font-size:var(--cs1);font-weight:800;white-space:nowrap;color:var(--muted-fg)}
+.badges{display:flex;gap:4px;flex-wrap:wrap}
+.bdg{font-size:var(--cs1);font-weight:800;padding:2px 8px;border-radius:99px;color:#fff;white-space:nowrap}
+/* .b-unk 는 위(120행)에서 정의되는데 .bdg 의 color:#fff 가 뒤에 와서 덮어버린다.
+   같은 특이도면 뒤가 이긴다 — 흰 글자에 흰 배경이 됐다. 여기서 되돌린다. */
+/* --muted-fg 는 이 배경에서 4.33:1 로 10px 굵은 글씨 기준(4.5:1)에 못 미친다. */
+.bdg.b-unk{background:var(--muted);color:#6b6b74;border:1px solid var(--border)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bdg.b-unk{color:var(--muted-fg)}}
+:root[data-theme="dark"] .bdg.b-unk{color:var(--muted-fg)}
+.b-clean{background:var(--green)}
+.b-today{background:var(--destructive)} .b-fail{background:#dd7400}
+.b-live{background:var(--primary)} .b-sold{background:#78716c} .b-done{background:#9a9aa4}
+.use-dot{display:none}
+.use-dot-unused{position:absolute;top:8px;right:8px;background:rgba(9,9,16,.8);color:#fff;font-size:10px;
+  font-weight:700;border-radius:99px;padding:3px 9px}
+.vchip{position:absolute;bottom:8px;right:8px;font-size:var(--cs1);font-weight:800;border-radius:99px;
+  padding:2px 8px;background:var(--green-soft);color:var(--green);border:1px solid currentColor;
+  white-space:nowrap}
+.vchip.no{background:var(--card);color:var(--muted-fg)}
+/* 결과(매각·유찰)를 검색 색인으로 확인한 물건. 법원 원본 대조(초록)와 섞이지 않게 호박색. */
+.vchip.idx{background:var(--amber-soft);color:var(--amber)}
+/* 카드 썸네일 밖(상세 헤더 등)에서는 절대배치를 풀어야 한다. 안 그러면
+   가장 가까운 position 조상까지 올라가 엉뚱한 자리에 떠 있는다. */
+.dtop .vchip{position:static}
+.cbody{padding:13px 14px 0;flex:1;display:flex;flex-direction:column}
+.cmeta{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:var(--cs1);
+  color:var(--muted-fg);font-weight:600}
+.cmeta .sep{opacity:.4}
+.cmeta .cno{color:var(--primary);font-weight:800}
+.cmeta .ino{background:var(--secondary);color:var(--secondary-fg);border-radius:5px;padding:0 5px;
+  font-size:var(--cs1);font-weight:800}
+/* 한글은 기본값이 글자 단위로 끊겨 '아스테라스' 가 '아 / 스테라스' 가 된다.
+   keep-all 로 어절에서 끊고, 한 어절이 줄보다 길 때만 break-word 로 넘긴다. */
+.miss{color:var(--muted-fg);font-weight:500}
+.caddr{margin:6px 0 2px;font-size:var(--cs3);font-weight:700;line-height:1.5;letter-spacing:-.02em;
+  text-wrap:balance;word-break:keep-all;overflow-wrap:break-word}
+.dline{margin:8px 0 0;font-size:var(--cs2);font-weight:700;color:var(--primary)}
+.sold-mark{margin-top:8px;background:var(--muted);border-radius:8px;padding:6px 9px;font-size:var(--cs1);
+  color:var(--muted-fg);font-weight:600}
+.boxes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.boxes.one{grid-template-columns:1fr}
+.bx2{border:1px solid var(--border);border-radius:8px;padding:7px 10px;background:var(--muted)}
+.bx2 .k{font-size:var(--cs1);color:var(--muted-fg);font-weight:600}
+.bx2 .v{font-size:var(--cs2);font-weight:700;margin-top:1px}
+.bx2 .v.dim{color:var(--muted-fg);font-weight:500}
+.sprow{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.sp-t{font-size:var(--cs1);font-weight:800;color:var(--destructive);border:1px solid currentColor;
+  border-radius:5px;padding:1px 7px}
+/* 카드 높이가 136~378px 로 들쭉날쭉했다. 대부분 이 주석 길이 탓이다.
+   두 줄로 자른다 — 전문은 상세 화면에 그대로 있다.
+   다만 경고문(.warn)은 절대 자르지 않는다. */
+.cnote{font-size:var(--cs1);color:var(--muted-fg);margin:8px 0 0;line-height:1.55;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cnote.warn{display:block;overflow:visible;color:var(--amber)}
+.cfoot{margin-top:auto;padding:11px 14px;display:grid;grid-template-columns:1fr 1fr auto;gap:8px;
+  align-items:end;background:var(--muted);border-top:1px solid var(--border);
+  margin-left:-14px;margin-right:-14px}
+.pf .k{font-size:var(--cs1);color:var(--muted-fg);font-weight:600}
+.pf .v{font-size:var(--cs4);font-weight:800;margin-top:1px;letter-spacing:-.03em}
+.pf .v.lo{color:var(--destructive)} .pf .v.mid{color:#b75000} .pf .v.blue{color:var(--primary)}
+/* 평당 단가. 금액 바로 밑에 작게 — 금액을 밀어내면 안 된다. */
+.py{font-size:var(--cs1);color:var(--muted-fg);font-weight:700;margin-top:1px;white-space:nowrap}
+.dday{margin-left:6px;font-size:var(--cs1);font-weight:800;border-radius:99px;padding:1px 7px;
+  background:var(--secondary);color:var(--secondary-fg)}
+.dday.near{background:var(--destructive-soft);color:var(--destructive)}
+.rt-pill{text-align:center}
+.rt-pill .k{font-size:var(--cs1);color:var(--muted-fg);font-weight:600}
+.rt-pill .v{font-size:var(--cs4);font-weight:800;border-radius:99px;padding:2px 10px;margin-top:2px;
+  display:inline-block;font-family:Montserrat,sans-serif}
+/* 시세 대비는 값을 판단하는 숫자다. 배지 줄이 아니라 금액 줄에 둔다. */
+.cfoot .mkchip{grid-column:1/-1;justify-self:start;margin-top:2px}
+.rt-hi{background:var(--secondary);color:var(--secondary-fg)}
+.rt-mid{background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber-line)}
+.rt-lo{background:var(--destructive-soft);color:var(--destructive)}
+
+/* ── 표 ── */
+.tblwrap{margin-top:14px;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);overflow-x:auto;box-shadow:var(--sh1)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:760px}
+th{text-align:left;font-size:11px;font-weight:700;color:var(--muted-fg);padding:11px 12px;
+  border-bottom:1px solid var(--border);white-space:nowrap;background:var(--muted)}
+td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--muted)}
+tbody tr.closed{opacity:.5} tbody tr.closed:hover{opacity:1}
+td.n{text-align:right;white-space:nowrap}
+.t-sub{font-size:11px;color:var(--muted-fg)}
+
+.foot{margin-top:34px;font-size:11.5px;color:var(--muted-fg);line-height:1.75;
+  border-top:1px solid var(--border);padding-top:18px}
+.foot b{color:var(--foreground);font-weight:700}
+</style>
+
+<nav class="nav">
+  <div class="nav-in">
+    <span class="brand"><span class="b1">경매</span>현황판<span class="b2">대구권 우선</span></span>
+    <div class="tabs" id="tabs"></div>
+    <button class="helpbtn" id="help-open" aria-label="사용법 열기">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+        stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.6"/><path d="M12 17h.01"/></svg>
+      <span>사용법</span>
+    </button>
+  </div>
+</nav>
+
+<div class="modal" id="guide" hidden role="dialog" aria-modal="true" aria-labelledby="guide-t">
+  <div class="sheet" role="document">
+    <div class="sheet-h">
+      <h2 id="guide-t">이 현황판 쓰는 법</h2>
+      <button class="sheet-x" id="help-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet-b" id="guide-body"></div>
+    <div class="sheet-f">
+      <span class="sub" id="guide-note"></span>
+      <button class="tab on" id="help-done">알겠습니다</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="view"></div>
+
+<script>
+const D = __DATA__;
+const APTS = __APTS__;
+const NEWS = __NEWS__;
+const DTL = __DETAIL__;
+const ONBID = __ONBID__;
+const CARS = __CARS__;
+const STAMP = '2026-08-25 20:00 KST';
+
+/* ── 공통 유틸 ── */
+const esc = s => String(s ?? '').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const won = n => {
+  if(n==null) return '—';
+  const e = Math.floor(n/1e8), m = Math.round((n%1e8)/1e4);
+  if(e && m) return `${e}억 ${m.toLocaleString()}만`;
+  if(e) return `${e}억`;
+  return `${m.toLocaleString()}만`;
+};
+/* 전용면적은 건축물대장(동·호까지 특정)이 가장 정확하다. 없으면 색인값을 쓴다.
+   실거래 밴드는 단지 전체의 최다 거래 평형이라 이 호수의 면적이 아니다 —
+   성서우방유쉘 103동 802호는 밴드 84.9㎡ 인데 실제 전유면적이 128㎡ 였다. */
+/* 전용면적 기준 평당 단가. 탱크옥션이 금액마다 붙여 주는 값이고,
+   한국에서 물건끼리 비싼지 싼지를 견주는 실제 단위다. 감정가 1억 8,400만이
+   비싼지는 평당가로 봐야 안다.
+   **면적을 모르면 만들지 않는다.** 단지 대표 평형으로 대신 나누면 이 호수의
+   평당가가 아니라 남의 평당가가 된다. */
+/* 오늘부터 며칠 남았나. 지났으면 음수. */
+function dayGap(d){
+  if(!d) return null;
+  const a = new Date(TODAY+'T00:00:00'), b = new Date(d+'T00:00:00');
+  if(isNaN(b)) return null;
+  return Math.round((b - a) / 86400000);
+}
+function pyeong(x){
+  const a = x.br?.ar ? +x.br.ar : (x.ar!=null ? parseFloat(x.ar) : NaN);
+  if(!a || isNaN(a)) return null;
+  const py = a / 3.3058;
+  const f = v => v ? Math.round(v / py / 1e4) : null;
+  return {py, ap: f(x.ap), mn: f(x.mn)};
+}
+function areaOf(x){
+  const n = x.br?.ar;
+  if(n) return {m2:n, txt:S.unit==='py'?`${(n/3.3058).toFixed(1)}평`:`${n}㎡`, src:'대장'};
+  if(!x.ar) return null;
+  const p = parseFloat(x.ar);
+  /* x.ar 은 '84.97㎡' 같은 문자열일 때도 있고 84.9427 같은 숫자일 때도 있다.
+     숫자를 그대로 찍으면 단위가 없는 '84.9427' 이 화면에 나온다. */
+  const bare = typeof x.ar === 'number' || /^\s*[\d.]+\s*$/.test(String(x.ar));
+  return {m2:isNaN(p)?null:p, src:'색인',
+    txt:(S.unit==='py' && !isNaN(p)) ? `${(p/3.3058).toFixed(1)}평`
+        : bare && !isNaN(p) ? `${Math.round(p*100)/100}㎡` : String(x.ar)};
+}
+/* ── 선별(screen) ──────────────────────────────────────────────
+   screen_clean.py 가 매긴다. 권리분석이 아니라 '문제가 있을 때 겉으로
+   드러나는 자국' 이 있나 없나다. 화면 문구도 그 이상을 말하지 않는다. */
+const SCREEN_LAB = {clean: '권리 자국 없음', risk: '자국 있음'};
+const SCREEN_ORDER = ['권리 자국 없음', '자국 있음', '판정 불가'];
+
+/* ── 실거래가 시세 ─────────────────────────────────────────────
+   mk 는 attach_rtms.py 가 물건에 붙인다. 금액 단위는 **만원**이다.
+   won() 은 원을 받으므로 반드시 1e4 를 곱해서 넘긴다. */
+const manwon = n => n == null ? '—' : won(n * 1e4);
+
+/* 최저매각가가 실거래 중앙값의 몇 % 인가. 낮을수록 싸게 나온 것이다. */
+function mkTone(M){
+  const g = M?.gap;
+  if(g == null) return 'mk-mid';
+  /* 감정가의 30% 밑까지 내려온 물건에 '싸다'는 초록을 붙이면 정반대로 읽힌다.
+     그만큼 유찰됐다는 건 아무도 안 받아 갔다는 뜻이다. */
+  if(M.deep) return 'mk-warn';
+  if(g <= 70) return 'mk-good';
+  if(g <= 85) return 'mk-mid';
+  return 'mk-warn';
+}
+
+/* 카드 머리에 붙는 한 줄짜리 표식 */
+function mkChip(x){
+  const M = x.mk;
+  if(!M || M.gap == null) return '';
+  return `<span class="mkchip ${mkTone(M)}" title="${M.deep
+    ? '유찰이 쌓여 감정가 아래로 크게 내려온 물건입니다. 전체 시세와 직접 비교하기 어렵습니다.'
+    : '최저매각가 ÷ 같은 평형 실거래 중앙값'}">시세 ${M.gap}%${M.deep?' ⚠':''}</span>`;
+}
+
+/* 전세가율. 깡통 위험을 본다 — 전세가 매매가에 붙어 있으면
+   대항력 있는 임차인의 보증금을 낙찰가로 못 덮는다. */
+function jeonRate(M){
+  const t = M.t?.med, j = M.r?.jmed;
+  return (t && j) ? Math.round(j / t * 100) : null;
+}
+
+/* 전세가율은 두 중앙값의 비다. 전세 표본이 한두 건이면 중앙값에 대표성이 없고,
+   100% 를 넘으면 두 표본의 평형·시점이 아예 다르다는 뜻이다. 2026-09-21 에
+   시지2차사월보성타운이 전세 2건으로 '전세가율 200%' 를 달고 나왔다 — 그대로
+   읽으면 깡통 직전으로 보인다. 숨기지 않고 왜 못 믿는지 붙인다
+   (mk.deep·arGuess 와 같은 방식이다). */
+function jeonWarn(M){
+  const jr = jeonRate(M);
+  if(jr == null) return null;
+  const jn = M.r?.jn || 0;
+  if(jr > 100) return '전세 중앙값이 매매 중앙값보다 높습니다 — 두 표본의 평형·시점이 달라 그대로 비교할 수 없습니다';
+  if(jn < 3) return `전세 ${jn}건뿐이라 중앙값의 대표성이 낮습니다`;
+  return null;
+}
+
+/* 블로그 초안에 넣을 시세 줄. 화면용 HTML 과 달리 순수 텍스트다. */
+function mkLines(x){
+  const M = x.mk;
+  if(!M) return [];
+  const L = [], T = M.t, R = M.r, jr = jeonRate(M);
+  const who = `${M.nm}${M.ar?` 전용 ${M.ar}㎡${M.arGuess?' — 이 물건의 면적을 몰라 단지 대표 평형으로 대신함':''}`:''}`;
+  if(T) L.push(`· 실거래 중앙값 ${manwon(T.med)} (${who}, 최근 12개월 ${T.n}건, 마지막 ${T.last})`
+    + (T.n > 1 ? ` · 범위 ${manwon(T.min)}~${manwon(T.max)}` : ''));
+  else L.push(`· 이 평형의 매매 실거래가 최근 12개월간 없습니다 (${who})`);
+  if(R?.jmed) L.push(`· 전세 중앙값 ${manwon(R.jmed)} (${R.jn}건)`
+    + (jr != null ? ` · 전세가율 ${jr}%${jeonWarn(M) ? ` (${jeonWarn(M)})` : ''}` : ''));
+  if(M.gap != null) L.push(M.deep
+    ? `· 최저가는 실거래 중앙값의 ${M.gap}% — 다만 유찰이 쌓여 크게 내려온 물건이라 이 비율만 보고 판단하면 안 됩니다`
+    : `· 최저가는 실거래 중앙값의 ${M.gap}%`);
+  return L;
+}
+
+function mkPanel(x){
+  const M = x.mk;
+  if(!M) return '';
+  const T = M.t, R = M.r, jr = jeonRate(M);
+  const rows = (T?.rows || []).map(([d, amt, fl]) =>
+    `<tr><td class="mono">${esc(d)}</td><td class="mono r">${manwon(amt)}</td>
+     <td class="mono r">${fl ? esc(fl) + '층' : '—'}</td></tr>`).join('');
+  return `<div class="mkbox">
+    <div class="mk-h">
+      <b>실거래가</b>
+      <span class="sub">${esc(M.nm)}${M.ar ? ` · 전용 ${M.ar}㎡${M.arGuess?'<i class="mk-q" title="이 물건의 전용면적을 몰라 단지에서 가장 많이 거래된 평형으로 대신했습니다. 이 호수의 면적이 아닙니다.">(단지 대표 평형)</i>':''}` : ''}
+        ${M.yr ? ` · ${esc(M.yr)}년` : ''} · ${M.src === '지번' ? '지번 일치' : '단지명 일치'}</span>
+      ${M.gap != null ? `<span class="mkchip ${mkTone(M)}">최저가 = 시세의 ${M.gap}%</span>` : ''}
+    </div>
+    ${T ? `<div class="mk-g">
+      <div><span class="k">매매 중앙값</span><span class="v mono">${manwon(T.med)}</span></div>
+      <div><span class="k">범위</span><span class="v mono">${manwon(T.min)} ~ ${manwon(T.max)}</span></div>
+      <div><span class="k">거래</span><span class="v mono">${T.n}건</span></div>
+      <div><span class="k">최근</span><span class="v mono">${esc(T.last)}</span></div>
+    </div>` : `<p class="sub">이 평형의 매매 거래가 없습니다.</p>`}
+    ${R ? `<div class="mk-g mk-r">
+      ${R.jmed ? `<div><span class="k">전세 중앙값</span><span class="v mono">${manwon(R.jmed)} <i>(${R.jn}건)</i></span></div>` : ''}
+      ${R.wmed ? `<div><span class="k">월세 중앙값</span><span class="v mono">보증 ${manwon(R.wdep)} / ${R.wmed}만 <i>(${R.wn}건)</i></span></div>` : ''}
+      ${jr != null ? (()=>{ const jw = jeonWarn(M); return `<div><span class="k">전세가율</span><span class="v mono ${jw || jr >= 80 ? 'mk-warn-t' : ''}">${jr}%${jw ? ` <i class="mk-q" title="${esc(jw)}">?</i>` : ''}</span></div>`; })() : ''}
+    </div>` : ''}
+    ${jeonWarn(M) ? `<p class="mk-n mk-warn-t">전세가율 ${jr}% 는 그대로 읽으면 안 됩니다 — ${esc(jeonWarn(M))}.</p>` : ''}
+    ${rows ? `<table class="mk-t"><thead><tr><th>계약일</th><th class="r">거래금액</th><th class="r">층</th></tr></thead><tbody>${rows}</tbody></table>` : ''}
+    ${M.deep ? `<p class="mk-n mk-warn-t"><b>이 비율은 그대로 읽으면 안 됩니다.</b>
+      유찰이 쌓여 감정가 아래로 크게 내려온 물건입니다. 아무도 받아 가지 않은 데는
+      지분매각·유치권·대항력 임차인 같은 이유가 따로 있는 경우가 많고, 그때는
+      온전한 소유권의 시세와 직접 비교할 수 없습니다. 매각물건명세서를 먼저 보십시오.</p>` : ''}
+    <p class="mk-n">국토교통부 실거래가 · 최근 12개월 · 같은 지번·같은 평형(±3㎡) 기준입니다.
+      해제된 거래는 뺐습니다. 층·향·수리 상태는 반영되지 않으니 참고용으로만 보십시오.</p>
+  </div>`;
+}
+
+const SOLD = new Set(['매각','낙찰']), CLOSED = new Set(['매각','낙찰','종료']);
+const isSold = x => SOLD.has(x.st), isClosed = x => CLOSED.has(x.st);
+function ratioOf(x){
+  if(x.rt!=null) return x.rt;
+  if(x.ld?.length){ const v=x.ld.map(r=>r[1]).filter(n=>n>0);
+    if(v.length>1) return Math.round(v[v.length-1]/v[0]*100); }
+  return null;
+}
+/* 0.47% 를 반올림하면 0% 가 된다. 공짜처럼 읽히므로 그렇게 쓰지 않는다. */
+function rtTxt(rt, x){
+  if(rt==null) return '—';
+  if(rt===0 && x && x.mn) return '<1%';
+  return rt + '%';
+}
+function useShort(u){
+  if(!u) return '기타';
+  if(/아파트/.test(u)) return '아파트';
+  if(/오피스텔/.test(u)) return u.includes(',')?'상가':'오피';
+  if(/다세대|연립|빌라/.test(u)) return '빌라';
+  if(/단독|다가구/.test(u)) return '단독';
+  if(/상가주택/.test(u)) return '상가';
+  if(/근린|상가/.test(u)) return '근생';
+  if(/공장/.test(u)) return '공장';
+  if(/대지|토지/.test(u)) return '대';
+  if(/^답$|^전$/.test(u)) return u;
+  return '기타';
+}
+// 종별(대분류) — auct.kr 의 "종별 법원경매" 에 대응
+function kindOf(x){
+  const u = x.ut || '';
+  if(/아파트/.test(u)) return '아파트';
+  if(/다세대|연립|빌라/.test(u)) return '빌라·다세대';
+  if(/단독|다가구|상가주택/.test(u)) return '주택';
+  if(/오피스텔/.test(u)) return '오피스텔';
+  if(/근린|상가/.test(u)) return '상가';
+  if(/대지|토지|^답$|^전$|임야/.test(u)) return '토지';
+  if(/공장|창고/.test(u)) return '공장·창고';
+  return '기타';
+}
+const KINDS = ['아파트','빌라·다세대','주택','오피스텔','상가','토지','공장·창고','기타'];
+const DAEGU = new Set(['대구','경북']);
+const REGION_ORDER = ['서울','경기','인천','대구','경북','부산','광주','대전','울산','강원','충북','충남','전북','경남'];
+const REGIONS = (()=>{ const s=[...new Set(D.map(x=>x.r).filter(Boolean))];
+  return [...REGION_ORDER.filter(r=>s.includes(r)), ...s.filter(r=>!REGION_ORDER.includes(r)).sort()]; })();
+
+const pad = n => String(n).padStart(2,'0');
+const iso = (y,m,d) => `${y}-${pad(m)}-${pad(d)}`;
+const NOW = new Date();
+const TODAY = iso(NOW.getFullYear(), NOW.getMonth()+1, NOW.getDate());
+const plusDays = k => new Date(Date.now()+k*864e5).toISOString().slice(0,10);
+
+// 유찰 사다리에만 기일이 있으면 마지막 기일을 매각기일로 승격
+for(const x of D){
+  if(x.d || !x.ld?.length) continue;
+  const m=/^(\d{2})\.(\d{2})\.(\d{2})$/.exec(x.ld[x.ld.length-1][0]);
+  if(m){ x.d=`20${m[1]}-${m[2]}-${m[3]}`; x.dFromLadder=true; }
+}
+const DATED = D.filter(x=>x.d);
+const BY_DAY = DATED.reduce((m,x)=>((m[x.d] ??= []).push(x), m), {});
+const LIVE = D.filter(x=>x.st==='진행중');
+const VERIFIED = D.filter(x=>x.verified);
+const UPCOMING = LIVE.filter(x=>x.d && x.d>=TODAY).sort((a,b)=>a.d<b.d?-1:1);
+
+let S = { unit:'m2', view:'card', sort:'기일 임박순' };
+const $ = id => document.getElementById(id);
+
+/* ── 카드 / 행 ── */
+function card(x){
+  const rt = ratioOf(x), b = [];
+  if(x.d===TODAY && x.st==='진행중') b.push('<span class="bdg b-today">오늘</span>');
+  else if(x.st==='진행중' && x.d && x.d>TODAY && x.d<=plusDays(7)) b.push('<span class="bdg b-today">임박</span>');
+  if(x.f) b.push(`<span class="bdg b-fail">유찰 ${x.f}</span>`);
+  if(x.screen === 'clean') b.push(`<span class="bdg b-clean" title="${esc(x.screenBy||'')} — 특이사항과 유찰횟수로 거른 것이지 권리분석을 마쳤다는 뜻이 아닙니다">권리 자국 없음</span>`);
+  /* 시세 대비 %는 상태가 아니라 값이다. 머리줄 배지에서 빼고 금액 줄로 내렸다.
+     머리줄에 배지가 최대 여섯 개까지 붙어서 정작 소재지가 눈에 안 들어왔다. */
+  /* '진행' 은 263건 중 263건에 붙는다 — 모든 카드에 같은 배지를 다는 건
+     정보가 아니라 잡음이다. 기본 상태는 위쪽 색 띠가 나타내고, 배지는
+     예외 상태(매각·종료·미확인)에만 단다. */
+  if(isSold(x)) b.push('<span class="bdg b-sold">매각</span>');
+  else if(x.st==='종료') b.push('<span class="bdg b-done">종료</span>');
+  else if(x.st==='미확인') b.push('<span class="bdg b-unk">상태 미확인</span>');
+  const rtc = rt==null?'':rt>=60?'rt-hi':rt>=30?'rt-mid':'rt-lo';
+  const mnc = rt==null?'blue':rt>=60?'blue':rt>=30?'mid':'lo';
+  const A = areaOf(x);
+  /* 국토부 실거래가(mk)가 붙었으면 그것을 쓴다. tx 는 네이버 색인 대체값이다. */
+  const txv = x.mk?.t ? manwon(x.mk.t.med) : x.tx ? won(x.tx.amt) : null;
+
+  const PY = pyeong(x);
+  const uid = `${x.ct}|${x.caNo}|${x.ino||1}`;
+  const sc = x.st==='진행중' ? 's-live' : isSold(x) ? 's-sold'
+           : x.st==='종료' ? 's-done' : '';
+  let h = `<article class="card ${sc}${isClosed(x)?' closed':''}" data-det="${esc(uid)}" role="button" tabindex="0" aria-label="${esc(x.caNo)} 상세 보기">`;
+  h += `<div class="cbody">
+    <div class="chead">
+      <div class="badges">${b.join('')}</div>
+      ${vchip(x)}</div>
+    <div class="cmeta"><span class="cno">${esc(x.caNo||x.c)}</span>`
+     + `${x.multi?`<span class="ino">물건 ${x.ino}</span>`:''}<span>${esc(x.ct)}</span>`
+     + `<span class="sep">·</span><span class="use-tag">${esc(useShort(x.ut))}</span></div>
+    <p class="caddr">${addrOf(x)}</p>`;
+  if(x.d){
+    /* 남은 날짜를 같이 적는다. 날짜만 보고 며칠 남았는지 세는 건 사람 몫이
+       아니다. 지난 기일에는 붙이지 않는다 — 'D+3' 은 입찰과 무관하다. */
+    const dd = x.st==='진행중' ? dayGap(x.d) : null;
+    h += `<p class="dline">매각기일 ${esc(x.d)}${x.dFromLadder?' (사다리 기준)':''}`
+       + (dd!=null && dd>=0 ? `<span class="dday${dd<=3?' near':''}">${dd===0?'오늘':`D-${dd}`}</span>` : '')
+       + `</p>`;
+  }
+  if(x.st==='미확인') h += `<div class="unk-mark">진행상태 미확인 — 색인에 상태가 없습니다. 이미 종결된 사건일 수 있어 법원 원본 대조가 필요합니다.</div>`;
+  else if(isSold(x)) h += `<div class="sold-mark">매각됨 — 입찰이 끝난 물건입니다</div>`;
+  else if(x.st==='종료') h += `<div class="sold-mark">종결 — 배당종결·취하·기각된 사건입니다</div>`;
+  /* 둘 다 비면 '— —' 상자 두 개만 남는다. 모르는 걸 칸으로 보여줄 이유가 없다.
+     하나만 있으면 그 하나가 폭을 다 쓴다. */
+  const bx = [];
+  if(A) bx.push(`<div class="bx2"><div class="k">전용면적${A.src==='대장'?' <span class="src-b">대장</span>':''}</div>
+      <div class="v">${esc(A.txt)}</div></div>`);
+  if(txv) bx.push(`<div class="bx2"><div class="k">${x.mk?.t?'실거래 중앙값 <span class="src-b">국토부</span>':'최근 실거래'}</div>
+      <div class="v">${txv}</div></div>`);
+  if(bx.length) h += `<div class="boxes${bx.length===1?' one':''}">${bx.join('')}</div>`;
+  if(x.sp?.length) h += `<div class="sprow">${x.sp.map(t=>`<span class="sp-t">${esc(t)}</span>`).join('')}</div>`;
+  /* 직전 기일이 유찰인데 다음 기일이 아직 안 잡힌 물건이 있다. 그때 보이는
+     최저가는 '다음 회차 가격' 이 아니라 **방금 유찰된 회차의 가격**이다.
+     그걸 안 적으면 낮아질 값을 이미 낮아진 값으로 읽는다. 또 이 경우
+     최저가율이 100% 여도 '가격이 리셋됐다' 가 아니므로 아래 경고를 끈다. */
+  const _lastLd = (x.ld && x.ld.length) ? x.ld[x.ld.length-1] : null;
+  const pendingNext = !x.d && x.st==='진행중' && _lastLd && /유찰/.test(String(_lastLd.res||''));
+  if(pendingNext)
+    h += `<p class="cnote warn">${esc(_lastLd.d)} 유찰 — 다음 매각기일과 최저매각가격은 법원 게시 전입니다. 아래 최저가는 그날 유찰된 회차의 값입니다.</p>`;
+  else if(rt!=null && rt>=100 && x.f>0)
+    h += `<p class="cnote warn">유찰 ${x.f}회 기록이 있으나 최저가가 감정가와 같습니다 — 절차 변경·재매각으로 가격이 되돌아간 경우입니다.</p>`;
+  // 평형을 추정한 건 반드시 적는다. 그냥 '전용 60㎡' 라고만 쓰면 이 호수를
+  // 재서 나온 값처럼 읽힌다.
+  if(x.mk) h += `<p class="cnote">${esc(x.mk.nm)}${x.mk.ar?` 전용 ${x.mk.ar}㎡${x.mk.arGuess?'(단지 대표 평형 — 이 호수 면적 아님)':''}`:''} · ${x.mk.t?`최근 12개월 ${x.mk.t.n}건 중위값`:'이 평형 매매 거래 없음'}${x.mk.r?.jmed?` · 전세 ${manwon(x.mk.r.jmed)}`:''}</p>`;
+  else if(x.tx) h += `<p class="cnote">${esc(x.tx.nm)} · ${esc(x.tx.note||'')}</p>`;
+  else if(x.note) h += `<p class="cnote">${esc(x.note)}</p>`;
+  h += `<div class="cfoot">
+    <div class="pf"><div class="k">감정가</div><div class="v">${won(x.ap)}</div>
+      ${PY?.ap?`<div class="py">평당 ${PY.ap.toLocaleString()}만</div>`:''}</div>
+    <div class="pf"><div class="k">최저가</div><div class="v ${mnc}">${x.mnApprox?'≈':''}${won(x.mn)}</div>
+      ${PY?.mn?`<div class="py">평당 ${PY.mn.toLocaleString()}만</div>`:''}</div>
+    <div class="rt-pill"><div class="k">최저가율</div>${rt!=null?`<div class="v ${rtc}">${rtTxt(rt,x)}</div>`:'<div class="v" style="color:var(--muted-fg)">—</div>'}</div>
+    ${x.mk?.gap != null ? mkChip(x) : ''}
+  </div></div></article>`;
+  return h;
+}
+/* 모아보기 한 줄. 카드와 같은 물건을 훨씬 좁게 보여준다. */
+/* 소재지가 없는 물건이 79건 있다(2026-09-02 기준). CODEF 가 사건은 주는데
+   물건 목록을 빈 채로 주는 경우다 — 취하·기각이거나 아직 목록이 안 올라온
+   사건이다. 빈 칸으로 두면 카드에 점 하나만 남아 망가진 것처럼 보인다.
+   무엇이 없는지 적는다. 지어내지 않는다. */
+/* 대장 단지(data/landmarks.json → lm)는 어디에 나오든 앞에 ⭐ 를 단다. */
+/* 검증 배지. stSrc==='idx' 는 매각·유찰 결과를 검색 색인(richgo·경매알리미)에서
+   확인했다는 뜻이다(scripts/index_recheck.py). 법원 원본이 아니므로 '법원 확인' 과
+   다른 배지를 단다 — 이 구분을 지우지 마라.
+   stSrc==='court' 는 사용자 PC 크롬으로 법원경매정보를 직접 읽은 결과다(scripts/apply_court.py). */
+function vchip(x){
+  if(x.stSrc==='court')
+    return `<span class="vchip" title="법원경매정보에서 ${esc(x.stAt||'')}에 기일내역을 직접 확인했습니다.">법원 확인</span>`;
+  if(x.stSrc==='idx')
+    return `<span class="vchip idx" title="결과를 검색 색인(${esc(x.stBy||'')}·${esc(x.stAt||'')})에서 확인했습니다. 법원 원본이 아닙니다.">색인 확인</span>`;
+  return `<span class="vchip${x.verified?'':' no'}">${x.verified?(x.vsrc?esc(x.vsrc):'법원 확인'):'미검증'}</span>`;
+}
+function lmStar(x){
+  return x && x.lm ? `<span class="lm-star" title="대장 단지 · ${esc(x.lm)}">⭐</span> ` : '';
+}
+function addrOf(x){
+  return lmStar(x) + (x.a ? esc(x.a) : '<span class="miss">소재지 미색인</span>');
+}
+
+function dlRow(x, opt){
+  opt = opt || {};
+  const d = opt.date !== undefined ? opt.date : x.d;
+  const rt = opt.rt !== undefined ? opt.rt : ratioOf(x);
+  const uid = opt.det === false ? '' : ` data-det="${esc(`${x.ct}|${x.caNo}|${x.ino||1}`)}"`;
+  return `<button class="dl-row"${uid}>
+    <span class="dl-d${d?'':' none'}">${d ? esc(d).slice(5) : '기일 미색인'}</span>
+    <span class="dl-t"><b>${lmStar(x)}${esc(opt.title || x.a || '주소 미색인')}</b>
+      <span>${esc(opt.sub || `${x.caNo||''} · ${x.ct||''}`)}</span></span>
+    <span class="dl-n"><b>${opt.amt !== undefined ? opt.amt : won(x.mn)}</b>
+      <span>${rt!=null ? rtTxt(rt, x) : (opt.foot || '')}</span></span>
+  </button>`;
+}
+function dlMore(page, label){
+  return `<button class="dl-more" data-go="${esc(page)}">${esc(label)} →</button>`;
+}
+function rowOf(x){
+  const rt = ratioOf(x);
+  return `<tr class="${isClosed(x)?'closed':''}" data-det="${esc(`${x.ct}|${x.caNo}|${x.ino||1}`)}" role="button" tabindex="0">
+    <td><b>${esc(x.caNo||x.c)}</b>${x.multi?` <span class="t-sub">물건 ${x.ino}</span>`:''}<div class="t-sub">${esc(x.ct)}</div></td>
+    <td>${addrOf(x)}${x.sp?.length?`<div class="t-sub" style="color:var(--destructive)">${esc(x.sp.join(' · '))}</div>`:''}</td>
+    <td>${esc(x.ut||'—')}${areaOf(x)?`<div class="t-sub">${esc(areaOf(x).txt)}</div>`:''}</td>
+    <td class="n">${won(x.ap)}</td>
+    <td class="n">${x.mnApprox?'≈':''}${won(x.mn)}</td>
+    <td class="n">${rtTxt(rt,x)}</td>
+    <td class="n">${x.f ?? '—'}</td>
+    <td class="n">${x.d ? esc(x.d) : '—'}</td>
+    <td>${esc(x.st||'미상')}${x.verified?'<div class="t-sub" style="color:var(--green)">법원 확인</div>':''}</td></tr>`;
+}
+const TH = `<thead><tr><th>사건번호</th><th>소재지</th><th>용도</th>
+  <th style="text-align:right">감정가</th><th style="text-align:right">최저가</th>
+  <th style="text-align:right">최저가율</th><th style="text-align:right">유찰</th>
+  <th style="text-align:right">매각기일</th><th>상태</th></tr></thead>`;
+const listOf = items => items.length
+  ? (S.view==='card' ? `<div class="grid">${items.map(card).join('')}</div>`
+     : `<div class="tblwrap"><table>${TH}<tbody>${items.map(rowOf).join('')}</tbody></table></div>`)
+  : `<div class="empty">조건에 맞는 물건이 없습니다.</div>`;
+
+/* 한 문단을 통째로 펼쳐 두면 90px 을 늘 차지하고, 늘 있으니 아무도 안 읽는다.
+   가장 중요한 한 줄만 남기고 나머지는 접는다 — 접어도 한 번 클릭이면 나온다. */
+/* .notice 는 display:flex 다. 본문을 하나의 블록으로 감싸지 않으면 각 요소가
+   flex 아이템이 되어 좁게 쪼개진다 — 모바일에서 글자가 한 줄에 하나씩 섰다.
+   특히 <p> 안에 <details> 를 넣으면 브라우저가 <p> 를 강제로 닫아버려
+   details 가 .notice 의 직접 자식이 된다. 반드시 div 로 함께 묶는다. */
+const SRC_NOTE = `<div class="notice"><span class="pk">출처 주의</span>
+  <div class="nbody">
+  <p>물건 데이터는 <b>법원경매정보 원본이 아닙니다.</b> <b>법원 확인</b> 배지가 붙은 것만 대법원 원본과 대조를 마쳤습니다. <b>입찰 전 반드시 법원 원본으로 재확인하십시오.</b></p>
+  <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--amber);font-weight:700">왜 원본이 아닌가</summary>
+  <p style="margin-top:5px">법원 사이트가 이 서버 IP를 차단해, 사설 경매정보 사이트의 네이버 색인으로 발굴한 뒤 <b>CODEF 대법원 경매사건검색</b>으로 대조해 왔습니다(2026-09-25 종료). 이후의 매각·유찰 결과는 <b>색인 확인</b> 배지로 따로 표시합니다 — 법원 원본이 아닙니다. 최저가의 <b>≈</b>는 색인이 반올림한 값이라 법원 확정가가 아닙니다. 실거래가만 예외로 국토교통부 오픈API 공식 데이터입니다.</p></details>
+  </div></div>`;
+const FOOT = `<p class="foot"><b>수집 시각</b> ${STAMP} · 매일 06:00 KST 자동 갱신<br>
+  <b>출처</b> 발굴 = 네이버 웹문서 색인(richgo.ai · auctioning.co.kr · 경매알리미) · 원본 대조 = CODEF 대법원 경매사건검색(2026-09-25까지) · 이후 결과 = 네이버 웹문서 색인(색인 확인 배지) · 시세 = 국토교통부 아파트 매매 실거래가 오픈API · 뉴스 = 네이버 뉴스 검색<br>
+  <b>한계</b> 등기부·현황조사서·임차인 대항력은 포함돼 있지 않습니다. 최저가율이 낮은 물건은 싼 게 아니라 <b>그럴 이유가 있는</b> 물건입니다.</p>`;
+
+/* ── 페이지 정의 ── */
+const PAGES = [
+  {id:'home',    label:'홈',              ic:'M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6'},
+  {id:'search',  label:'경매검색',        ic:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M20 20l-3.5-3.5'},
+  {id:'upcoming',label:'예정물건',        ic:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l3 2'},
+  {id:'calendar',label:'캘린더',          ic:'M3 5h18v16H3zM8 3v4M16 3v4M3 10h18'},
+  {id:'map',     label:'경매지도',        ic:'m9 4-6 3v13l6-3 6 3 6-3V4l-6 3zM9 4v13M15 7v13'},
+  {id:'apt',     label:'아파트/건물 정보',ic:'M3 21h18M6 21V5h6v16M12 10h6v11M9 8h1M9 12h1M15 14h1'},
+  {id:'wiki',    label:'경매위키',        ic:'M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3zM21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z'},
+  {id:'news',    label:'경매뉴스',        ic:'M3 5h18v14H3zM7 9h6M7 13h10M7 16h10'},
+  {id:'blog',    label:'블로그컨텐츠',    ic:'M4 4h11l5 5v11H4zM15 4v5h5M8 13h8M8 17h5'},
+  {id:'onbid',   label:'온비드 공매',     ic:'M3 21h18M5 21V10l7-6 7 6v11M9 21v-5h6v5'},
+  {id:'car',     label:'자동차',          ic:'M5 17h14M6 17v2M18 17v2M4 13l1.6-4.4A2 2 0 0 1 7.5 7h9a2 2 0 0 1 1.9 1.6L20 13v4H4zM7 15h.01M17 15h.01'},
+];
+$('tabs').innerHTML = PAGES.map(p=>
+  `<button class="tab" data-p="${p.id}"><svg class="ic" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+     <path d="${p.ic}"/></svg>${p.label}</button>`).join('');
+
+__PAGES__
+
+const RENDER = {home:pgHome, search:pgSearch, upcoming:pgUpcoming, calendar:pgCalendar,
+                map:pgMap, apt:pgApt, wiki:pgWiki, news:pgNews, blog:pgBlog,
+                onbid:pgOnbid, car:pgCar, detail:pgDetail};
+/* 상세는 탭이 없는 화면이다. 돌아왔을 때 보던 자리를 잃지 않도록 기억해 둔다. */
+let BACK = {id:'search', y:0};
+function openDetail(uid){
+  const [ct,caNo,ino] = String(uid).split('|');
+  const x = D.find(v=>v.ct===ct && v.caNo===caNo && String(v.ino||1)===ino);
+  if(!x) return;
+  if(CUR!=='detail') BACK = {id:CUR, y:window.scrollY};
+  DET = x; go('detail');
+}
+let CUR = 'home';
+/* keep=true 는 같은 화면을 다시 그리는 것이다(검색필터). 보던 자리를 지킨다. */
+function go(id, keep){
+  if(!RENDER[id]) id='home';
+  const y = keep ? window.scrollY : null;
+  CUR = id;
+  [...$('tabs').children].forEach(b=>b.classList.toggle('on', b.dataset.p===id));
+  $('view').innerHTML = RENDER[id]();
+  if(WIRE[id]) WIRE[id]();
+  // 상세에서 목록으로 돌아온 것이면 보던 자리로 되돌린다.
+  const back = id===BACK.id && BACK.y;
+  window.scrollTo({top: y!=null ? y : (back ? BACK.y : 0), behavior:'instant'});
+  if(back) BACK.y = 0;
+}
+$('tabs').addEventListener('click', e=>{
+  const b=e.target.closest('[data-p]'); if(b) go(b.dataset.p);
+});
+$('view').addEventListener('click', e=>{
+  // 카드 안의 버튼·링크가 먼저다. 그게 아닐 때만 상세로 넘긴다.
+  // 다만 눌린 버튼이 [data-det] 그 자신이면 넘긴다 — 모아보기 줄(.dl-row)이
+  // 버튼이라 이 걸음에 통째로 걸려 상세가 안 열렸다.
+  const d=e.target.closest('[data-det]');
+  const blocker=e.target.closest('[data-go],[data-v],[data-u],a,button');
+  if(d && (!blocker || blocker===d)){ openDetail(d.dataset.det); return; }
+  const g=e.target.closest('[data-go]');
+  if(g){ if(g.dataset.go===BACK.id) go(BACK.id); else go(g.dataset.go); }
+});
+$('view').addEventListener('keydown', e=>{
+  if(e.key!=='Enter' && e.key!==' ') return;
+  const d=e.target.closest('[data-det]');
+  if(d){ e.preventDefault(); openDetail(d.dataset.det); }
+});
+/* ══════ 사용법 안내 ══════
+   숫자는 화면에 실제로 있는 값으로 채운다. '많습니다' 같은 말로 적어 두면
+   데이터가 바뀌어도 안내문은 그대로 남아 거짓말이 된다. */
+const GUIDE_KEY = 'auction-board.guide.seen.v1';
+function guideHTML(){
+  const nApt   = D.filter(x=>x.ut==='아파트').length;
+  const nClean = D.filter(x=>x.screen==='clean').length;
+  const nVer   = D.filter(x=>x.verified).length;
+  const nDate  = D.filter(x=>x.d).length;
+  return `
+  <div class="g-sec">
+    <h3>1. 이 보드가 무엇인지부터</h3>
+    <p>네이버 웹문서 색인에서 경매물건을 찾아 모으고, CODEF로 대법원 원본과 대조해 왔습니다.
+    지금 <b>${D.length}건</b> 중 <b>${nVer}건</b>이 대조를 마쳤습니다.
+    <b>CODEF 대조는 2026-09-25에 끝났습니다.</b> 그 뒤로는 기일이 지난 물건의 결과를 검색 색인에서
+    매일 되짚고, 매각·낙찰·유찰이 분명히 적힌 것만 반영합니다
+    — 그런 물건에는 <span class="vchip idx" style="position:static">색인 확인</span> 이 붙습니다.
+    색인에 결과가 없으면 아무것도 바꾸지 않습니다.</p>
+    <p><b>색인은 법원 원본이 아닙니다.</b> 대조를 마친 물건에만
+    <span class="vchip" style="position:static">법원 확인</span> 이 붙습니다. 나머지는 색인에서 읽은 값이라
+    이미 바뀌었거나 사건이 끝났을 수 있습니다. <b>입찰 전에는 반드시 법원 원본으로 다시 확인하십시오.</b></p>
+  </div>
+
+  <div class="g-sec">
+    <h3>2. 찾는 법 — 왼쪽 검색필터</h3>
+    <p>홈과 경매검색 왼쪽에 같은 필터가 있습니다. 홈에서 조건을 걸면 그 자리에서 결과를 보여주고,
+    여섯 건이 넘으면 경매검색으로 조건을 그대로 들고 넘어갑니다.</p>
+    <dl class="g-list">
+      <dt><span class="g-kbd">키워드</span></dt>
+      <dd>사건번호나 주소 일부를 넣습니다 — <b>2025타경1239</b>, <b>수성구</b>, <b>범어동</b>.
+        입력 후 <b>Enter</b>.</dd>
+      <dt><span class="g-kbd">사건번호</span></dt>
+      <dd>연도를 고르고 타경 뒤 번호만 적으면 그 사건만 나옵니다.</dd>
+      <dt><span class="g-kbd">매각기일</span></dt>
+      <dd>기간으로 좁힙니다. 기일이 색인된 물건은 <b>${nDate}건</b>이고,
+        기간을 걸면 나머지는 빠집니다.</dd>
+      <dt><span class="g-kbd">소재지</span></dt>
+      <dd>시·도를 고르면 아래 시·군·구와 법원 목록이 그 지역 것으로 바뀝니다.</dd>
+      <dt><span class="g-kbd">선별</span></dt>
+      <dd><b>권리 자국 없음</b>을 고르면 특이사항이 없고 유찰 1회 이하인 아파트만 남습니다
+        (지금 <b>${nClean}건</b>).</dd>
+    </dl>
+    <p style="margin-top:8px">걸린 조건은 결과 위에 알약으로 다시 나옵니다. 알약의 <b>×</b>를 누르면
+    그 조건 하나만 풀리고, <b>초기화</b>는 전부 풉니다.</p>
+  </div>
+
+  <div class="g-sec">
+    <h3>3. 카드 읽는 법</h3>
+    <dl class="g-list">
+      <dt><span class="bdg b-today">임박</span></dt><dd>7일 안에 매각기일이 있습니다. 당일이면 <b>오늘</b>.</dd>
+      <dt><span class="bdg b-fail">유찰 3</span></dt><dd>세 번 유찰됐습니다. 그만큼 최저가가 내려가 있습니다.</dd>
+      <dt><span class="bdg b-clean">권리 자국 없음</span></dt>
+      <dd>특이사항이 없고 유찰 1회 이하입니다. <b>권리분석을 마쳤다는 뜻이 아닙니다</b> —
+        등기부와 임차인 정보는 이 보드에 없습니다.</dd>
+      <dt><span class="bdg b-unk">상태 미확인</span></dt><dd>색인에 진행상태가 없습니다. 이미 끝난 사건일 수 있습니다.</dd>
+      <dt><span class="sp-t">유치권</span></dt><dd>빨간 테두리는 특수권리입니다. 그대로 인수할 수 있으니 반드시 원본을 보십시오.</dd>
+      <dt><span class="rt-pill" style="display:inline-block"><span class="v rt-lo" style="font-size:12px">24%</span></span></dt>
+      <dd><b>최저가율 = 최저가 ÷ 감정가.</b> 낮을수록 유찰이 쌓인 것입니다.
+        <b>싼 게 아니라 그럴 이유가 있는 물건</b>이라 초록이 아니라 빨강으로 칠합니다.</dd>
+      <dt><span class="mkchip mk-mid">시세 84%</span></dt>
+      <dd>최저가가 <b>같은 단지·같은 평형</b> 국토교통부 실거래 중앙값의 몇 %인가입니다.
+        이 호수의 면적을 모르면 아예 만들지 않습니다.</dd>
+    </dl>
+  </div>
+
+  <div class="g-sec">
+    <h3>4. 탭</h3>
+    <p><b>예정물건·캘린더</b>는 기일 순으로, <b>경매지도</b>는 지역별로 봅니다.
+    <b>아파트/건물 정보</b>는 단지별 실거래(아파트 ${nApt}건 기준), <b>경매위키</b>는 용어,
+    <b>블로그컨텐츠</b>는 글감, <b>온비드·자동차</b>는 공매와 차량입니다.</p>
+    <p>카드를 누르면 상세로 들어갑니다. 카드에서 두 줄로 잘린 설명도 상세에는 전문이 있습니다.</p>
+  </div>
+
+  <div class="g-sec">
+    <h3>5. 이 보드가 못 하는 것</h3>
+    <p>등기부·현황조사서·매각물건명세서가 <b>여기에 없습니다.</b> 권리분석은 그 서류를 봐야 하고,
+    특수권리가 걸린 물건은 전문가 검토가 필요합니다. 여기 숫자는 <b>후보를 좁히는 데까지만</b> 쓰십시오.</p>
+  </div>`;
+}
+
+const GUIDE = {
+  open(){
+    const g = $('guide');
+    $('guide-body').innerHTML = guideHTML();
+    $('guide-note').textContent = LS_OK
+      ? '이 안내는 처음 한 번만 뜹니다. 위쪽 사용법 단추로 다시 열 수 있습니다.'
+      : '이 브라우저는 저장을 막고 있어 자동으로 뜨지 않습니다 — 사용법 단추로 여십시오.';
+    g.hidden = false;
+    GUIDE.prev = document.activeElement;
+    $('help-close').focus();
+  },
+  close(){
+    $('guide').hidden = true;
+    try{ localStorage.setItem(GUIDE_KEY, '1'); }catch(_){}
+    if(GUIDE.prev && GUIDE.prev.focus) GUIDE.prev.focus();
+  },
+};
+$('help-open').onclick = GUIDE.open;
+$('help-close').onclick = GUIDE.close;
+$('help-done').onclick = GUIDE.close;
+// 바깥을 누르면 닫는다. 시트 안을 누른 것은 통과시킨다.
+$('guide').addEventListener('click', e=>{ if(e.target === $('guide')) GUIDE.close(); });
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && !$('guide').hidden) GUIDE.close();
+});
+
+go('home');
+
+/* 처음 온 사람에게 한 번만 띄운다. 저장이 막힌 브라우저에서는 띄우지 않는다 —
+   그러면 새로고침할 때마다 뜬다. 대신 사용법 단추는 늘 있다. */
+(() => {
+  if(!LS_OK) return;
+  let seen = null;
+  try{ seen = localStorage.getItem(GUIDE_KEY); }catch(_){ return; }
+  if(!seen) GUIDE.open();
+})();
+</script>

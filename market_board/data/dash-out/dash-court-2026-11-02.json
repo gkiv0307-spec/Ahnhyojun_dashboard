@@ -1,0 +1,68 @@
+[
+ {
+  "caseNumber": "2025타경3422",
+  "courtCheckedAt": "2026-11-02",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-02T04:45:01.617994Z",
+  "status": "변경",
+  "courtResult": "⚠ 재확인: 2026-08-20 변경 · 새 기일 미정",
+  "courtStatusRaw": "2026-08-20 매각기일 변경 · 이후 기일 없음",
+  "memo": "결과 입력 (2026-11-02) — 08/20 기일 변경, 새 기일 미정 · 법원경매정보 화면 확인(크롬·2026-11-02)"
+ },
+ {
+  "caseNumber": "2025타경34936 물건1",
+  "courtCheckedAt": "2026-11-02",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-02T04:45:01.618027Z",
+  "status": "변경",
+  "courtResult": "⚠ 재확인: 2026-10-07 변경 · 새 기일 미정 · 집행정지됨",
+  "courtStatusRaw": "2026-10-07 매각기일 변경 · 이후 기일 없음 · 집행정지됨",
+  "memo": "결과 입력 (2026-11-02) — 10/07 기일 변경, 새 기일 미정 · 사건 집행정지됨 · 법원경매정보 화면 확인(크롬·2026-11-02)"
+ },
+ {
+  "caseNumber": "2026타경100622 물건1",
+  "courtCheckedAt": "2026-11-02",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-02T04:45:01.618041Z",
+  "status": "변경",
+  "courtResult": "⚠ 재확인: 2026-10-08 변경 · 새 기일 미정",
+  "courtStatusRaw": "2026-10-08 매각기일 변경 · 이후 기일 없음",
+  "memo": "결과 입력 (2026-11-02) — 10/08 기일 변경, 새 기일 미정 · 법원경매정보 화면 확인(크롬·2026-11-02)"
+ },
+ {
+  "caseNumber": "2025타경9351",
+  "courtCheckedAt": "2026-11-02",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-02T04:45:01.618050Z",
+  "status": "변경",
+  "courtResult": "⚠ 재확인: 2026-10-15 변경 · 새 기일 미정",
+  "courtStatusRaw": "2026-10-15 매각기일 변경 · 이후 기일 없음",
+  "memo": "결과 입력 (2026-11-02) — 10/15 기일 변경, 새 기일 미정 · 법원경매정보 화면 확인(크롬·2026-11-02)"
+ },
+ {
+  "caseNumber": "2025타경10021",
+  "courtCheckedAt": "2026-11-02",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-02T04:45:01.618057Z",
+  "status": "변경",
+  "courtResult": "⚠ 재확인: 2026-10-19 변경 · 새 기일 미정",
+  "courtStatusRaw": "2026-10-19 매각기일 변경 · 이후 기일 없음",
+  "memo": "결과 입력 (2026-11-02) — 10/19 기일 변경, 새 기일 미정 · 법원경매정보 화면 확인(크롬·2026-11-02)"
+ },
+ {
+  "caseNumber": "2026타경100116",
+  "courtCheckedAt": "2026-11-02",
+  "courtCheckedBy": "PC GPT 화면 확인",
+  "courtSourceUrl": "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml",
+  "updatedAt": "2026-11-02T04:45:01.618062Z",
+  "status": "변경",
+  "courtResult": "⚠ 재확인: 2026-10-21 변경 · 새 기일 미정",
+  "courtStatusRaw": "2026-10-21 매각기일 변경 · 이후 기일 없음",
+  "memo": "결과 입력 (2026-11-02) — 10/21 기일 변경, 새 기일 미정 · 법원경매정보 화면 확인(크롬·2026-11-02)"
+ }
+]

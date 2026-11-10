@@ -1,0 +1,762 @@
+{
+ "checkedAt": "2026-10-27",
+ "by": "탱크옥션 조회(법원 자료 전재·사용자 계정)",
+ "items": [
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9442",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-13",
+     "amt": 351400000,
+     "res": "매각",
+     "winBid": 359910000
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9750",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-20",
+     "amt": 324100000,
+     "res": "매각",
+     "winBid": 394111111
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경1254",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-21",
+     "amt": 211680000,
+     "res": "매각",
+     "winBid": 272000000
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경10005",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-21",
+     "amt": 714000000,
+     "res": "매각",
+     "winBid": 870770000
+    }
+   ]
+  },
+  {
+   "ct": "대구서부지원",
+   "caNo": "2025타경32082",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-22",
+     "amt": 148960000,
+     "res": "매각",
+     "winBid": 181750100
+    }
+   ]
+  },
+  {
+   "ct": "대구서부지원",
+   "caNo": "2026타경3104",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-22",
+     "amt": 151200000,
+     "res": "매각",
+     "winBid": 180756000
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9859",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-22",
+     "amt": 106400000,
+     "res": "매각",
+     "winBid": 112000000
+    }
+   ]
+  },
+  {
+   "ct": "대구서부지원",
+   "caNo": "2026타경142",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-20",
+     "amt": 120000000,
+     "res": "매각",
+     "winBid": 120000000
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경1350",
+   "ino": 1,
+   "final": "기각",
+   "finalAt": "2026-10-21",
+   "full": false,
+   "hold": false,
+   "ld": []
+  },
+  {
+   "ct": "대구서부지원",
+   "caNo": "2026타경3134",
+   "ino": 1,
+   "final": "취하",
+   "finalAt": "2026-10-22",
+   "full": false,
+   "hold": false,
+   "ld": []
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경100193",
+   "ino": 1,
+   "final": "취하",
+   "finalAt": "2026-10-27",
+   "full": false,
+   "hold": false,
+   "ld": []
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9952",
+   "ino": 1,
+   "final": "취하",
+   "finalAt": "2026-10-20",
+   "full": false,
+   "hold": false,
+   "ld": []
+  },
+  {
+   "ct": "포항지원",
+   "caNo": "2025타경3968",
+   "ino": 2,
+   "final": "기각",
+   "finalAt": "2026-10-27",
+   "full": false,
+   "hold": false,
+   "ld": []
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2024타경125748",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 1530000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 1071000000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9640",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 1230000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 861000000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9627",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 253000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 177100000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9785",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 212000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 148400000,
+     "res": "변경"
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9845",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 53000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 37100000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경1199",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 198000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 138600000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경1223",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 510000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 357000000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경1220",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-20",
+     "amt": 283500000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-18",
+     "amt": 198450000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9941",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-20",
+     "amt": 385000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-18",
+     "amt": 269500000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9769",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-20",
+     "amt": 46900000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-18",
+     "amt": 32830000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9660",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-20",
+     "amt": 44800000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-18",
+     "amt": 31360000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경10139",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-22",
+     "amt": 167000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-24",
+     "amt": 116900000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9162",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-15",
+     "amt": 32900000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-17",
+     "amt": 23030000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구서부지원",
+   "caNo": "2026타경3444",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-15",
+     "amt": 79100000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-12",
+     "amt": 55370000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경1282",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 493000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 345100000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9568",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 174000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 121800000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9997",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-19",
+     "amt": 231000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-20",
+     "amt": 161700000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2025타경9929",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-20",
+     "amt": 271000000,
+     "res": "유찰"
+    },
+    {
+     "d": "2026-11-18",
+     "amt": 189700000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구서부지원",
+   "caNo": "2026타경3409",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-11-12",
+     "amt": 420700000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "부산동부지원",
+   "caNo": "2024타경110444",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-11-30",
+     "amt": 672280000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경100560",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-11-19",
+     "amt": 101500000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경100043",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-11-24",
+     "amt": 192500000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경100729",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-11-04",
+     "amt": 130200000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경100756",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-11-04",
+     "amt": 94500000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경100586",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-11-19",
+     "amt": 47600000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경101064",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-27",
+     "amt": 551000000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경101177",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-27",
+     "amt": 450000000,
+     "res": null
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경100638",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-27",
+     "amt": 227500000,
+     "res": "변경"
+    }
+   ]
+  },
+  {
+   "ct": "대구지방법원",
+   "caNo": "2026타경100116",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-10-21",
+     "amt": 313000000,
+     "res": "변경"
+    }
+   ]
+  },
+  {
+   "ct": "포항지원",
+   "caNo": "2025타경3968",
+   "ino": 1,
+   "final": null,
+   "finalAt": null,
+   "full": false,
+   "hold": false,
+   "ld": [
+    {
+     "d": "2026-11-09",
+     "amt": 259700000,
+     "res": "변경"
+    }
+   ]
+  }
+ ]
+}

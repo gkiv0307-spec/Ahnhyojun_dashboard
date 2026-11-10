@@ -1,0 +1,648 @@
+[
+{
+"caseNumber": "2025타경9339 물건1",
+"status": "매각종료",
+"courtResult": "2026-10-15 매각(260,990,000원)",
+"courtCheckedAt": "2026-10-16",
+"winningBid": 260990000
+},
+{
+"caseNumber": "2026타경75 물건1",
+"status": "매각종료",
+"courtResult": "2026-10-15 매각(78,000,000원)",
+"courtCheckedAt": "2026-10-16",
+"winningBid": 78000000
+},
+{
+"caseNumber": "2025타경9004 물건1",
+"status": "매각종료",
+"courtResult": "2026-10-15 매각(125,588,000원)",
+"courtCheckedAt": "2026-10-16",
+"winningBid": 125588000
+},
+{
+"caseNumber": "2025타경9661 물건1",
+"status": "매각종료",
+"courtResult": "2026-10-15 매각(140,500,000원)",
+"courtCheckedAt": "2026-10-16",
+"winningBid": 140500000
+},
+{
+"caseNumber": "2026타경3444 물건1",
+"status": "입찰예정",
+"courtResult": "2026-10-15 유찰 → 다음 2026-11-12 최저 55,370,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3462 물건1",
+"status": "매각종료",
+"courtResult": "2026-10-15 매각(85,088,000원)",
+"courtCheckedAt": "2026-10-16",
+"winningBid": 85088000
+},
+{
+"caseNumber": "2026타경3456 물건1",
+"status": "매각종료",
+"courtResult": "2026-10-15 매각(120,890,000원)",
+"courtCheckedAt": "2026-10-16",
+"winningBid": 120890000
+},
+{
+"caseNumber": "2025타경9162 물건1",
+"status": "입찰예정",
+"courtResult": "2026-10-15 유찰 → 다음 2026-11-17 최저 23,030,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9138 물건1",
+"status": "매각종료",
+"courtResult": "2026-10-15 매각(215,325,000원)",
+"courtCheckedAt": "2026-10-16",
+"winningBid": 215325000
+},
+{
+"caseNumber": "2025타경34936 물건1",
+"status": "변경",
+"courtResult": "변경 · 2026-10-07 변경, 새 기일 미정",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2024타경125748",
+"courtResult": "진행중 · 매각기일 10/19 최저 1,530,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1199",
+"courtResult": "진행중 · 매각기일 10/19 최저 198,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1223",
+"courtResult": "진행중 · 매각기일 10/19 최저 510,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1236",
+"courtResult": "진행중 · 매각기일 10/19 최저 245,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1282",
+"courtResult": "진행중 · 매각기일 10/19 최저 493,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9568",
+"courtResult": "진행중 · 매각기일 10/19 최저 174,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9627",
+"courtResult": "진행중 · 매각기일 10/19 최저 253,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9640",
+"courtResult": "진행중 · 매각기일 10/19 최저 1,230,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9736",
+"courtResult": "진행중 · 매각기일 10/19 최저 502,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9950",
+"courtResult": "진행중 · 매각기일 10/19 최저 172,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9997",
+"courtResult": "진행중 · 매각기일 10/19 최저 231,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경10021",
+"courtResult": "진행중 · 매각기일 10/19 최저 530,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9700",
+"courtResult": "진행중 · 매각기일 10/19 최저 62,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9785",
+"courtResult": "진행중 · 매각기일 10/19 최저 212,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9845",
+"courtResult": "진행중 · 매각기일 10/19 최저 53,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9941",
+"courtResult": "진행중 · 매각기일 10/20 최저 385,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경10005",
+"courtResult": "진행중 · 매각기일 10/21 최저 714,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경3968 물건1",
+"status": "변경",
+"courtResult": "변경 · 2026-11-09 변경, 새 기일 미정",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경10154",
+"courtResult": "진행중 · 매각기일 11/11 최저 1,050,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9596 물건1",
+"courtResult": "진행중 · 매각기일 10/20 최저 107,800,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1183",
+"courtResult": "진행중 · 매각기일 10/20 최저 319,900,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1290",
+"courtResult": "진행중 · 매각기일 10/20 최저 190,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9693",
+"courtResult": "진행중 · 매각기일 10/20 최저 258,300,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9715",
+"courtResult": "진행중 · 매각기일 10/20 최저 304,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9750",
+"courtResult": "진행중 · 매각기일 10/20 최저 324,100,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9929",
+"courtResult": "진행중 · 매각기일 10/20 최저 271,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9943",
+"status": "취하",
+"courtResult": "사건 기각 (2026-09-29)",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9952",
+"courtResult": "진행중 · 매각기일 10/20 최저 479,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100",
+"courtResult": "진행중 · 매각기일 10/20 최저 154,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경118",
+"courtResult": "진행중 · 매각기일 10/20 최저 142,800,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경130",
+"status": "취하",
+"courtResult": "사건 취하 (2026-10-15)",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경142",
+"courtResult": "진행중 · 매각기일 10/20 최저 120,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경148",
+"courtResult": "진행중 · 매각기일 10/20 최저 152,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3379",
+"courtResult": "진행중 · 매각기일 10/20 최저 83,300,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3547",
+"courtResult": "진행중 · 매각기일 10/20 최저 163,800,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3601",
+"courtResult": "진행중 · 매각기일 10/20 최저 140,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3685",
+"courtResult": "진행중 · 매각기일 10/20 최저 205,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3697",
+"courtResult": "진행중 · 매각기일 10/20 최저 175,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3727",
+"courtResult": "진행중 · 매각기일 10/20 최저 245,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3817",
+"courtResult": "진행중 · 매각기일 10/20 최저 293,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3835",
+"courtResult": "진행중 · 매각기일 10/20 최저 158,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9660",
+"courtResult": "진행중 · 매각기일 10/20 최저 44,800,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9769",
+"courtResult": "진행중 · 매각기일 10/20 최저 46,900,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9789",
+"courtResult": "진행중 · 매각기일 10/20 최저 63,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1254",
+"courtResult": "진행중 · 매각기일 10/21 최저 211,680,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2023타경114185",
+"courtResult": "진행중 · 매각기일 10/21 최저 132,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경8661",
+"courtResult": "진행중 · 매각기일 10/21 최저 267,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9457",
+"courtResult": "진행중 · 매각기일 10/21 최저 368,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100011",
+"courtResult": "진행중 · 매각기일 10/21 최저 250,600,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100116",
+"status": "변경",
+"courtResult": "변경 · 2026-10-21 변경, 새 기일 미정",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100129",
+"courtResult": "진행중 · 매각기일 10/21 최저 529,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100547",
+"courtResult": "진행중 · 매각기일 10/21 최저 423,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100560",
+"courtResult": "진행중 · 매각기일 10/21 최저 145,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100586",
+"courtResult": "진행중 · 매각기일 10/21 최저 68,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100333 물건1",
+"courtResult": "진행중 · 매각기일 10/21 최저 153,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경32082",
+"courtResult": "진행중 · 매각기일 10/22 최저 148,960,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3134 물건1",
+"courtResult": "진행중 · 매각기일 10/22 최저 353,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3104 물건1",
+"courtResult": "진행중 · 매각기일 10/22 최저 151,200,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1356",
+"courtResult": "진행중 · 매각기일 10/22 최저 173,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경4074",
+"courtResult": "진행중 · 매각기일 10/22 최저 218,400,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경4272",
+"courtResult": "진행중 · 매각기일 10/22 최저 372,400,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9726",
+"courtResult": "진행중 · 매각기일 10/22 최저 177,800,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경10048",
+"courtResult": "진행중 · 매각기일 10/22 최저 157,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경10139",
+"courtResult": "진행중 · 매각기일 10/22 최저 167,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경10183",
+"courtResult": "진행중 · 매각기일 10/22 최저 310,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경31810",
+"courtResult": "진행중 · 매각기일 10/22 최저 87,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경32259",
+"courtResult": "진행중 · 매각기일 10/22 최저 49,253,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3038",
+"courtResult": "진행중 · 매각기일 10/22 최저 125,300,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3080",
+"courtResult": "진행중 · 매각기일 10/22 최저 381,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3116",
+"courtResult": "진행중 · 매각기일 10/22 최저 122,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3206",
+"courtResult": "진행중 · 매각기일 10/22 최저 222,600,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3225",
+"courtResult": "진행중 · 매각기일 10/22 최저 47,600,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100043",
+"courtResult": "진행중 · 매각기일 10/22 최저 275,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100095",
+"courtResult": "진행중 · 매각기일 10/22 최저 634,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경8499",
+"courtResult": "진행중 · 매각기일 10/22 최저 59,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9859",
+"courtResult": "진행중 · 매각기일 10/22 최저 106,400,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9987",
+"courtResult": "진행중 · 매각기일 10/22 최저 400,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1134",
+"courtResult": "진행중 · 매각기일 10/23 최저 142,800,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9767",
+"courtResult": "진행중 · 매각기일 10/23 최저 255,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9731",
+"courtResult": "진행중 · 매각기일 10/23 최저 75,600,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1296",
+"courtResult": "진행중 · 매각기일 10/27 최저 312,200,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경8414",
+"courtResult": "진행중 · 매각기일 10/27 최저 88,200,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경1062",
+"courtResult": "진행중 · 매각기일 10/27 최저 188,300,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100638",
+"courtResult": "진행중 · 매각기일 10/27 최저 227,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100728",
+"courtResult": "진행중 · 매각기일 10/27 최저 230,300,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100741",
+"courtResult": "진행중 · 매각기일 10/27 최저 173,600,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경101064",
+"courtResult": "진행중 · 매각기일 10/27 최저 551,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경101177",
+"courtResult": "진행중 · 매각기일 10/27 최저 450,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경101010",
+"courtResult": "진행중 · 매각기일 10/27 최저 121,100,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경50515 물건1",
+"courtResult": "진행중 · 매각기일 10/28 최저 304,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1315",
+"courtResult": "진행중 · 매각기일 10/30 최저 161,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경10102",
+"courtResult": "진행중 · 매각기일 10/30 최저 99,400,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경10227",
+"courtResult": "진행중 · 매각기일 10/30 최저 227,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경50270 물건1",
+"status": "취하",
+"courtResult": "사건 취하 (2026-10-15)",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2024타경38681",
+"courtResult": "진행중 · 매각기일 11/3 최저 126,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경31795",
+"courtResult": "진행중 · 매각기일 11/3 최저 231,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3197",
+"courtResult": "진행중 · 매각기일 11/3 최저 193,200,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3323",
+"courtResult": "진행중 · 매각기일 11/3 최저 147,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3348",
+"courtResult": "진행중 · 매각기일 11/3 최저 105,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경1262 물건1",
+"courtResult": "진행중 · 매각기일 11/4 최저 149,940,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2023타경10177",
+"courtResult": "진행중 · 매각기일 11/4 최저 618,100,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경1153",
+"courtResult": "진행중 · 매각기일 11/4 최저 252,700,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100729",
+"courtResult": "진행중 · 매각기일 11/4 최저 130,200,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100756",
+"courtResult": "진행중 · 매각기일 11/4 최저 94,500,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경1101",
+"courtResult": "진행중 · 매각기일 11/4 최저 49,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100466",
+"courtResult": "진행중 · 매각기일 11/4 최저 53,200,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9813",
+"courtResult": "진행중 · 매각기일 11/10 최저 167,300,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100875 물건1",
+"courtResult": "진행중 · 매각기일 11/10 최저 184,100,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경8788",
+"courtResult": "진행중 · 매각기일 11/11 최저 70,000,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3025",
+"courtResult": "진행중 · 매각기일 11/17 최저 223,300,000원",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경3422",
+"status": "변경",
+"courtResult": "변경 · 2026-08-20 변경, 새 기일 미정",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경100622 물건1",
+"status": "변경",
+"courtResult": "변경 · 2026-10-08 변경, 새 기일 미정",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2025타경9351",
+"status": "변경",
+"courtResult": "변경 · 2026-10-15 변경, 새 기일 미정",
+"courtCheckedAt": "2026-10-16"
+},
+{
+"caseNumber": "2026타경3409 물건1",
+"status": "변경",
+"courtResult": "변경 · 2026-10-15 변경, 새 기일 미정",
+"courtCheckedAt": "2026-10-16"
+}
+]
