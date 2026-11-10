@@ -4,13 +4,15 @@
 
 | 항목 | 값 |
 |---|---|
+| **새 게시 주소 (새 계정, 2026-11-10~)** | https://claude.ai/artifact/TfYdstJyqdtC2vuj88Ji2L — v1 · version id `1794318288-6a80` · contract `0.2.41` · capabilities `mcp: Google Drive[create_file]` |
+| 새 작업 위치 | 저장소 `gkiv0307-spec/Ahnhyojun_dashboard` 브랜치 `claude/youthful-fermi-cz07ep`, 폴더 `market_board/` |
 | 옛 게시 주소 (옛 계정 소유) | https://claude.ai/code/artifact/e6e3bb90-f77b-48af-aa80-3560d882ae4c |
 | 내보낸 배포본 | v97 · version id `1794258507-83c9` · 빌드 시각 2026-11-10 06:08 KST |
 | 런타임 contract | `0.2.41` |
 | 원본 저장소 | `hyojun127/-` 브랜치 `claude/network-external-site-access-9ek78q`, 커밋 `4f617af` (2026-11-10 일일 갱신) |
 | 물건 수 (data.json) | 4,616건 — 미확인 2,391 · 진행중 810 · 매각 557 · 종료 858 |
 
-새 계정에서 처음 게시하면 주소가 새로 생깁니다. 그 주소를 `docs/routine-daily.md`, `docs/board-master-prompt.md`, 예약 작업 문구에 바꿔 적어야 합니다.
+2026-11-10 새 계정에서 처음 게시했고, 새 주소를 `docs/routine-daily.md`·`docs/board-master-prompt.md`에 반영했습니다. 이후 갱신은 이 주소(`url`)로 publish 합니다.
 
 ---
 

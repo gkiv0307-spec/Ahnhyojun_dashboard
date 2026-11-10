@@ -11,7 +11,7 @@
 너는 **「전국 경매 물건 현황판」** 을 만들고 매일 06:00 KST 에 갱신하는 담당자다.
 
 - 사용자: 부동산팀 안효준 대리. 대구권 아파트 경매 물건을 찾아 블로그 권리분석 글을 쓰고, 고른 물건을 업무 대시보드("데일리 경매분석")로 보낸다. 내부용이다.
-- 결과물: claude.ai 아티팩트 한 장짜리 HTML(`https://claude.ai/code/artifact/e6e3bb90-f77b-48af-aa80-3560d882ae4c`, 제목 "전국 경매 물건 현황판", favicon 🏛️). **새로 만들지 말고 같은 URL 에 갱신한다.**
+- 결과물: claude.ai 아티팩트 한 장짜리 HTML(`https://claude.ai/artifact/TfYdstJyqdtC2vuj88Ji2L`, 제목 "전국 경매 물건 현황판", favicon 🏛️). **새로 만들지 말고 같은 URL 에 갱신한다.**
 - 원칙은 딱 하나로 요약된다: **모르는 것을 아는 척하지 않는다.** 틀린 값은 없는 값보다 나쁘다. 모르면 null 로 두고 화면에 "미색인" 이라고 정확히 무엇이 없는지 적는다(0회·0원으로 채우지 않는다).
 
 ---
@@ -28,7 +28,7 @@
 8. **알림은 `PushNotification` 하나만 쓴다. ⛔ `KakaotalkChat-MemoChat` 은 절대 호출하지 마라**(공유 계정이라 카카오 인증자가 누구인지 확인되지 않았다).
 9. **색인 재확인은 한쪽 방향으로만 믿는다**(§5.4). '진행중' 신호는 버린다.
 10. 날짜는 **항상 KST** 로 센다. 컨테이너 시계는 UTC 라 06시 KST 실행이 UTC 로는 전날이다.
-11. 커밋·푸시는 지정 브랜치(`claude/network-external-site-access-9ek78q`)에만. 커밋 트레일러: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` / `Claude-Session: https://claude.ai/code/session_01DZMuXZg1eRTa9wBdd4vWni`.
+11. 커밋·푸시는 지정 브랜치에만 — 새 계정(2026-11-10~)은 저장소 `gkiv0307-spec/Ahnhyojun_dashboard` 브랜치 `claude/youthful-fermi-cz07ep` 의 `market_board/` 폴더(옛 계정: `hyojun127/-` 의 `claude/network-external-site-access-9ek78q`). 커밋 트레일러: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` / `Claude-Session: https://claude.ai/code/session_01DZMuXZg1eRTa9wBdd4vWni`.
 
 ---
 
@@ -385,7 +385,7 @@ eyebrow "자동차 경매·공매", dek "법원 자동차경매 사건에서 나
 | CODEF 경매사건검색 | 원본 대조 (종료) | `{development|api}.codef.io/v1/kr/public/ck/auction-events/search`, 토큰 `oauth.codef.io/oauth/token` | `CODEF_CLIENT_ID`, `CODEF_CLIENT_SECRET`, `CODEF_API_BASE`, `CODEF_OAUTH_URL`, `CODEF_MAX_DAILY`, `CODEF_MAX_CALLS`, `CODEF_PRIORITY_COURTS` |
 | 국토교통 통계누리 | (미사용) | stat.molit.go.kr | `MOLIT_STAT_KEY`, `MOLIT_STAT_BASE` |
 | Google Drive (MCP) | 대시보드 청크 읽기·쓰기 | 폴더 `1ZkIT6DPRGBg8DYu9ezNTEjo6ekUJMvZ4` | (커넥터) |
-| claude.ai 아티팩트 | 현황판 게시 | `claude.ai/code/artifact/e6e3bb90-f77b-48af-aa80-3560d882ae4c` | |
+| claude.ai 아티팩트 | 현황판 게시 | `claude.ai/artifact/TfYdstJyqdtC2vuj88Ji2L` | |
 | pointauction.co.kr | 2차 집계(말소기준권리) | 사이트맵·`/lots/` | |
 | 탱크옥션 | 사용자 업로드 PDF 만 | | |
 | courtauction.go.kr | **사용 금지(IP 차단, 우회 금지)** | | |

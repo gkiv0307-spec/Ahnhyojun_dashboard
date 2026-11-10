@@ -1,8 +1,8 @@
-<!-- 매일 06:00 KST 루틴(trig_01RGfGtss4MoTv9g5X5hKF7S)이 읽는 절차서. 루틴 프롬프트는 이 파일을 먼저 읽으라고만 한다. 고칠 때는 여기를 고쳐 커밋한다. -->
+<!-- 매일 06:00 KST 루틴이 읽는 절차서. (옛 계정 루틴 id trig_01RGfGtss4MoTv9g5X5hKF7S — 2026-11-10 새 계정으로 옮김) 루틴 프롬프트는 이 파일을 먼저 읽으라고만 한다. 고칠 때는 여기를 고쳐 커밋한다. -->
 
 전국 경매 물건 현황판을 갱신할 시간이다. 대구권을 우선으로 본다.
 
-**0. 준비** — 저장소를 clone 후 브랜치 `claude/network-external-site-access-9ek78q` 체크아웃(있으면 pull). `source scripts/datagokr.sh`.
+**0. 준비** — 저장소 `gkiv0307-spec/Ahnhyojun_dashboard` 를 clone 후 브랜치 `claude/youthful-fermi-cz07ep` 체크아웃(있으면 pull), **`cd market_board`** (이 문서의 `scripts/`·`data/` 경로는 전부 이 폴더 기준이다). `source scripts/datagokr.sh`.
 
 **먼저 `bash scripts/daily.sh --check` 를 돌려 인증키가 보이는지 확인한다.** 출처(환경변수/파일)와 날짜만 찍고 값은 절대 찍지 않는다. 키가 없으면 CODEF(4단계)와 실거래가 수집(3단계)이 통째로 불가능하다 — **우회하지 말고, 새로 발급받으려 하지도 말고**, 그 두 단계를 건너뛴 채 나머지를 진행하고 보고 말미에 "환경변수 DATA_GO_KR_KEY / CODEF_CLIENT_ID / CODEF_CLIENT_SECRET 가 없어 건너뛰었다" 고 분명히 적는다.
 
@@ -349,7 +349,7 @@ dash-sent.json·bdone.json 을 커밋해라. **올리지 않으면 등록이 안
 - **모르는 값을 기본값으로 채우지 마라.** 유찰 횟수를 모르면 0회가 아니라 미색인이다.
 
 **6. 아티팩트 갱신 — 새로 만들지 말 것**
-URL: https://claude.ai/code/artifact/e6e3bb90-f77b-48af-aa80-3560d882ae4c
+URL: https://claude.ai/artifact/TfYdstJyqdtC2vuj88Ji2L
 **HTML 을 직접 편집하지 마라. 빌드 스크립트가 있다.**
 
 ```
@@ -364,8 +364,9 @@ bash scripts/build_site.sh <스크래치패드>/auction-board.html
 `site-pages.js` 를 문자열 치환으로 고칠 때는 **치환이 실제로 먹었는지 확인해라** —
 못 찾고 지나가면 `FS.screen` 이 undefined 라 화면이 통째로 안 뜬다. 실제로 그랬다.
 
-**publish 전에 `Artifact action:"read"` 로 라이브를 먼저 읽어라.** 안 읽으면
-"hadn't viewed the live version" 으로 거부된다. 읽은 뒤 같은 파일 경로로 publish 한다.
+**publish 전에 `Artifact action:"read"` (url 위 주소)로 라이브를 먼저 읽어라.** 안 읽으면
+"hadn't viewed the live version" 으로 거부된다. 읽은 뒤 `url` 에 위 주소를 넣고 새로 빌드한 파일로 publish 한다.
+`capabilities`·`contract`·`icon` 은 넘기지 마라 — 넘기지 않으면 저장된 선언(Google Drive create_file)과 contract 0.2.41 이 그대로 유지된다. `url` 을 빼면 새 아티팩트가 생기니 반드시 넣는다.
 
 **디자인은 2026-08-25 에 상용 경매 사이트 형태로 새로 만들었다. 되돌리지 마라.**
 상단 탭바 → 네이비 검색 히어로(통계 3칸) → 좌 262px 필터 사이드바 + 우 카드 그리드. 사이드바 칸은 키워드 / 법원 / 사건번호(연도+타경) / 매각기일 기간 / 소재지(시·도+시·군·구) / 경매결과 / 유찰횟수 / 감정가 / 최저가 / 부동산구분(칩) / 특이사항(칩) / 선별(칩) 이고, 걸린 조건은 결과 위에 알약으로 다시 보여 ×로 하나씩 푼다. **홈·지도의 지역·종별 칩을 누를 때 `st='진행중'` 을 걸지 마라** — 칩은 전체를 세는데 진행중을 걸면 눌렀을 때 나오는 수가 칩의 수와 달라진다(부산 34건에 진행중 0건이라 빈 화면이 나왔다).
