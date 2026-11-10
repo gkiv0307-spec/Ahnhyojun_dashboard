@@ -42,7 +42,7 @@
 
 발행대기 글을 대리님이 GPT(ChatGPT)로 다듬을 수 있게 Drive 폴더 "블로그 GPT 교환"(parentId `1FiETh0OJuly14r6GQ0tgh5nXp-Lkc_pd`)에 글마다 `.md` 파일로 내보낸다.
 1. 폴더 목록을 읽는다: `mcp__Google_Drive__search_files` query `parentId = '1FiETh0OJuly14r6GQ0tgh5nXp-Lkc_pd'` (excludeContentSnippets true, pageSize 100). 제목이 `<글id>.md` 인 파일의 글id 목록을 만든다(`_GPT최종` 이 붙은 파일은 제외).
-2. `python3 /home/user/yeopkerphone-auction-site/scripts/blog_gpt_export.py snapshot.json gpt_out --skip <이미 있는 글id를 쉼표로>` — 오늘 만든 글은 스냅샷에 없으므로, 오늘 발행대기로 올린 항목(있다면)은 스냅샷 blogPosts 에 같은 모양으로 덧붙인 임시 파일을 만들어 넘긴다.
+2. `python3 /home/user/Ahnhyojun_dashboard/scripts/blog_gpt_export.py snapshot.json gpt_out --skip <이미 있는 글id를 쉼표로>` — 오늘 만든 글은 스냅샷에 없으므로, 오늘 발행대기로 올린 항목(있다면)은 스냅샷 blogPosts 에 같은 모양으로 덧붙인 임시 파일을 만들어 넘긴다.
 3. 새로 만들어진 `gpt_out/<글id>.md` 마다 `mcp__Google_Drive__create_file`(title `<글id>.md`, parentId 위 폴더, contentMimeType "text/markdown", disableConversionToGoogleType true, textContent 파일 내용)로 올린다. 이미 있는 글은 다시 올리지 않는다(같은 이름 중복 방지).
 4. 6단계 근무 기록의 `blogApprove`(보류로 끝났으면 `blogPipeline`) detail 에 "GPT 교환 폴더 내보내기 N건(신규)" 를 한 줄 덧붙인다.
 - 발행완료로 바뀐 글의 `.md` 는 지우지 않는다(대리님이 폴더 정리). 파일 안 `- 글ID:` 줄은 대시보드가 글을 찾는 키이므로 형식을 바꾸지 않는다.
