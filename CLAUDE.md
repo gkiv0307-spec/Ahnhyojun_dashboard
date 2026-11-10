@@ -158,6 +158,7 @@
 - **저장소 이름이 2026-11-10 `yeopkerphone-auction-site` → `Ahnhyojun_dashboard` 로 바뀌었다**(GitHub 가 옛 주소를 넘겨줘 클론·푸시는 그대로 됨. 새 계정 GitHub 앱 설치 때는 새 이름으로 고른다).
 - 핵심: Claude 계정에 묶인 것은 아티팩트 2개·예약 작업 5개·환경·세션 기억뿐. 구글(gkiv0307)·GitHub 는 대리님 소유라 그대로. 데이터 원본은 PC 크롬 localStorage 라 **옛 대시보드에서 "데이터 내보내기(JSON)" → 새 대시보드 "데이터 가져오기"** 로 옮긴다(Drive 스냅샷은 v106 압축본이라 그것만 받으면 옛 글 본문·보고 전문이 빠진다).
 - 새 계정에서 대시보드를 발행할 때 **런타임 contract 0.1.15 고정**, capabilities 는 Google Drive 3도구(PlayMCP 생략 가능). 새 루틴 첫 실행 뒤 옛 계정 루틴 5개를 끈다(중복 청크 방지).
+- **이관 진행 기록 (2026-11-10, 새 계정 세션 `session_01MWyhHSvUADsrsUNmEALQ1v`, 브랜치 `claude/keen-goldberg-valfiz` = 작업 브랜치 fast-forward)**: 새 대시보드 발행 https://claude.ai/artifact/Cfkmyq9FJAjxBedydBF1Gy (Version 1, contract 0.1.15, mcp Google Drive 3도구 + downloads, `dist/dashboard_v108_published_2026-11-10.html` 에서 런타임 껍데기만 떼고 그대로). **막힌 점**: 새 계정의 Google Drive 커넥터가 gkiv0307 이 아니라 ykpbds@gmail.com 으로 연결돼 있어 백업 폴더 `1ZkIT6DPRGBg8DYu9ezNTEjo6ekUJMvZ4` 가 안 보인다. 이 상태로 새 대시보드를 열면 `resolveDriveFolder` 가 ykpbds 드라이브에 빈 백업 폴더를 만들고 거기 저장하므로, 커넥터를 gkiv0307 로 다시 연결하기 전에는 새 대시보드를 열지 않는다. 예약 작업 5개·현황판 발행·데이터 가져오기는 그 뒤로 미룸. 옛 대시보드 안의 외부 도구 링크(`EXTERNAL_TOOL_URL`·`HOUSING_TOOL_URL`)는 옛 계정 아티팩트라 새 계정에서 공유받지 않으면 안 열린다.
 - 이 계정(부동산팀 공용)에는 다른 팀원 작업(이재환 주임 릴스·인스타, 레브소유, 다른 대시보드 환경)이 함께 있다. 그쪽은 건드리지 않는다.
 
 ## 7. 최근 상태 메모 (2026-09-08)
