@@ -2,7 +2,7 @@
 
 대시보드 세션에 바인딩된 Claude Code 예약 작업 5개의 이름·시각·프롬프트를 그대로 옮겨 적었다.
 새 계정에서 `create_trigger` 로 다시 만들 때 아래 파일 내용을 prompt 에 그대로 넣는다.
-공통 조건: 저장소 `gkiv0307-spec/yeopkerphone-auction-site` 브랜치 `claude/dashboard-from-yesterday-p4zuaj` 가 연결된 세션(CLAUDE.md 가 읽힘), Google Drive 커넥터(구글 계정 gkiv0307), 15:48 루틴은 `send_later` 사용.
+공통 조건: 저장소 `gkiv0307-spec/Ahnhyojun_dashboard` 브랜치 `claude/dashboard-from-yesterday-p4zuaj` 가 연결된 세션(CLAUDE.md 가 읽힘), Google Drive 커넥터(구글 계정 gkiv0307), 15:48 루틴은 `send_later` 사용.
 
 | 파일 | 이름 | cron(UTC) | KST | 옛 trigger id |
 |---|---|---|---|---|
