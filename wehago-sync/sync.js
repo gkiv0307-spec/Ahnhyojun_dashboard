@@ -143,6 +143,7 @@ async function cmdRun(apply) {
   const page = ctx.pages()[0] || await ctx.newPage();
   const dryRun = !apply;
   console.log(dryRun ? '[미리보기] 시트에는 쓰지 않습니다. 실제 입력은 --apply' : '[실제 입력]');
+  const stats = { inbox: 0, added: 0, skipped: 0 };
   try {
     const known = new Set((await api('known')).keys);
 
@@ -150,6 +151,7 @@ async function cmdRun(apply) {
     const rows = await gotoList(page, cfg.inboxUrl);
     const texts = await rowTexts(page);
     console.log(`수신결재함 ${texts.length}건`);
+    stats.inbox = texts.length;
     const items = [];
     for (let i = 0; i < texts.length && items.length < cfg.maxDocs; i++) {
       if (cfg.docNoPattern) {
@@ -166,6 +168,7 @@ async function cmdRun(apply) {
     if (items.length) {
       const { results } = await api('add', { items, dryRun });
       results.forEach((r) => {
+        if (r.result === '입력') stats.added++; else stats.skipped++;
         console.log(`- ${r.result}${r.reason ? ` (${r.reason})` : ''} | ${r.title}`);
         if (r.values) console.log(`    ${r.tab} ${r.row}행: ${r.values[6]} / ${Number(r.values[7]).toLocaleString()} / ${r.values[14]} ${r.values[15]} / 부동산=${r.values[4] || '(빈칸)'} 통장=${r.values[5] || '(빈칸)'}`);
       });
@@ -178,6 +181,11 @@ async function cmdRun(apply) {
       const { results } = await api('markDone', { rows: doneRows, dryRun });
       results.forEach((r) => console.log(`- 증빙수취 ${r.result}${r.reason ? ` (${r.reason})` : ''} | ${r.title}`));
     }
+    if (apply) await api('heartbeat', { ok: true, ...stats });
+  } catch (e) {
+    // 대시보드에 '마지막 실행 실패'를 남긴다(웹앱 자체가 안 되면 남길 수 없음)
+    if (apply) await api('heartbeat', { ok: false, ...stats, error: e.message }).catch(() => {});
+    throw e;
   } finally {
     await ctx.close();
   }

@@ -12,7 +12,7 @@
 }
 
 body.dv{background:var(--dv-bg);color:var(--dv-t1)}
-.dv-main{padding:26px 0 60px}
+.dv-main{padding-top:26px;padding-bottom:60px}
 .dv-head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;justify-content:space-between;margin-bottom:8px}
 .dv-head h1{font-size:26px;font-weight:900;letter-spacing:-.03em;margin:6px 0 4px}
 .dv-head .sub{color:var(--dv-t2);font-size:14px;margin:0}

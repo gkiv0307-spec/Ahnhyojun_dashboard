@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>수신결재 처리 현황 | 부동산경매.store</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/dashboard.css">
+<style>
+  .run{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;background:var(--dv-surface);border:1px solid var(--dv-line);
+    border-radius:14px;padding:14px 16px;margin-bottom:18px;font-size:14px}
+  .run .dot{width:10px;height:10px;border-radius:50%;background:var(--dv-t3);flex:none}
+  .run.ok .dot{background:#3fbf7f}.run.fail .dot{background:#e5484d}.run.stale .dot{background:#fab219}
+  .run b{font-size:15px}.run .meta{color:var(--dv-t2)}.run .err{color:#ffb4b6;flex-basis:100%}
+  .kpi-grid.k5{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:1000px){.kpi-grid.k5{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.kpi-grid.k5{grid-template-columns:repeat(2,1fr)}}
+  .kpi.alert .k-value{color:var(--dv-series)}
+  .st{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;white-space:nowrap;
+    border:1px solid var(--dv-line);background:var(--dv-surface-2);color:var(--dv-t2)}
+  .st.add{border-color:var(--dv-series);color:var(--dv-series)}
+  .st.warn{border-color:rgba(250,178,25,.6);color:#f3d79a;background:rgba(250,178,25,.10)}
+  .st.done{border-color:rgba(63,191,127,.55);color:#9fe3bf}
+  .todo{display:flex;flex-direction:column;gap:10px}
+  .todo-item{border-bottom:1px solid var(--dv-line);padding-bottom:10px;font-size:13.5px}
+  .todo-item:last-child{border-bottom:none}
+  .todo-item .t{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .todo-item .t b{color:#fff}
+  .todo-item .r{color:var(--dv-t2);font-size:12.5px;margin-top:4px;line-height:1.5}
+  .dv-table td.doc-title{max-width:340px;min-width:180px}
+  .muted{color:var(--dv-t3)}
+</style>
+</head>
+<body class="dv">
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="/"><img src="assets/logo-dark.png" alt="옆커폰부동산에듀"></a>
+    <nav class="nav-menu">
+      <a href="/dashboard.html">유입 분석</a>
+      <a href="/wehago.html" aria-current="page">수신결재 현황</a>
+    </nav>
+    <a class="btn btn-gold" href="/">사이트로</a>
+  </div>
+</header>
+
+<main class="wrap dv-main">
+  <div class="dv-head">
+    <div>
+      <div class="kicker">Approval Inbox</div>
+      <h1>위하고 수신결재, <span class="gold">어디까지</span> 처리됐나</h1>
+      <p class="sub">이체관리 시트 <span id="tab-label">-</span> 기준 · 지출결의서 칸이 <b>결재</b>인 건 · <span id="gen-label">-</span></p>
+    </div>
+  </div>
+
+  <div id="note-demo" class="dv-note warn"><b>⚠ 지금 화면은 예시(demo) 데이터입니다.</b> 실제 결재 건이 아닙니다. <span id="demo-reason"></span></div>
+  <div id="note-err" class="dv-note warn"></div>
+
+  <div class="dv-controls">
+    <span class="spacer"></span>
+    <button class="ghost-btn" id="btn-key">접근 키</button>
+    <button class="ghost-btn" id="btn-reload">새로고침</button>
+  </div>
+
+  <div id="dv-body" hidden>
+    <div class="run" id="run"></div>
+
+    <div class="kpi-grid k5">
+      <div class="kpi"><div class="k-label">이번 달 결재 건</div><div class="k-value" id="k-count">-</div><div class="k-sub" id="k-amount">-</div></div>
+      <div class="kpi" id="kb-unpaid"><div class="k-label">아직 송금 안 함</div><div class="k-value" id="k-unpaid">-</div><div class="k-sub" id="k-unpaid-amt">-</div></div>
+      <div class="kpi" id="kb-proof"><div class="k-label">증빙 미수취</div><div class="k-value" id="k-proof">-</div><div class="k-sub">증빙수취 칸이 '필요'</div></div>
+      <div class="kpi"><div class="k-label">자동 입력 (최근 30일)</div><div class="k-value" id="k-added">-</div><div class="k-sub">위하고에서 시트로 넣은 건</div></div>
+      <div class="kpi" id="kb-check"><div class="k-label">사람 확인 필요</div><div class="k-value" id="k-check">-</div><div class="k-sub">중복의심·수동확인 (최근 30일)</div></div>
+    </div>
+
+    <div class="dv-grid">
+      <div class="card">
+        <h2>사람이 확인해야 할 건</h2>
+        <p class="cap">자동 입력하지 않고 멈춘 건입니다. 시트에서 직접 넣거나, 이미 있는 행이 맞는지 확인하세요.</p>
+        <div class="todo" id="todo"></div>
+      </div>
+      <div class="card">
+        <h2>지점별 결재 금액 (이번 달)</h2>
+        <p class="cap">해당부동산 칸 기준입니다. 비어 있는 건은 (미지정)으로 묶습니다.</p>
+        <div class="bars" id="bars-prop"></div>
+      </div>
+    </div>
+
+    <div class="card full">
+      <h2>최근 처리 기록</h2>
+      <p class="cap">자동화 프로그램이 위하고 문서를 처리한 기록입니다(최근 300건). 계좌번호는 이 화면에 보내지 않습니다.</p>
+      <div class="seg" id="filter-seg" role="group" aria-label="기록 필터" style="margin-bottom:12px">
+        <button data-f="all" aria-pressed="true">전체</button>
+        <button data-f="add" aria-pressed="false">자동 입력</button>
+        <button data-f="warn" aria-pressed="false">확인 필요</button>
+      </div>
+      <div class="table-scroll" id="log-table"></div>
+    </div>
+
+    <p class="dv-foot">데이터 출처: 이체관리 시트의 이번 달 탭과 <code>위하고_처리기록</code> 탭. 설정 방법은 <code>wehago-sync/README.md</code> 참고.</p>
+  </div>
+  <div class="loading" id="loading">불러오는 중…</div>
+</main>
+<div class="dv-tip" id="dv-tip"></div>
+
+<script>
+const KEY_STORE = "ykp_dash_key"; // 유입 분석 대시보드와 같은 키를 쓴다
+const $ = (id) => document.getElementById(id);
+const nf = (n) => (n == null ? "-" : Number(n).toLocaleString("ko-KR"));
+const won = (n) => nf(n) + "원";
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const kst = (iso) => { const d = new Date(iso); return isNaN(d) ? esc(iso) : d.toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }); };
+const ago = (iso) => { const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+const WARN = ["중복의심", "수동확인", "오류"];
+const kind = (r) => (r === "입력" ? "add" : WARN.includes(r) ? "warn" : "other");
+let state = { data: null, filter: "all" };
+
+function demoData() {
+  const now = Date.now(), h = 3600000, iso = (t) => new Date(t).toISOString();
+  const log = [
+    { title: "26/11/20_예시 객실 비품_120,000", holder: "예시상사", amount: 120000, result: "입력", reason: "", at: iso(now - 1 * h), proof: "필요", tab: "11월 이체" },
+    { title: "26/11/20_예시 세탁비_1,500,000", holder: "예시세탁", amount: 1500000, result: "중복의심", reason: "11월 이체 88행에 같은 받는사람+금액 있음", at: iso(now - 1 * h), proof: "", tab: "11월 이체" },
+    { title: "26/11/19_예시 자재비_575,000", holder: "예시인테리어", amount: 575000, result: "입력", reason: "", at: iso(now - 20 * h), proof: "완료", tab: "11월 이체" },
+    { title: "예시 공과금 납부", holder: "", amount: 0, result: "수동확인", reason: "받는사람/금액 미확정: 예금주를 찾지 못함", at: iso(now - 26 * h), proof: "", tab: "" },
+    { title: "26/11/18_예시 광고비_200,000", holder: "예시광고", amount: 200000, result: "입력", reason: "", at: iso(now - 50 * h), proof: "필요", tab: "11월 이체" },
+  ];
+  return { configured: true, demo: true, generatedAt: iso(now), lastRun: { at: iso(now - 40 * 60000), ok: true, inbox: 3, added: 1, skipped: 1, error: "" },
+    month: { tab: "11월 이체", exists: true, count: 42, amount: 38250000, unpaid: 5, unpaidAmount: 2395000, proofNeeded: 11,
+      byProperty: { "예시 A지점": { count: 14, amount: 21000000 }, "예시 B지점": { count: 12, amount: 9800000 }, "예시 C지점": { count: 9, amount: 5200000 }, "(미지정)": { count: 7, amount: 2250000 } } },
+    log };
+}
+
+function note(id, html) { const el = $(id); if (html == null) { el.classList.remove("show"); return; } if (html) el.innerHTML = html; el.classList.add("show"); }
+
+async function load() {
+  $("loading").hidden = false; note("note-err", null); note("note-demo", null);
+  const key = localStorage.getItem(KEY_STORE) || "";
+  let data;
+  try {
+    const res = await fetch("/api/wehago-status" + (key ? `?key=${encodeURIComponent(key)}` : ""), { cache: "no-store" });
+    const body = await res.json().catch(() => null);
+    if (!body) throw new Error("서버 함수가 없습니다(로컬 파일로 열었거나 배포 전).");
+    if (res.status === 401) { $("loading").hidden = true; $("dv-body").hidden = true; note("note-err", `<b>접근 키가 필요합니다.</b> 오른쪽 <b>[접근 키]</b> 버튼에 유입 분석 대시보드와 같은 키를 넣으세요.`); return; }
+    if (body.error || body.configured === false) throw new Error(body.message || body.error);
+    data = body;
+  } catch (e) {
+    data = demoData();
+    $("demo-reason").textContent = "이유: " + e.message;
+    note("note-demo", "");
+  }
+  state.data = data;
+  render();
+  $("loading").hidden = true; $("dv-body").hidden = false;
+}
+
+function render() {
+  const d = state.data, m = d.month || {}, log = d.log || [];
+  $("tab-label").textContent = m.tab || "-";
+  $("gen-label").textContent = d.generatedAt ? `${kst(d.generatedAt)} 조회` : "-";
+
+  // 마지막 자동 실행
+  const r = d.lastRun, run = $("run");
+  if (!r) { run.className = "run"; run.innerHTML = `<span class="dot"></span><b>자동 실행 기록 없음</b><span class="meta">PC에서 <code>npm run apply</code> 가 한 번도 돌지 않았습니다.</span>`; }
+  else {
+    const stale = Date.now() - new Date(r.at) > 3 * 3600000;
+    run.className = "run " + (!r.ok ? "fail" : stale ? "stale" : "ok");
+    run.innerHTML = `<span class="dot"></span><b>마지막 자동 실행: ${r.ok ? "정상" : "실패"}${r.ok && stale ? " · 3시간 넘게 안 돌았음" : ""}</b>
+      <span class="meta">${kst(r.at)} (${ago(r.at)}) · 수신결재함 ${nf(r.inbox)}건 · 입력 ${nf(r.added)}건 · 보류 ${nf(r.skipped)}건</span>
+      ${r.error ? `<span class="err">오류: ${esc(r.error)}${/로그인/.test(r.error) ? " → PC에서 <code>npm run login</code>" : ""}</span>` : ""}`;
+  }
+  if (m.exists === false) note("note-err", `<b>"${esc(m.tab)}" 탭이 없습니다.</b> 이번 달 탭을 만들어야 자동 입력이 됩니다.`);
+
+  const since = Date.now() - 30 * 86400000;
+  const recent = log.filter((x) => new Date(x.at) >= since);
+  const todo = recent.filter((x) => WARN.includes(x.result));
+  $("k-count").textContent = nf(m.count); $("k-amount").textContent = won(m.amount);
+  $("k-unpaid").textContent = nf(m.unpaid); $("k-unpaid-amt").textContent = won(m.unpaidAmount);
+  $("k-proof").textContent = nf(m.proofNeeded);
+  $("k-added").textContent = nf(recent.filter((x) => x.result === "입력").length);
+  $("k-check").textContent = nf(todo.length);
+  $("kb-check").classList.toggle("alert", todo.length > 0);
+
+  $("todo").innerHTML = todo.length ? todo.map((x) => `<div class="todo-item">
+      <div class="t"><span class="st warn">${esc(x.result)}</span><b>${esc(x.title || "(제목 없음)")}</b></div>
+      <div class="r">${x.holder ? esc(x.holder) + " · " : ""}${x.amount ? won(x.amount) + " · " : ""}${kst(x.at)}<br>${esc(x.reason)}</div></div>`).join("")
+    : '<div class="empty">확인할 건이 없습니다.</div>';
+
+  const props = Object.entries(m.byProperty || {}).map(([k, v]) => ({ label: k, value: v.amount, count: v.count })).sort((a, b) => b.value - a.value);
+  const max = Math.max(1, ...props.map((p) => p.value)), total = props.reduce((s, p) => s + p.value, 0);
+  $("bars-prop").innerHTML = props.length ? props.map((p) => `<div class="bar-row">
+      <div class="b-label">${esc(p.label)}<small>${nf(p.count)}건</small></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max((p.value / max) * 100, 1.5)}%"></div></div>
+      <div class="b-val">${nf(p.value)}<span>${total ? Math.round((p.value / total) * 1000) / 10 : 0}%</span></div></div>`).join("")
+    : '<div class="empty">이번 달 결재 건이 없습니다.</div>';
+
+  renderLog();
+}
+
+function renderLog() {
+  const f = state.filter;
+  const rows = (state.data.log || []).filter((x) => f === "all" || kind(x.result) === f);
+  $("log-table").innerHTML = rows.length ? `<table class="dv-table"><thead><tr>
+      <th>처리 시각</th><th>결과</th><th>제목</th><th>받는사람</th><th class="num">금액</th><th>증빙수취</th></tr></thead><tbody>
+      ${rows.map((x) => `<tr><td class="num">${kst(x.at)}</td>
+        <td><span class="st ${kind(x.result)}">${esc(x.result)}</span>${x.reason ? `<div class="muted" style="font-size:12px;margin-top:3px">${esc(x.reason)}</div>` : ""}</td>
+        <td class="doc-title">${esc(x.title)}</td><td>${esc(x.holder) || '<span class="muted">-</span>'}</td>
+        <td class="num">${x.amount ? nf(x.amount) : "-"}</td>
+        <td>${x.proof ? `<span class="st ${x.proof === "완료" ? "done" : ""}">${esc(x.proof)}</span>` : '<span class="muted">-</span>'}</td></tr>`).join("")}
+      </tbody></table>` : '<div class="empty">기록이 없습니다.</div>';
+}
+
+$("filter-seg").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.filter = b.dataset.f;
+  [...e.currentTarget.children].forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  renderLog();
+});
+$("btn-reload").addEventListener("click", load);
+$("btn-key").addEventListener("click", () => {
+  const cur = localStorage.getItem(KEY_STORE) || "";
+  const v = prompt("대시보드 접근 키(DASHBOARD_KEY)를 입력하세요. 비우면 저장된 키를 지웁니다.", cur);
+  if (v === null) return;
+  if (v) localStorage.setItem(KEY_STORE, v); else localStorage.removeItem(KEY_STORE);
+  load();
+});
+load();
+</script>
+</body>
+</html>

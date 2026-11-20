@@ -32,6 +32,14 @@ function doPost(e) {
       else if (req.action === 'add') out = { ok: true, results: (req.items || []).map(function (it) { return addItem_(ss, it, !!req.dryRun); }) };
       else if (req.action === 'markDone') out = { ok: true, results: markDone_(ss, req.rows || [], !!req.dryRun) };
       else if (req.action === 'ping') out = { ok: true, tab: monthTabName_(new Date()) };
+      else if (req.action === 'status') out = status_(ss);
+      else if (req.action === 'heartbeat') {
+        props.setProperty('LAST_RUN', JSON.stringify({
+          at: new Date().toISOString(), ok: !!req.ok, inbox: req.inbox || 0, added: req.added || 0,
+          skipped: req.skipped || 0, error: String(req.error || '').slice(0, 300),
+        }));
+        out = { ok: true };
+      }
       else throw new Error('알 수 없는 action: ' + req.action);
     } finally {
       lock.releaseLock();
@@ -203,6 +211,47 @@ function markDone_(ss, rows, dryRun) {
     results.push(item);
   });
   return results;
+}
+
+// 대시보드용 현황. 계좌번호는 보내지 않는다.
+function status_(ss) {
+  var now = new Date();
+  var tabName = monthTabName_(now);
+  var month = { tab: tabName, exists: false, count: 0, amount: 0, unpaid: 0, unpaidAmount: 0, proofNeeded: 0, byProperty: {} };
+  var sh = ss.getSheetByName(tabName);
+  if (sh) {
+    month.exists = true;
+    var last = lastDataRow_(sh);
+    if (last > HEADER_ROWS) {
+      sh.getRange(HEADER_ROWS + 1, FIRST_COL, last - HEADER_ROWS, NUM_COLS).getValues().forEach(function (r) {
+        var v = function (c) { return r[c - FIRST_COL]; };
+        if (String(v(COL.resolution)).trim() !== '결재') return;
+        var amt = Number(v(COL.amount)) || 0;
+        var prop = String(v(COL.property) || '').trim() || '(미지정)';
+        month.count++; month.amount += amt;
+        if (String(v(COL.paid)).trim() !== 'Y') { month.unpaid++; month.unpaidAmount += amt; }
+        if (String(v(COL.proofRecv)).trim() === '필요') month.proofNeeded++;
+        var p = month.byProperty[prop] || (month.byProperty[prop] = { count: 0, amount: 0 });
+        p.count++; p.amount += amt;
+      });
+    }
+  }
+  var log = [];
+  var lsh = ss.getSheetByName(LOG_SHEET);
+  if (lsh && lsh.getLastRow() >= 2) {
+    var n = Math.min(lsh.getLastRow() - 1, 300);
+    log = lsh.getRange(lsh.getLastRow() - n + 1, 1, n, LOG_HEADER.length).getValues().map(function (r) {
+      var res = String(r[5]);
+      var m = res.match(/^([^ (]+)\s*(?:\((.*)\))?$/);
+      return {
+        title: String(r[1]), tab: String(r[2]), holder: String(r[3]), amount: Number(r[4]) || 0,
+        result: m ? m[1] : res, reason: m && m[2] ? m[2] : '',
+        at: r[6] instanceof Date ? r[6].toISOString() : String(r[6]), proof: String(r[7] || ''),
+      };
+    }).reverse();
+  }
+  var lastRun = PropertiesService.getScriptProperties().getProperty('LAST_RUN');
+  return { ok: true, generatedAt: now.toISOString(), month: month, log: log, lastRun: lastRun ? JSON.parse(lastRun) : null };
 }
 
 /** 편집기에서 한 번 실행: 기록·매핑 시트를 만들고 권한을 승인받는다. */
