@@ -211,6 +211,11 @@ function setup() {
   if (!id) throw new Error('스크립트 속성 SPREADSHEET_ID 를 먼저 넣어 주세요');
   var ss = SpreadsheetApp.openById(id);
   logSheet_(ss);
+  var isNew = !ss.getSheetByName(MAP_SHEET);
   lookupMapping_(ss, '');
+  if (isNew) {
+    // 확인된 매핑(2026-11): 양산 건은 당분간 옆커폰본사통장에서 출금
+    ss.getSheetByName(MAP_SHEET).appendRow(['양산', '스테이레브소유 양산점', '옆커폰본사통장', '당분간 본사통장 (2026-11 확인)']);
+  }
   Logger.log('준비 완료: ' + monthTabName_(new Date()) + ' 탭에 입력됩니다.');
 }
