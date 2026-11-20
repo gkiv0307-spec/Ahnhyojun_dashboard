@@ -1,0 +1,15 @@
+{
+  "webAppUrl": "https://script.google.com/macros/s/여기에_웹앱_ID/exec",
+  "token": "Apps Script 스크립트 속성 SYNC_TOKEN 과 같은 값",
+  "inboxUrl": "위하고 수신결재함 화면의 주소창 주소를 그대로 복사",
+  "doneUrl": "위하고 결재내역함 화면의 주소창 주소를 그대로 복사",
+  "headless": true,
+  "maxDocs": 20,
+  "docWaitMs": 3000,
+  "docNoPattern": "",
+  "selectors": {
+    "listRow": "table tbody tr",
+    "rowClick": "",
+    "loginHint": "input[type=\"password\"]"
+  }
+}

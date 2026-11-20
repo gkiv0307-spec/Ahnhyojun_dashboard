@@ -3,3 +3,7 @@
 /courses.html    /#courses     301
 /reviews.html    /#reviews     301
 /properties.html /area         301
+
+# 사무실 PC용 자동화 도구 폴더는 웹사이트로 공개하지 않음
+/wehago-sync/*  /  302
+/wehago-sync    /  302

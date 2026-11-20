@@ -1,0 +1,15 @@
+{
+  "name": "wehago-sync",
+  "private": true,
+  "description": "위하고 수신결재함 → 이체관리 시트 자동 입력",
+  "scripts": {
+    "login": "node sync.js login",
+    "inspect": "node sync.js inspect",
+    "preview": "node sync.js run",
+    "apply": "node sync.js run --apply",
+    "test": "node --test test/parse.test.js"
+  },
+  "dependencies": {
+    "playwright": "1.48.2"
+  }
+}
